@@ -1,0 +1,1 @@
+export const Font = 'Fontspring-DEMO-proximanovacond-regular'
