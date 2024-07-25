@@ -16,7 +16,7 @@ import { GoogleSigninButton } from '@react-native-community/google-signin';
 import { useNavigation } from '@react-navigation/native';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
-const Login = () => {
+const Login: React.FC = () => {
     const navigation = useNavigation();
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
@@ -32,31 +32,66 @@ const Login = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [showInvalidCredentialsModal, setShowInvalidCredentialsModal] = useState(false);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (accountLocked) {
             return;
         }
-
+    
         if (!email) {
             setEmailError('Email address is required');
             return;
         }
-
+    
         if (!password) {
             setPasswordError('Password is required');
             return;
         }
+    
+        try {
+            const response = await fetch('https://beatask.cloud/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+    
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+    
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+    
+            if (data.success) {
+                // Assuming success means OTP sent, navigate to OTP verification screen
+                navigation.navigate('OTPVerification' as never);
+            } else {
+                // Handle other cases as needed
+                setShowInvalidCredentialsModal(true);
+            }
 
-        setLoginAttempts(0);
-        navigation.navigate('OTPVerification' as never);
+            console.log('Login API call commented out');
+            // Simulate navigation for demonstration purposes
+            navigation.navigate('OTPVerification' as never);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setShowInvalidCredentialsModal(true); // Show modal for any error
+        }
     };
+    
+    
 
     const closeModal = () => {
         setShowPopup(false);
         setShowInvalidCredentialsModal(false);
     };
 
-    const InvalidCredentialsModal = () => (
+    const InvalidCredentialsModal: React.FC = () => (
         <Modal
             animationType="fade"
             transparent={true}
@@ -75,7 +110,7 @@ const Login = () => {
         </Modal>
     );
 
-    const LockoutModal = () => (
+    const LockoutModal: React.FC = () => (
         <Modal
             animationType="fade"
             transparent={true}

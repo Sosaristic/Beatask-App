@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Modal, ScrollView,Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Modal, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Card } from 'react-native-paper';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import axios from 'axios'; // Import axios if using it
 
 const RequestServiceScreen = () => {
     const [instructions, setInstructions] = useState('');
@@ -12,9 +13,27 @@ const RequestServiceScreen = () => {
     const [bookVisible, setBookVisible] = useState(false);
     const [sortValue, setSortValue] = useState('rating');
     const navigation = useNavigation();
-  const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
-
+    const [modalVisible, setModalVisible] = useState(false);
     const [selectedServiceOption, setSelectedServiceOption] = useState('Select service categories');
+    const [services, setServices] = useState<any[]>([]); // State to store services
+    const [loading, setLoading] = useState(true); // State to handle loading
+
+    useEffect(() => {
+        // Fetch services when the component mounts
+        fetchServices();
+    }, []);
+
+    const fetchServices = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get('https://beatask.cloud/get-requested-services');
+            setServices(response.data);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleInstructionsChange = (text: string) => {
         if (text.length <= 100) {
@@ -28,20 +47,14 @@ const RequestServiceScreen = () => {
         setBookVisible(false);
         // Add sorting logic here
     };
+
     const handlePost = () => {
-        // Show the modal
         setModalVisible(true);
-    
-        // Automatically hide the modal after 5 seconds
         setTimeout(() => {
-          setModalVisible(false);
-    
-          // Navigate to 'Homeimp' screen
-          navigation.navigate('Home' as never);
-        }, 5000); // 5000 milliseconds = 5 seconds
-    
-        // You can also perform other actions upon sending here
-      };
+            setModalVisible(false);
+            navigation.navigate('Home' as never);
+        }, 5000);
+    };
 
     const toggleBookModal = () => {
         setBookVisible(!bookVisible);
@@ -49,8 +62,9 @@ const RequestServiceScreen = () => {
 
     const handleServiceOptionSelect = (option: string) => {
         setSelectedServiceOption(option);
-        toggleBookModal(); // Close modal after selecting an option (optional)
+        toggleBookModal();
     };
+
     const serviceCategories = [
         'Home Improvement',
         'Business',
@@ -73,7 +87,7 @@ const RequestServiceScreen = () => {
             <Text style={[styles.label, { color: isDarkMode ? '#FFFFFF' : '#000000' }]}>Service category</Text>
             <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: isDarkMode ? '#333333' : '#CCCCCC' }]}
-                onPress={toggleBookModal} // Open modal on press
+                onPress={toggleBookModal}
             >
                 <Text style={{ color: isDarkMode ? '#CCCCCC' : '#333333' }}>{selectedServiceOption}</Text>
             </TouchableOpacity>
@@ -117,7 +131,6 @@ const RequestServiceScreen = () => {
                             </TouchableOpacity>
                         </View>
                         <ScrollView style={{ maxHeight: hp('30%'), width: '100%' }}>
-                            {/* Adjusted maxHeight for responsive scrolling */}
                             {serviceCategories.map((option, index) => (
                                 <TouchableOpacity key={index} style={styles.modalOption} onPress={() => handleServiceOptionSelect(option)}>
                                     <Text style={styles.modalOptionText}>{option}</Text>
@@ -128,23 +141,35 @@ const RequestServiceScreen = () => {
                 </View>
             </Modal>
             <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-        }}
-      >
-        <View style={styles.modalContainer1}>
-          <View style={styles.modalContent1}>
-            <Image source={require('D:/beatask/src/assets/images/verified.png')} style={styles.modalIcon} />
-            <Text style={styles.modalText}>Posted</Text>
-            <Text style={styles.modalSubText}>
-            Request Posted
-            </Text>
-          </View>
-        </View>
-      </Modal>
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(false);
+                }}
+            >
+                <View style={styles.modalContainer1}>
+                    <View style={styles.modalContent1}>
+                        <Image source={require('D:/beatask/src/assets/images/verified.png')} style={styles.modalIcon} />
+                        <Text style={styles.modalText}>Posted</Text>
+                        <Text style={styles.modalSubText}>
+                            Request Posted
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+
+            {loading && <ActivityIndicator size="large" color="#0000ff" />}
+            {!loading && services.length > 0 && (
+                <ScrollView style={styles.servicesList}>
+                    {services.map((service, index) => (
+                        <View key={index} style={styles.serviceItem}>
+                            <Text style={styles.serviceTitle}>{service.title}</Text>
+                            <Text style={styles.serviceDescription}>{service.description}</Text>
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
         </View>
     );
 };
@@ -223,19 +248,19 @@ const styles = StyleSheet.create({
         borderTopRightRadius: wp('10%'),
         alignItems: 'center',
     },
-    modalHeading: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: hp('2%'),
-    },
     modalContent1: {
         backgroundColor: '#fff',
         padding: wp('5%'),
         borderRadius: wp('10%'),
         alignItems: 'center',
         marginHorizontal:wp('15%'),
+    },
+    modalHeading: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: hp('2%'),
     },
     modalHeadingText: {
         fontSize: wp('5%'),
@@ -255,21 +280,35 @@ const styles = StyleSheet.create({
         width: wp('8%'),
         height: hp('4%'),
         marginBottom: ('2%'),
-      },
-    
-modalText: {
-    fontSize: wp('4%'), // Adjust font size based on window width
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: hp('2%'), // Adjust margin as a percentage of the screen height
-    color: '#000',
-  },
-  modalSubText: {
-    fontSize: wp ('4%'), // Adjust font size based on window width
-    textAlign: 'center',
-    marginBottom: hp('1%'), // Adjust margin as a percentage of the screen height
-    color: '#000',
-  },
+    },
+    modalText: {
+        fontSize: wp('4%'),
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: hp('2%'),
+        color: '#000',
+    },
+    modalSubText: {
+        fontSize: wp('4%'),
+        textAlign: 'center',
+        marginBottom: hp('1%'),
+        color: '#000',
+    },
+    servicesList: {
+        marginTop: hp('2%'),
+    },
+    serviceItem: {
+        padding: wp('4%'),
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
+    },
+    serviceTitle: {
+        fontSize: wp('4%'),
+        fontWeight: 'bold',
+    },
+    serviceDescription: {
+        fontSize: wp('3.5%'),
+    },
 });
 
 export default RequestServiceScreen;

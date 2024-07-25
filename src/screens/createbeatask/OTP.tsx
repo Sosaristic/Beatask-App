@@ -44,7 +44,7 @@ const App = () => {
             setVerificationSuccess(true); 
             setTimeout(() => {
                 setShowModal(false); 
-                navigation.navigate('Setting'as never);
+                navigation.navigate('dashboard'as never);
             }, 3000); // Close modal after 3 seconds
         }, 2000); // Simulate verification for 2 seconds
     };

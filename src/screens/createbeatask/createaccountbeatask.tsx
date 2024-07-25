@@ -37,6 +37,9 @@ const CreateAccountScreen = () => {
     const handleNextPress = () => {
         navigation.navigate('Upload' as never);
     };
+    const handleagree = () => {
+        navigation.navigate('Agree' as never);
+    };
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!isPasswordVisible);
@@ -118,9 +121,9 @@ const CreateAccountScreen = () => {
                 />
                 <Text style={styles.checkboxLabel}>
                     I agree to Beatask
-                    <Text style={{ color: '#12CCB7' }}> terms of use</Text>
+                    <Text style={{ color: '#12CCB7'}} onPress={handleagree}> terms of use</Text>
                     {' '}and{'\n'}
-                    <Text style={{ color: '#12CCB7' }}> privacy policy.</Text>
+                    <Text style={{ color: '#12CCB7' }} onPress={handleagree}> privacy policy.</Text>
                 </Text>
             </View>
 

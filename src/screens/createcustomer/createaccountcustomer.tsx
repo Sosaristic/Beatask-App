@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import CheckBox from '@react-native-community/checkbox';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import axios from 'axios';
 
 // Define the interface for the country object
 interface Country {
@@ -86,11 +87,33 @@ const CreateAccountScreen = () => {
         return valid;
     };
 
-    const handleNextPress = () => {
-        if (validateFields()) {
-            navigation.navigate('OTPCustomer' as never);
+    const sendDataToAPI = async () => {
+        try {
+            const response = await axios.post('https://beatask.cloud/register', {
+                first_legal_name: firstName,
+                last_legal_name: lastName,
+                email: email,
+                phone_number: phoneNumber,
+                home_address: address,
+                password: password,
+            });
+            console.log('API Response:', response.data);
+            navigation.navigate('OTPCustomer'as never);
+        } catch (error) {
+            console.error('Error sending data:', error);
+            
         }
     };
+
+    
+
+    const handleNextPress = () => {
+    if (validateFields()) {
+        // sendDataToAPI();
+        navigation.navigate('OTPCustomer' as never);
+    }
+};
+
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!isPasswordVisible);

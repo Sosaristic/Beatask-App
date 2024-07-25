@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal,Image, ActivityIndicator, useColorScheme, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, ActivityIndicator, useColorScheme, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 const App = () => {
     const navigation = useNavigation();
     const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
-    
-    const [code, setCode] = useState(['', '', '', '']);
+
+    const [code, setCode] = useState(['', '', '', '', '', '']);
     const [resendTimer, setResendTimer] = useState(60); // 1 minute in seconds
     const [showResendButton, setShowResendButton] = useState(false);
     const [showModal, setShowModal] = useState(false); // State for showing the modal
     const [verificationSuccess, setVerificationSuccess] = useState(false); // State for verification success
 
-    const inputRefs = useRef<Array<TextInput | null>>([null, null, null, null]);
+    const inputRefs = useRef<Array<TextInput | null>>([null, null, null, null, null, null]);
 
     useEffect(() => {
         if (resendTimer > 0) {
@@ -39,12 +39,12 @@ const App = () => {
 
     const handleNextPress = () => {
         setShowModal(true);
-        
+
         setTimeout(() => {
-            setVerificationSuccess(true); 
+            setVerificationSuccess(true);
             setTimeout(() => {
-                setShowModal(false); 
-                navigation.navigate('Home'as never);
+                setShowModal(false);
+                navigation.navigate('Home' as never);
             }, 3000); // Close modal after 3 seconds
         }, 2000); // Simulate verification for 2 seconds
     };
@@ -82,7 +82,7 @@ const App = () => {
         <ScrollView style={[styles.container, colorScheme === 'dark' ? styles.darkContainer : styles.lightContainer]}>
             <Text style={[styles.title, colorScheme === 'dark' ? styles.darkTitle : styles.lightTitle]}>Enter verification code</Text>
             <Text style={[styles.subtitle, colorScheme === 'dark' ? styles.darkSubtitle : styles.lightSubtitle]}>
-                Check your email, a 4 digits verification code was sent.
+                Check your email, a 6 digits verification code was sent.
             </Text>
             <View style={styles.inputContainer}>
                 {code.map((digit, index) => (
@@ -125,7 +125,7 @@ const App = () => {
             >
                 <Text style={styles.submitButtonText}>Submit</Text>
             </TouchableOpacity>
-    
+
             {/* Modal for Verifying Code */}
             <Modal
                 visible={showModal}
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-evenly',
         alignItems: 'center',
         marginBottom: hp('4%'),
     },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
         fontSize: wp('8%'),
         textAlign: 'center',
         borderRadius: 8,
-        width: wp('15%'),
+        width: wp('12%'),
         height: hp('10%'),
         marginHorizontal: wp('2%'),
     },
@@ -281,15 +281,11 @@ const styles = StyleSheet.create({
         marginBottom: hp('2%'),
         color: '#12CCB7', // Success text color
     },
-    tickMark: {
-        fontSize: wp('12%'),
-        color: '#12CCB7', // Tick mark color
-    },
     modalIcon: {
         width: wp('12%'),
         height: hp('6%'),
-        marginBottom: ('2%'),
-      },
+        marginBottom: hp('2%'),
+    },
 });
 
 export default App;

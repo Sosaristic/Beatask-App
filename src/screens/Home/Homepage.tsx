@@ -497,7 +497,7 @@ const HomeScreen = () => {
             </ScrollView>
             <TouchableOpacity style={styles.fab} onPress={handleFABPress}>
         <Icon name="briefcase-variant-outline" size={26} color="#fff" />
-      </TouchableOpacity>
+            </TouchableOpacity>
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
                     <Icon name="home-outline" size={wp('7%')} color={isDarkMode ? '#FFF' : '#000'} />

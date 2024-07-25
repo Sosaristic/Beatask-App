@@ -17,13 +17,14 @@ import OTPCustomer from './src/screens/createcustomer/OTPcustomer';
 import Login from './src/screens/Login/Login';
 import OTPVerification from './src/screens/Login/OTPVerification';
 import Home from './src/screens/Home/Homepage';
-import Setting from './src/screens/Home/setting/setting';
+import Setting from './src/screens/createbeatask/setting/setting';
 import ProfileSetup from './src/screens/Home/setting/profileSetup';
 import servicelisting from './src/screens/Home/setting/servicelisting';
 import profile from './src/screens/Home/profile';
 import Booked from './src/screens/Home/booked/booked';
 import Review from './src/screens/Home/setting/review';
 import Chat from './src/screens/Home/chat/chat';
+import Chat1 from './src/screens/createbeatask/Home/chat/chat';
 import Service from './src/screens/Home/setting/Serviceprovider';
 import Homeimp from './src/screens/Home/provider/Homeimp';
 import Filter from './src/screens/Home/provider/filter';
@@ -33,6 +34,17 @@ import calenderbook from './src/screens/Home/provider/calenderbooking';
 import Request from './src/screens/Home/request';
 import seved from './src/screens/Home/provider/sevedimp';
 import masglist from './src/screens/Home/chat/masglist';
+import masglist1 from './src/screens/createbeatask/Home/chat/masglist1';
+import Agree from './src/screens/createbeatask/agreement';
+import dashboard from './src/screens/createbeatask/Home/dashboard';
+import booked1 from './src/screens/createbeatask/booked/booked1';
+import Bid from './src/screens/createbeatask/Home/Bid';
+import Bid1 from './src/screens/createbeatask/Home/Bid1';
+import review1 from './src/screens/createbeatask/setting/review1';
+import withdraw from './src/screens/createbeatask/setting/withdraw';
+import withdraw1 from './src/screens/createbeatask/setting/withdraw1';
+import spiner from './src/screens/Home/setting/spiner';
+
 
 // Define RootStackParamList with appropriate types
 export type RootStackParamList = {
@@ -55,6 +67,7 @@ export type RootStackParamList = {
   Booked: undefined;
   Review: undefined;
   Chat: undefined;
+  Chat1: undefined;
   Service: undefined;
   Homeimp: undefined;
   Filter: undefined;
@@ -64,6 +77,17 @@ export type RootStackParamList = {
   Request: undefined;
   seved: undefined;
   masglist: undefined;
+  masglist1: undefined;
+  Agree: undefined;
+  dashboard: undefined;
+  booked1: undefined;
+  Bid: undefined;
+  Bid1: undefined;
+  servicelisting:undefined;
+  review1:undefined;
+  withdraw:undefined;
+  withdraw1:undefined;
+  spiner:undefined;
 };
 
 // Create a Stack navigator
@@ -108,11 +132,12 @@ const App = () => {
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
         <Stack.Screen name="Setting" component={Setting} options={{ title: 'Setting' }} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetup} options={{ title: 'Profile Setup' }} />
-        <Stack.Screen name="Servicelisting" component={servicelisting} options={{ title: 'Service Listing' }} />
+        <Stack.Screen name="servicelisting" component={servicelisting} options={{ title: 'Service Listing' }} />
         <Stack.Screen name="Profile" component={profile} options={{ title: 'Profile' }} />
         <Stack.Screen name="Booked" component={Booked} options={{ title: 'Booked' }} />
         <Stack.Screen name="Review" component={Review} options={{ title: 'Review' }} />
         <Stack.Screen name="Chat" component={Chat} options={{ headerShown: true, title: 'Maryland Winkles' }} />
+        <Stack.Screen name="Chat1" component={Chat1} options={{ headerShown: true, title: 'Maryland Winkles' }} />
         <Stack.Screen name="Service" component={Service} options={{ headerShown: true, title: 'Provider Profile' }} />
         <Stack.Screen name="Homeimp" component={Homeimp} options={{headerShown: true,title: 'Home Improvement',headerRight: () => <CustomHeaderRight/> }} />
         <Stack.Screen name="Filter" component={Filter} options={{headerShown: true,title: 'Filter'}} />
@@ -122,6 +147,17 @@ const App = () => {
         <Stack.Screen name="Request" component={Request} options={{headerShown: true,title: 'Request service'}} />
         <Stack.Screen name="seved" component={seved} options={{headerShown: true,title: 'Saved Provider'}} />
         <Stack.Screen name="masglist" component={masglist} options={{headerShown: true,title: 'Message'}} />
+        <Stack.Screen name="masglist1" component={masglist1} options={{headerShown: true,title: 'Message'}} />
+        <Stack.Screen name="Agree" component={Agree} options={{headerShown: true,title: 'Independent contractor agreement'}} />
+        <Stack.Screen name="dashboard" component={dashboard} options={{headerShown: false,}} />
+        <Stack.Screen name="booked1" component={booked1} options={{headerShown: true,title: 'Booking'}} />
+        <Stack.Screen name="Bid" component={Bid} options={{headerShown: false,title: ''}} />
+        <Stack.Screen name="Bid1" component={Bid1} options={{headerShown: false,title: ''}} />
+        <Stack.Screen name="review1" component={review1} options={{headerShown: true,title: 'Review and Ratings'}} />
+        <Stack.Screen name="withdraw" component={withdraw} options={{headerShown: true,title: 'Payment'}} />
+        <Stack.Screen name="withdraw1" component={withdraw1} options={{headerShown: true,title: 'Withdraw'}} />
+        <Stack.Screen name="spiner" component={spiner} options={{headerShown: false,}} />
+
 
       </Stack.Navigator>
     </NavigationContainer>
