@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Image, useColorScheme } from 'react-native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { useNavigation } from '@react-navigation/native';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Image,
+  useColorScheme,
+} from 'react-native';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import {useNavigation} from '@react-navigation/native';
 
 const InquiryScreen: React.FC = () => {
   const [activeButtons, setActiveButtons] = useState<string[]>([]);
@@ -12,10 +24,10 @@ const InquiryScreen: React.FC = () => {
   const handleButtonPress = (buttonName: string) => {
     if (activeButtons.includes(buttonName)) {
       // If button is already active, deactivate it
-      setActiveButtons((prev) => prev.filter((name) => name !== buttonName));
+      setActiveButtons(prev => prev.filter(name => name !== buttonName));
     } else {
       // If button is not active, activate it
-      setActiveButtons((prev) => [...prev, buttonName]);
+      setActiveButtons(prev => [...prev, buttonName]);
     }
   };
 
@@ -42,15 +54,20 @@ const InquiryScreen: React.FC = () => {
       <View style={styles.buttonsContainer}>
         <View style={styles.row}>
           <TouchableOpacity
-            style={[styles.button, activeButtons.includes('Price reduction') && styles.activeButton]}
-            onPress={() => handleButtonPress('Price reduction')}
-          >
+            style={[
+              styles.button,
+              activeButtons.includes('Price reduction') && styles.activeButton,
+            ]}
+            onPress={() => handleButtonPress('Price reduction')}>
             <Text style={styles.buttonText}>Price reduction</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, activeButtons.includes('Different schedule') && styles.activeButton]}
-            onPress={() => handleButtonPress('Different schedule')}
-          >
+            style={[
+              styles.button,
+              activeButtons.includes('Different schedule') &&
+                styles.activeButton,
+            ]}
+            onPress={() => handleButtonPress('Different schedule')}>
             <Text style={styles.buttonText}>Different schedule</Text>
           </TouchableOpacity>
         </View>
@@ -58,11 +75,11 @@ const InquiryScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.button,
-              activeButtons.includes('Quote for extra service') && styles.activeButton,
+              activeButtons.includes('Quote for extra service') &&
+                styles.activeButton,
               styles.leftButton, // Style for left-aligned button
             ]}
-            onPress={() => handleButtonPress('Quote for extra service')}
-          >
+            onPress={() => handleButtonPress('Quote for extra service')}>
             <Text style={styles.buttonText}>Quote for extra service</Text>
           </TouchableOpacity>
         </View>
@@ -89,14 +106,17 @@ const InquiryScreen: React.FC = () => {
         visible={modalVisible}
         onRequestClose={() => {
           setModalVisible(false);
-        }}
-      >
+        }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Image source={require('D:/beatask/src/assets/images/verified.png')} style={styles.modalIcon} />
+            <Image
+              source={require('../../../assets/images/verified.png')}
+              style={styles.modalIcon}
+            />
             <Text style={styles.modalText}>Message sent</Text>
             <Text style={styles.modalSubText}>
-              Your message has been sent to the service provider. You can continue the conversation on the message section.
+              Your message has been sent to the service provider. You can
+              continue the conversation on the message section.
             </Text>
           </View>
         </View>

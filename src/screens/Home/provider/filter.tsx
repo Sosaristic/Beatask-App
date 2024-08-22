@@ -1,27 +1,57 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
-import { Calendar} from 'react-native-calendars'; // Correct imports for Calendar and types
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  useColorScheme,
+} from 'react-native';
+import {Calendar} from 'react-native-calendars'; // Correct imports for Calendar and types
 import Slider from '@react-native-community/slider';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { useNavigation } from '@react-navigation/native';
-import { Button } from 'react-native-elements';
+import {RouteProp, useNavigation} from '@react-navigation/native';
+import {Button} from 'react-native-elements';
+import {RootStackParamList} from '../../../../App';
+import {StackNavigationProp} from '@react-navigation/stack';
 
-const App: React.FC = () => {
+type FilterProps = {
+  route: RouteProp<RootStackParamList, 'Filter'>;
+  navigation: StackNavigationProp<RootStackParamList, 'Filter'>;
+};
+
+const App: React.FC<FilterProps> = ({route, navigation}) => {
   const [price, setPrice] = useState<[number, number]>([22, 56]);
   const [rating, setRating] = useState<number>(5);
-  const [jobCompletionRate, setJobCompletionRate] = useState<[number, number]>([10, 25]);
+  const [jobCompletionRate, setJobCompletionRate] = useState<[number, number]>([
+    10, 25,
+  ]);
   const [distance, setDistance] = useState<[number, number]>([10, 25]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null); // State to store selected date
-  const navigation = useNavigation();
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    new Date().toISOString().split('T')[0],
+  ); // State to store selected date
+
   const colorScheme = useColorScheme();
 
   const onPriceChange = (values: [number, number]) => setPrice(values);
   const onRatingChange = (selectedRating: number) => setRating(selectedRating);
-  const onJobCompletionRateChange = (values: [number, number]) => setJobCompletionRate(values);
+  const onJobCompletionRateChange = (values: [number, number]) =>
+    setJobCompletionRate(values);
   const onDistanceChange = (values: [number, number]) => setDistance(values);
 
   const handleSave = () => {
-    navigation.navigate('Home' as never);
+    const params = {
+      price_min: price[0].toString(),
+      price_max: price[1].toString(),
+      rating_min: rating.toString(),
+      rating_max: '5',
+      date: selectedDate as string,
+      category: route.params.category,
+      services: '',
+    };
+    console.log(params);
+
+    navigation.navigate('Homeimp', params);
   };
   const handleSub = () => {
     navigation.navigate('Homeimp' as never);
@@ -45,21 +75,25 @@ const App: React.FC = () => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.subCategoryContainer} onPress={handleSub}>
         <Text style={styles.subCategory}>Sub-category</Text>
-        <FontAwesome name="angle-right" size={24} color={styles.subCategory.color} />
+        <FontAwesome
+          name="angle-right"
+          size={24}
+          color={styles.subCategory.color}
+        />
       </TouchableOpacity>
       <Text style={styles.heading}>Set availability</Text>
       <Calendar
         style={styles.calendar}
         markingType={'custom'}
         current={new Date().toISOString().split('T')[0]} // Set the current date in ISO format
-        onDayPress={(day) => setSelectedDate(day.dateString)} // Update selected date
+        onDayPress={day => setSelectedDate(day.dateString)} // Update selected date
         theme={{
           calendarBackground: styles.container.backgroundColor,
           selectedDayBackgroundColor: '#00adf5',
           selectedDayTextColor: '#fff',
         }}
         markedDates={{
-          [selectedDate || '']: { selected: true, selectedColor: '#00adf5' }, // Mark selected date
+          [selectedDate || '']: {selected: true, selectedColor: '#00adf5'}, // Mark selected date
         }}
       />
       <View style={styles.sliderContainer}>
@@ -71,14 +105,16 @@ const App: React.FC = () => {
           maximumValue={56}
           step={1}
           thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
-          minimumTrackTintColor='#12CCB7'
+          minimumTrackTintColor="#12CCB7"
         />
-        <Text style={styles.valueText}>${price[0]} - ${price[1]}</Text>
+        <Text style={styles.valueText}>
+          ${price[0]} - ${price[1]}
+        </Text>
       </View>
       <View style={styles.ratingContainer}>
         <Text style={styles.label}>Rating</Text>
         <View style={styles.rating}>
-          {[5, 4, 3, 2, 1].map((star) => (
+          {[1, 2, 3, 4, 5].map(star => (
             <FontAwesome
               key={star}
               name="star"
@@ -93,27 +129,35 @@ const App: React.FC = () => {
         <Text style={styles.label}>Job completion rate</Text>
         <Slider
           value={jobCompletionRate[0]}
-          onValueChange={(value: number) => onJobCompletionRateChange([value, jobCompletionRate[1]])}
+          onValueChange={(value: number) =>
+            onJobCompletionRateChange([value, jobCompletionRate[1]])
+          }
           minimumValue={5}
           maximumValue={25}
           step={1}
           thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
-          minimumTrackTintColor='#12CCB7'
+          minimumTrackTintColor="#12CCB7"
         />
-        <Text style={styles.valueText}>{jobCompletionRate[0]}% - {jobCompletionRate[1]}%</Text>
+        <Text style={styles.valueText}>
+          {jobCompletionRate[0]}% - {jobCompletionRate[1]}%
+        </Text>
       </View>
       <View style={styles.sliderContainer}>
         <Text style={styles.label}>Distance</Text>
         <Slider
           value={distance[0]}
-          onValueChange={(value: number) => onDistanceChange([value, distance[1]])}
+          onValueChange={(value: number) =>
+            onDistanceChange([value, distance[1]])
+          }
           minimumValue={5}
           maximumValue={25}
           step={1}
           thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
-          minimumTrackTintColor='#12CCB7'
+          minimumTrackTintColor="#12CCB7"
         />
-        <Text style={styles.valueText}>{distance[0]}km - {distance[1]}km</Text>
+        <Text style={styles.valueText}>
+          {distance[0]}km - {distance[1]}km
+        </Text>
       </View>
       <Button
         title="Save"

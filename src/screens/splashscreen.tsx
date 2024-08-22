@@ -1,9 +1,21 @@
-import React, { useEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, useColorScheme, ScrollView } from 'react-native';
+import React, {useEffect} from 'react';
+import {useNavigation} from '@react-navigation/native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Platform,
+  useColorScheme,
+  ScrollView,
+} from 'react-native';
 import SplashScreen from 'react-native-splash-screen';
-import { Font } from '../components/coustomFonts';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {Font} from '../components/coustomFonts';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 
 const SplashScreenComponent = () => {
   const navigation = useNavigation();
@@ -35,26 +47,26 @@ const SplashScreenComponent = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.logoContainer}>
-        <Image source={require('D:/beatask/src/assets/images/logo11.png')} style={styles.logo} />
+        <Image
+          source={require('../assets/images/logo11.png')}
+          style={styles.logo}
+        />
       </View>
-      <Text style={[styles.title, { fontFamily: Font }]}>Connect with {"\n"}service providers.{"\n"} Get tasks done quickly.</Text>
+      <Text style={[styles.title, {fontFamily: Font}]}>
+        Connect with {'\n'}service providers.{'\n'} Get tasks done quickly.
+      </Text>
       <TouchableOpacity
         style={styles.createAccountButton}
-        onPress={createbeatask}
-      >
+        onPress={createbeatask}>
         <Text style={styles.buttonText}>I AM A BEATASKER</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.createAccountButton}
-        onPress={createcoustomer}
-      >
+        onPress={createcoustomer}>
         <Text style={styles.buttonText}>I Need A BEATASKER</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={login}
-      >
+      <TouchableOpacity style={styles.loginButton} onPress={login}>
         <Text style={styles.loginText}>SIGN IN</Text>
       </TouchableOpacity>
     </ScrollView>

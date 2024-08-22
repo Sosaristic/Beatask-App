@@ -1,37 +1,48 @@
 import React from 'react';
-import { StyleSheet, View, Text, ImageBackground, Image, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ImageBackground,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 
 const App = () => {
   const navigation = useNavigation();
 
   const handleNext = () => {
     // Navigate to the next screen
-    navigation.navigate('SplashScreen'as never);
+    navigation.navigate('SplashScreen' as never);
   };
 
   return (
     <ImageBackground
-      source={require('D:/beatask/src/assets/images/pic3.jpg')}
-      style={styles.background}
-    >
+      source={require('../assets/images/pic3.jpg')}
+      style={styles.background}>
       <View style={styles.container}>
         <Image
-          source={require('D:/beatask/src/assets/images/mainlogo.png')}
+          source={require('../assets/images/mainlogo.png')}
           style={styles.logo}
         />
-        <Text style={styles.text}>
-        Booking made easy in three steps.
-        </Text>
+        <Text style={styles.text}>Booking made easy in three steps.</Text>
         <View style={styles.pagination}>
           <View style={[styles.dash]} />
-          <View style={[styles.dash,]} />
+          <View style={[styles.dash]} />
           <View style={[styles.dash, styles.activeDash]} />
         </View>
         <TouchableOpacity onPress={handleNext}>
-          <Icon name="arrow-right-circle-outline" size={wp('15%')} color="#00d3a9" /> 
+          <Icon
+            name="arrow-right-circle-outline"
+            size={wp('15%')}
+            color="#00d3a9"
+          />
         </TouchableOpacity>
       </View>
     </ImageBackground>

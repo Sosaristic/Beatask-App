@@ -1,16 +1,27 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, ImageBackground, Image,Platform, TouchableOpacity } from 'react-native';
+import React, {useEffect} from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ImageBackground,
+  Image,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import SplashScreen from 'react-native-splash-screen';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 
 const App = () => {
   const navigation = useNavigation();
 
   const handleNext = () => {
     // Navigate to the next screen
-    navigation.navigate('ServicesScreen1'as never);
+    navigation.navigate('ServicesScreen1' as never);
   };
 
   useEffect(() => {
@@ -24,12 +35,11 @@ const App = () => {
   }, []);
   return (
     <ImageBackground
-      source={require('D:/beatask/src/assets/images/pic1.jpg')}
-      style={styles.background}
-    >
+      source={require('../assets/images/pic1.jpg')}
+      style={styles.background}>
       <View style={styles.container}>
         <Image
-          source={require('D:/beatask/src/assets/images/mainlogo.png')}
+          source={require('../assets/images/mainlogo.png')}
           style={styles.logo}
         />
         <Text style={styles.text}>
@@ -41,7 +51,11 @@ const App = () => {
           <View style={styles.dash} />
         </View>
         <TouchableOpacity onPress={handleNext}>
-          <Icon name="arrow-right-circle-outline" size={wp('15%')} color="#00d3a9" /> 
+          <Icon
+            name="arrow-right-circle-outline"
+            size={wp('15%')}
+            color="#00d3a9"
+          />
         </TouchableOpacity>
       </View>
     </ImageBackground>

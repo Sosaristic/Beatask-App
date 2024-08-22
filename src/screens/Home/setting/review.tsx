@@ -1,90 +1,134 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, useColorScheme, TouchableOpacity } from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  useColorScheme,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import {useUserStore} from '../../../store/useUserStore';
+
+import useFetch from '../../../hooks/useFetch';
+import {UserReview} from '../../../interfaces/apiResponses';
+import Empty from '../../../components/Empty';
+
+type ReviewResponse = {
+  message: string;
+  data: UserReview[];
+};
 
 const ReviewScreen = () => {
-  const [rating, setRating] = useState(0);
-  const [review, setReview] = useState('');
-  const [name, setName] = useState('');
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const user = useUserStore(state => state.user);
+
+  const [openUserReview, setOpenUserReview] = useState<UserReview | null>(null);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  const sections = ['Maryland Winkles'];
+  const {data, error, loading} = useFetch<ReviewResponse>(
+    '/user-review',
+    'POST',
+    {user_id: user?.id?.toString() as string},
+  );
 
-  const toggleSection = (section: string) => {
-    setExpandedSections((prevState) =>
-      prevState.includes(section)
-        ? prevState.filter((item) => item !== section)
-        : [...prevState, section]
-    );
-  };
+  if (loading) {
+    return <ActivityIndicator size="large" color="#12CCB7" />;
+  }
 
-  const handleRating = (rate: number) => {
-    setRating(rate);
-  };
-
-  const handleSubmit = () => {
-    // Handle form submission logic here
-    console.log({ rating, review, name });
-  };
+  if (error || data?.data.length === 0) {
+    return <Empty />;
+  }
 
   return (
-    <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
-      {sections.map((section) => (
-        <View key={section}>
-          <TouchableOpacity
-            onPress={() => toggleSection(section)}
-            style={styles.section}
-          >
-            <Text style={[styles.sectionText, isDarkMode ? styles.darkText : styles.lightText]}>
-              {section}
-            </Text>
-            <Icon
-              name={expandedSections.includes(section) ? 'chevron-down' : 'chevron-up'}
-              size={wp('4%')}
-              style={[styles.chevron, isDarkMode ? styles.darkChevron : styles.lightChevron]}
-            />
-          </TouchableOpacity>
-          {expandedSections.includes(section) && section === 'Maryland Winkles' && (
-            <View style={[styles.detailsContainer, isDarkMode ? styles.darkDetailsContainer : styles.lightDetailsContainer]}>
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Rate</Text>
-              <View style={styles.ratingContainer}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Icon
-                    key={star}
-                    name={star <= rating ? 'star' : 'star-o'}
-                    size={24}
-                    color="gold"
-                    onPress={() => handleRating(star)}
-                    style={styles.star}
-                  />
-                ))}
+    <View
+      style={[
+        styles.container,
+        isDarkMode ? styles.darkContainer : styles.lightContainer,
+      ]}>
+      {data?.data.map(item => {
+        return (
+          <View key={item.id}>
+            <TouchableOpacity
+              key={item.id}
+              onPress={() =>
+                setOpenUserReview(prev => (prev?.id === item.id ? null : item))
+              }
+              style={styles.section}>
+              <Text
+                style={[
+                  styles.sectionText,
+                  isDarkMode ? styles.darkText : styles.lightText,
+                ]}>
+                {item.provider.name}
+              </Text>
+              <Icon
+                name={
+                  openUserReview?.id === item.id ? 'chevron-down' : 'chevron-up'
+                }
+                size={wp('4%')}
+                style={[
+                  styles.chevron,
+                  isDarkMode ? styles.darkChevron : styles.lightChevron,
+                ]}
+              />
+            </TouchableOpacity>
+            {openUserReview?.id === item.id && (
+              <View
+                style={[
+                  styles.detailsContainer,
+                  isDarkMode
+                    ? styles.darkDetailsContainer
+                    : styles.lightDetailsContainer,
+                ]}>
+                <Text
+                  style={[
+                    styles.title,
+                    isDarkMode ? styles.darkText : styles.lightText,
+                  ]}>
+                  Rate
+                </Text>
+                <View style={styles.ratingContainer}>
+                  {Array.from({length: item.rating_stars as number}, (_, i) => (
+                    <Icon
+                      key={i}
+                      name="star"
+                      size={24}
+                      color="gold"
+                      style={styles.star}
+                    />
+                  ))}
+                </View>
+                <Text
+                  style={[
+                    styles.title,
+                    isDarkMode ? styles.darkText : styles.lightText,
+                  ]}>
+                  Review
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    isDarkMode ? styles.darkInput : styles.lightInput,
+                  ]}
+                  placeholder="What was your experience with this service provider?"
+                  placeholderTextColor={isDarkMode ? '#888' : '#555'}
+                  value={item.review_message}
+                  editable={false}
+                  // onChangeText={setReview}
+                  multiline
+                />
               </View>
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Review</Text>
-              <TextInput
-                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                placeholder="What was your experience with this service provider?"
-                placeholderTextColor={isDarkMode ? "#888" : "#555"}
-                value={review}
-                onChangeText={setReview}
-                multiline
-              />
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Your name</Text>
-              <TextInput
-                style={[styles.input2, isDarkMode ? styles.darkInput : styles.lightInput]}
-                placeholder="Full name"
-                placeholderTextColor={isDarkMode ? "#888" : "#555"}
-                value={name}
-                onChangeText={setName}
-              />
-              {/* <Button title="Submit" onPress={handleSubmit} /> */}
-            </View>
-          )}
-        </View>
-      ))}
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -108,6 +152,7 @@ const styles = StyleSheet.create({
   },
   sectionText: {
     fontSize: 18,
+    textTransform: 'capitalize',
   },
   darkText: {
     color: 'white',

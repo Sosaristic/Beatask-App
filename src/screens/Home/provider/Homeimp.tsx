@@ -1,323 +1,412 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Modal } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useColorScheme } from 'react-native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook if using React Navigation
+import {useColorScheme} from 'react-native';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import {RouteProp, useNavigation} from '@react-navigation/native'; // Import useNavigation hook if using React Navigation
+import {RootStackParamList} from '../../../../App';
+import {
+  Filter,
+  Provider,
+  ServiceType,
+  SingleServicePayload,
+} from '../../../interfaces/apiResponses';
+import useFetch from '../../../hooks/useFetch';
+import {ActivityIndicator} from 'react-native';
+import {GetRating} from '../../../components';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {makeApiRequest} from '../../../utils/helpers';
+import Empty from '../../../components/Empty';
 
 interface Item {
-    id: string;
-    name: string;
-    description: string;
-    image: any;
-    rating: number;
-    reviews: number;
-    price: number;
-    highlyRated?: boolean;
+  id: string;
+  name: string;
+  description: string;
+  email: string;
+  image: any;
+  rating: number;
+  reviews: number;
+  price: number;
+  highlyRated?: boolean;
 }
 
-const data: Item[] = [
-    {
-        id: '1',
-        name: 'Benjamin Wilson',
-        description: 'Expert in residential cleaning services, lawn care and trimming.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.5,
-        reviews: 24,
-        price: 20,
-    },
-    {
-        id: '2',
-        name: 'Maryland Winkles',
-        description: 'Expert in residential cleaning services, lawn care and trimming.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 5.0,
-        reviews: 32,
-        price: 20,
-        highlyRated: true,
-    },
-    {
-        id: '3',
-        name: 'John Doe',
-        description: 'Expert in gardening and landscaping.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.8,
-        reviews: 45,
-        price: 25,
-    },
-    {
-        id: '4',
-        name: 'Jane Smith',
-        description: 'Expert in interior design and home decor.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.2,
-        reviews: 50,
-        price: 30,
-    },
-    {
-        id: '5',
-        name: 'Emily Johnson',
-        description: 'Expert in pet grooming and care.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.9,
-        reviews: 20,
-        price: 15,
-    },
-    {
-        id: '6',
-        name: 'Michael Brown',
-        description: 'Expert in electrical repairs and installations.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.6,
-        reviews: 28,
-        price: 40,
-    },
-    {
-        id: '7',
-        name: 'Sarah Davis',
-        description: 'Expert in plumbing and pipe fitting.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.3,
-        reviews: 22,
-        price: 35,
-    },
-    {
-        id: '8',
-        name: 'David Martinez',
-        description: 'Expert in home renovation and construction.',
-        image: require('D:/beatask/src/assets/images/category/booked.png'),
-        rating: 4.7,
-        reviews: 38,
-        price: 50,
-    },
-];
+type Props = {
+  route: RouteProp<RootStackParamList, 'Homeimp'>;
+  navigation: StackNavigationProp<RootStackParamList, 'Homeimp'>;
+};
 
-const HomeScreen: React.FC = () => {
-    const [sortVisible, setSortVisible] = useState(false);
-    const [sortValue, setSortValue] = useState('rating');
-    const colorScheme = useColorScheme();
-    const isDarkMode = colorScheme === 'dark';
-    const navigation = useNavigation(); // Initialize useNavigation hook
+type FilterPayload = {
+  price_min?: string;
+  price_max?: string;
+  rating_min?: string;
+  rating_max?: string;
+  date?: string;
+  category_name: string;
+  services?: string;
+};
 
-    const handleSortChange = (value: string) => {
-        setSortValue(value);
-        setSortVisible(false);
-        // Add sorting logic here
+type ApiResponse = {
+  message: string;
+  data: Filter[];
+};
+
+interface mixed extends ServiceType {
+  providerName: string;
+  category_name: string;
+  sub_category: string;
+}
+
+const HomeScreen: React.FC<Props> = ({route, navigation}) => {
+  const [sortVisible, setSortVisible] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  let routeData = route.params || {};
+  const [data, setData] = useState<Filter[] | null>(null);
+  const [filterPayload, setFilterPayload] = useState<FilterPayload>(routeData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: routeData.category_name.toUpperCase(),
+      headerTitleStyle: {textTransform: 'capitalize'},
+    });
+  }, [routeData.category_name]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const {data, error} = await makeApiRequest<ApiResponse>(
+        '/search-services-by-multiple-commands',
+        'POST',
+
+        filterPayload,
+      );
+      if (data) {
+        setData(data.data);
+      }
+      if (error) {
+        setError(error);
+      }
+      setLoading(false);
     };
 
-    const renderItem = ({ item }: { item: Item }) => (
-        <View style={[styles.card, isDarkMode && styles.cardDark]}>
-            <Image source={item.image} style={styles.image} />
-            <Text style={[styles.name, isDarkMode && styles.textDark]}>{item.name}</Text>
-            <Text style={[styles.description, isDarkMode && styles.textDark]}>{item.description}</Text>
-            <View style={styles.ratingContainer}>
-                <Text style={[styles.rating, isDarkMode && styles.textDark]}>{item.rating}</Text>
-                <Icon name="star" size={20} color="#ffd700" />
-                <Text style={[styles.reviews, isDarkMode && styles.textDark]}>({item.reviews})</Text>
-            </View>
-            <Text style={[styles.price, isDarkMode && styles.textDark1]}>${item.price}</Text>
-            <TouchableOpacity style={[styles.button, isDarkMode && styles.buttonDark]} onPress={handleView}>
-                <Text style={styles.buttonText}  >VIEW</Text>
-            </TouchableOpacity>
-        </View>
+    fetchData();
+  }, [filterPayload]);
+
+  const handleSortChange = (value: string) => {
+    setFilterPayload({...filterPayload, services: value});
+    setSortVisible(false);
+    // Add sorting logic here
+  };
+
+  const handleView = (payload: mixed) => {
+    const payloadData: SingleServicePayload = {
+      category_name: payload.category_name,
+      service_image: payload.service_image,
+      service_name: payload.service_name,
+      real_price: payload.real_price,
+      service_id: payload.id,
+      category_id: payload.category_id,
+      provider_id: payload.provider_id,
+      provider_name: payload.providerName,
+      sub_category_name: payload.sub_category,
+      service_description: payload.service_description,
+    };
+
+    navigation.navigate('singleservice', {data: payloadData});
+  };
+
+  const renderItem = ({item}: {item: mixed}) => {
+    const providerDetail = data?.find(
+      provider => provider.service_id == item.id,
     );
-
-    const handleItemPress = (item: Item) => {
-        // Navigate or handle item press action
-    };
-    const handleView = () => {
-        navigation.navigate('Service'as never);
-    };
-
-    const handleFilterPress = () => {
-        navigation.navigate('Filter'as never);
-    };
 
     return (
-        <View style={[styles.container, isDarkMode && styles.containerDark]}>
-            <FlatList
-                data={data}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                contentContainerStyle={styles.list}
-            />
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={styles.footerButton}
-                    onPress={() => setSortVisible(!sortVisible)}
-                >
-                    <Icon name="sort" size={24} color="#fff" />
-                    <Text style={styles.footerButtonText}>SORT</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerButton} onPress={handleFilterPress}>
-                    <Icon name="filter-variant" size={24} color="#fff" />
-                    <Text style={styles.footerButtonText}>FILTERS</Text>
-                </TouchableOpacity>
-            </View>
-            <Modal
-                visible={sortVisible}
-                transparent={true}
-                animationType="slide"
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeading}>
-                            <Text style={styles.modalHeadingText}>Sort by</Text>
-                            <TouchableOpacity onPress={() => setSortVisible(false)}>
-                                <Icon name="close" size={24} color="#010A0C" />
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity onPress={() => handleSortChange('newest')} style={styles.modalOption}>
-                            <Text style={styles.modalOptionText}>Newest listing</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleSortChange('mostJobs')} style={styles.modalOption}>
-                            <Text style={styles.modalOptionText}>Most jobs completed</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleSortChange('bestReviews')} style={styles.modalOption}>
-                            <Text style={styles.modalOptionText}>Best reviews</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleSortChange('highToLowPrice')} style={styles.modalOption}>
-                            <Text style={styles.modalOptionText}>High to low price</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleSortChange('lowToHighPrice')} style={styles.modalOption}>
-                            <Text style={styles.modalOptionText}>Low to high price</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+      <View style={[styles.card, isDarkMode && styles.cardDark]}>
+        <View style={{height: 150, width: 150, position: 'relative'}}>
+          <Image source={{uri: item.service_image}} style={styles.image} />
         </View>
+        <Text style={[styles.name, isDarkMode && styles.textDark]}>
+          {`${item.providerName}`}
+        </Text>
+        <Text style={[styles.description, isDarkMode && styles.textDark]}>
+          {item?.service_description}
+        </Text>
+        <View style={styles.ratingContainer}>
+          {/* <Text style={[styles.rating, isDarkMode && styles.textDark]}>
+          <GetRating rating={item.review_rating} />
+        </Text> */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 8,
+            }}>
+            <GetRating rating={item.review_rating} />
+          </View>
+          {/* <Text style={[styles.reviews, isDarkMode && styles.textDark]}>
+          ( {item?.})
+        </Text> */}
+        </View>
+        {/* <Text style={[styles.price, isDarkMode && styles.textDark1]}>
+        ${item?.real_price}
+      </Text> */}
+        <TouchableOpacity
+          style={[styles.button, isDarkMode && styles.buttonDark]}
+          onPress={() => handleView(item)}>
+          <Text style={styles.buttonText}>VIEW</Text>
+        </TouchableOpacity>
+      </View>
     );
+  };
+
+  const handleFilterPress = () => {
+    navigation.navigate('Filter', {category: routeData.category_name});
+  };
+
+  if (loading) {
+    return (
+      <ActivityIndicator style={{flex: 1}} size={'large'} color={'#12CCB7'} />
+    );
+  }
+  if (error) {
+    return (
+      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+        <Text>There was an error fetch providers</Text>
+      </View>
+    );
+  }
+
+  if (data && data.length === 0) {
+    return <Empty />;
+  }
+
+  const getServices = () => {
+    const testData: mixed[] = [];
+
+    data?.forEach(item => {
+      item.service.forEach(nexted => {
+        testData.push({
+          ...nexted,
+          providerName: item.provider.name,
+          category_name: item.category,
+          sub_category: item.sub_category,
+        });
+      });
+    });
+    return testData;
+  };
+  const dataMapped = getServices();
+
+  console.log('dataMapped', dataMapped);
+
+  return (
+    <View style={[styles.container, isDarkMode && styles.containerDark]}>
+      <FlatList
+        data={dataMapped || []}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        numColumns={2}
+        contentContainerStyle={styles.list}
+      />
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() => setSortVisible(!sortVisible)}>
+          <Icon name="sort" size={24} color="#fff" />
+          <Text style={styles.footerButtonText}>SORT</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={handleFilterPress}>
+          <Icon name="filter-variant" size={24} color="#fff" />
+          <Text style={styles.footerButtonText}>FILTERS</Text>
+        </TouchableOpacity>
+      </View>
+      <Modal visible={sortVisible} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeading}>
+              <Text style={styles.modalHeadingText}>Sort by</Text>
+              <TouchableOpacity onPress={() => setSortVisible(false)}>
+                <Icon name="close" size={24} color="#010A0C" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => handleSortChange('newest_listing')}
+              style={styles.modalOption}>
+              <Text style={styles.modalOptionText}>Newest listing</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleSortChange('most_jobs_completed')}
+              style={styles.modalOption}>
+              <Text style={styles.modalOptionText}>Most jobs completed</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleSortChange('best_reviews')}
+              style={styles.modalOption}>
+              <Text style={styles.modalOptionText}>Best reviews</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleSortChange('high_to_low_price')}
+              style={styles.modalOption}>
+              <Text style={styles.modalOptionText}>High to low price</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleSortChange('low_to_high_price')}
+              style={styles.modalOption}>
+              <Text style={styles.modalOptionText}>Low to high price</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    containerDark: {
-        backgroundColor: '#010A0C',
-    },
-    list: {
-        padding: 10,
-    },
-    card: {
-        flex: 1,
-        margin: 5,
-        padding: 10,
-        backgroundColor: '#51514C',
-        borderRadius: 10,
-        alignItems: 'center',
-    },
-    cardDark: {
-        backgroundColor: '#fff',
-    },
-    image: {
-        width: wp('40%'),
-        height: wp('40%'),
-        borderRadius: 10,
-    },
-    name: {
-        fontSize: wp('4.5%'),
-        fontWeight: 'bold',
-        marginTop: 10,
-        color: '#fff',
-    },
-    textDark: {
-        color: '#010A0C',
-    },
-    textDark1: {
-        color: '#12CCB7',
-    },
-    description: {
-        textAlign: 'center',
-        marginVertical: 10,
-        color: '#fff',
-    },
-    ratingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    rating: {
-        fontSize: wp('4%'),
-        marginRight: 5,
-        color: '#fff',
-    },
-    reviews: {
-        fontSize: wp('4%'),
-        color: '#fff',
-    },
-    price: {
-        fontSize: wp('4%'),
-        fontWeight: 'bold',
-        marginVertical: 10,
-        color: '#12CCB7',
-    },
-    button: {
-        backgroundColor: '#00ced1',
-        padding: 10,
-        borderRadius: 5,
-    },
-    buttonDark: {
-        backgroundColor: '#008b8b',
-    },
-    buttonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
-        backgroundColor: '#00ced1',
-        marginHorizontal: 35,
-        marginVertical: 15,
-        borderRadius: 15,
-    },
-    footerButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    footerButtonText: {
-        color: '#fff',
-        marginLeft: 5,
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        padding: 20,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        alignItems: 'center',
-    },
-    modalHeading: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        alignItems: 'center',
-    },
-    modalHeadingText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        color: '#010A0C',
-    },
-    modalOption: {
-        paddingVertical: 15,
-    },
-    modalOptionText: {
-        fontSize: 18,
-        color: '#010A0C',
-    },
-    modalCancel: {
-        color: 'red',
-        textAlign: 'center',
-        marginTop: 10,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  containerDark: {
+    backgroundColor: '#010A0C',
+  },
+  list: {
+    padding: 10,
+  },
+  card: {
+    width: wp('45%'),
+    margin: 5,
+    padding: 10,
+    backgroundColor: '#51514C',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cardDark: {
+    backgroundColor: '#fff',
+  },
+  image: {
+    borderRadius: 10,
+    height: '100%',
+    width: '100%',
+    objectFit: 'cover',
+  },
+  name: {
+    fontSize: wp('4.5%'),
+    fontWeight: 'bold',
+    marginTop: 10,
+    color: '#fff',
+  },
+  textDark: {
+    color: '#010A0C',
+  },
+  textDark1: {
+    color: '#12CCB7',
+  },
+  description: {
+    textAlign: 'center',
+    marginVertical: 10,
+    color: '#fff',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rating: {
+    fontSize: wp('4%'),
+    marginRight: 5,
+    color: '#fff',
+  },
+  reviews: {
+    fontSize: wp('4%'),
+    color: '#fff',
+  },
+  price: {
+    fontSize: wp('4%'),
+    fontWeight: 'bold',
+    marginVertical: 10,
+    color: '#12CCB7',
+  },
+  button: {
+    backgroundColor: '#00ced1',
+    padding: 10,
+    borderRadius: 5,
+  },
+  buttonDark: {
+    backgroundColor: '#008b8b',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 10,
+    backgroundColor: '#00ced1',
+    marginHorizontal: 35,
+    marginVertical: 15,
+    borderRadius: 15,
+  },
+  footerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerButtonText: {
+    color: '#fff',
+    marginLeft: 5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    alignItems: 'center',
+  },
+  modalHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalHeadingText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#010A0C',
+  },
+  modalOption: {
+    paddingVertical: 15,
+  },
+  modalOptionText: {
+    fontSize: 18,
+    color: '#010A0C',
+  },
+  modalCancel: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
+  },
 });
 
 export default HomeScreen;
