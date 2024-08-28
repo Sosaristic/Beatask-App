@@ -23,7 +23,7 @@ export const makeApiRequest = async <T>(
   url: string,
   method: string,
 
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown> | FormData,
   config?: AxiosRequestConfig,
 ): Promise<{data?: T; error?: ApiError}> => {
   try {

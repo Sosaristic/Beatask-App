@@ -22,36 +22,42 @@ import {RootStackParamList} from '../../../../App';
 import useFetch from '../../../hooks/useFetch';
 import {BookingPriceResponse} from '../../../interfaces/apiResponses';
 import {StackNavigationProp} from '@react-navigation/stack';
+import {customTheme} from '../../../custom_theme/customTheme';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'calenderbook'>;
   navigation: StackNavigationProp<RootStackParamList, 'calenderbook'>;
 };
 
-const timeSlots = [
-  '08:00 AM',
-  '09:00 AM',
-  '10:00 AM',
-  '11:00 AM',
-  '12:00 PM',
-  '01:00 PM',
-  '02:00 PM',
-  '03:00 PM',
-  '04:00 PM',
-  '05:00 PM',
-  '06:00 PM',
+
+
+const userTimeSlots = [
+  {time: '08:00 AM', selected: false},
+  {time: '09:00 AM', selected: false},
+  {time: '10:00 AM', selected: false},
+  {time: '11:00 AM', selected: false},
+  {time: '12:00 PM', selected: false},
+  {time: '01:00 PM', selected: false},
+  {time: '02:00 PM', selected: false},
+  {time: '03:00 PM', selected: false},
+  {time: '04:00 PM', selected: false},
+  {time: '05:00 PM', selected: false},
+  {time: '06:00 PM', selected: false},
 ];
+
+type BookedDates = {
+  [key: string]: {
+    selected: boolean;
+    marked: boolean;
+    selectedColor: string;
+    time: string;
+  };
+};
 
 const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
   const {data} = route.params;
-  const [selectedDates, setSelectedDates] = useState<{
-    [key: string]: {
-      selected: boolean;
-      marked: boolean;
-      selectedColor: string;
-      times: string[];
-    };
-  }>({});
+  console.log('route', data);
+
   const [instructions, setInstructions] = useState('');
   const [instructionsLength, setInstructionsLength] = useState(0);
   const {
@@ -60,6 +66,19 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
     data: bookingPrice,
   } = useFetch<BookingPriceResponse>('/get-service-price', 'POST', {
     id: data.service_id,
+  });
+
+  const [bookDate, setBookDate] = useState(
+    new Date().toISOString().split('T')[0],
+  );
+
+  const [bookedDates, setBookedDates] = useState<BookedDates>({
+    [bookDate]: {
+      selected: true,
+      marked: true,
+      selectedColor: customTheme.primaryColor,
+      time: '08:00 AM',
+    },
   });
 
   const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
@@ -79,11 +98,18 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
   });
 
   const handleSend = async () => {
+    const chosenDatesAndTime: string[] = [];
+
+    for (const [key, value] of Object.entries(bookedDates)) {
+      chosenDatesAndTime.push(`${key} ${value.time}`);
+    }
+
     setShowSuccessModal({
       ...showSuccessModal,
       requestLoading: true,
       showModal: true,
     });
+
     const {data: BookingResponse, error} = await makeApiRequest(
       '/book-services',
       'POST',
@@ -91,8 +117,8 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
         provider_id: data.provider_id,
         service_id: data.service_id,
         category_id: data.category_id,
-        dates_and_times: [selectedDates],
-        description: 'test',
+        dates_and_times: chosenDatesAndTime,
+        description: instructions,
       },
     );
 
@@ -127,39 +153,30 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  const handleDateChange = (day: {dateString: string}) => {
-    setSelectedDates(prevSelectedDates => {
-      const newSelectedDates = {...prevSelectedDates};
-      if (newSelectedDates[day.dateString]) {
-        delete newSelectedDates[day.dateString];
-      } else {
-        newSelectedDates[day.dateString] = {
-          selected: true,
-          marked: true,
-          selectedColor: '#12CCB7',
-          times: [],
-        };
-      }
-      return newSelectedDates;
+  const handleCalendarChange = (day: {dateString: string}) => {
+    const bookedDatesPayload = {...bookedDates};
+    if (Object.hasOwn(bookedDatesPayload, day.dateString)) {
+      delete bookedDatesPayload[day.dateString];
+    } else {
+      bookedDatesPayload[day.dateString] = {
+        selected: true,
+        marked: true,
+        selectedColor: customTheme.primaryColor,
+        time: '08:00 AM',
+      };
+    }
+    setBookedDates(bookedDatesPayload);
+  };
+
+  const handleChoosenTime = (time: string, date: string) => {
+    setBookedDates(prevBookedDates => {
+      const newBookedDates = {...prevBookedDates};
+      newBookedDates[date].time = time;
+      return newBookedDates;
     });
   };
 
-  const handleTimeChange = (date: string, time: string) => {
-    setSelectedDates(prevSelectedDates => {
-      const newSelectedDates = {...prevSelectedDates};
-      if (!newSelectedDates[date].times) {
-        newSelectedDates[date].times = [];
-      }
-      if (newSelectedDates[date].times.includes(time)) {
-        newSelectedDates[date].times = newSelectedDates[date].times.filter(
-          t => t !== time,
-        );
-      } else {
-        newSelectedDates[date].times.push(time);
-      }
-      return newSelectedDates;
-    });
-  };
+
 
   const handleInstructionsChange = (text: string) => {
     if (text.length <= 100) {
@@ -210,33 +227,28 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
       <Card style={styles.card}>
         <Text style={styles.header}>Select date</Text>
         <Calendar
-          onDayPress={handleDateChange}
-          markedDates={selectedDates}
-          current={new Date().toISOString().slice(0, 10)}
+          onDayPress={handleCalendarChange}
+          markedDates={{...bookedDates}}
+          current={new Date().toISOString().split('T')[0]}
         />
         <View style={styles.selectedDatesContainer}>
-          {Object.keys(selectedDates).map(date => (
+          {Object.keys(bookedDates).map(date => (
             <View key={date} style={styles.selectedDateContainer}>
               <Text style={styles.selectedDate}>{formatDate(date)}</Text>
               <ScrollView
                 horizontal
                 contentContainerStyle={styles.timeButtonsContainer}>
-                {timeSlots.map(time => (
+                {userTimeSlots.map(time => (
                   <Button
-                    key={time}
-                    onPress={() => handleTimeChange(date, time)}
+                    key={time.time}
+                    onPress={() => handleChoosenTime(time.time, date)}
                     style={[
                       styles.timeButton,
-                      selectedDates[date].times.includes(time)
+                      bookedDates[date].time === time.time
                         ? styles.selectedButton
                         : styles.unselectedButton,
-                    ]}
-                    labelStyle={
-                      selectedDates[date].times.includes(time)
-                        ? styles.selectedText
-                        : styles.unselectedText
-                    }>
-                    {time}
+                    ]}>
+                    {time.time}
                   </Button>
                 ))}
               </ScrollView>

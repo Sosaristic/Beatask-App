@@ -109,23 +109,33 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
       ...details,
     };
     // throw an error if any value is missing
-    for (const [key, value] of Object.entries(payload)) {
-      if (value === null || value === undefined || value === '') {
-        setShowErrorModal({
-          ...showErrorModal,
-          isModalOpen: true,
-          errorMessage: 'Please fill all the required fields',
-        });
-        return;
-      }
+
+    if (einInfo.einNumber === '') {
+      setShowErrorModal({
+        ...showErrorModal,
+        isModalOpen: true,
+        errorMessage: 'EIN number is required',
+      });
+      return;
     }
-    console.log('payload', payload);
+
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(payload)) {
+      formData.append(key, value);
+    }
+
+    console.log(formData);
+
     setShowSuccessModal({
       ...showSuccessModal,
       requestLoading: true,
       showModal: true,
     });
-    const {data, error} = await makeApiRequest('/register', 'POST', payload);
+    const {data, error} = await makeApiRequest('/register', 'POST', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     console.log('error', error);
 
     if (error) {

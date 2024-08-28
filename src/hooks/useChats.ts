@@ -16,7 +16,7 @@ const useChats = () => {
       // Set up a real-time listener
       const unsubscribe = conversationsRef.onSnapshot(snapshot => {
         const newMessages = snapshot.docs.map(doc => {
-          const data = doc.data();
+          const data = doc?.data();
           return {
             id: doc.id,
             lastMessageContent: data.lastMessageContent,

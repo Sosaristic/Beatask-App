@@ -18,10 +18,24 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {useUserStore} from '../../../store/useUserStore';
+import {Formik, useFormikContext} from 'formik';
+import {ProviderValidationSchema} from '../../../components/forms/providerProfile';
+import {makeApiRequest} from '../../../utils/helpers';
+import {CustomErrorModal, CustomModal} from '../../../components';
 
 interface Country {
   dial_code: string;
 }
+
+type InitialValues = {
+  profile_image: string;
+  first_legal_name: string;
+  last_legal_name: string;
+  email: string;
+  phone_number: string;
+  business_address: string;
+};
 
 const CreateAccountScreen = () => {
   const colorScheme = useColorScheme();
@@ -30,9 +44,22 @@ const CreateAccountScreen = () => {
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [countryCode, setCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [country, setcountry] = useState('');
+
   const navigation = useNavigation();
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
+  const {user} = useUserStore(state => state);
+  const [showSuccessModal, setShowSuccessModal] = useState({
+    successTitle: 'Success',
+    successMessage: 'Profile Updated',
+    loadingMessage: 'processing..',
+    requestLoading: false,
+    showModal: false,
+  });
+  const [showErrorModal, setShowErrorModal] = useState({
+    errorTitle: '',
+    errorMessage: '',
+    isModalOpen: false,
+  });
 
   const pickImage = () => {
     ImagePicker.launchImageLibrary({mediaType: 'photo'}, response => {
@@ -51,9 +78,68 @@ const CreateAccountScreen = () => {
     setPickerVisible(true);
   };
 
-  const handleNextPress = () => {
-    navigation.navigate('Setting' as never);
+  const handleNextPress = async (values: InitialValues) => {
+    const payload = {
+      ...values,
+      phone_number: `${countryCode}${phoneNumber}`,
+      profile_image: imageUri,
+    };
+
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(payload)) {
+      formData.append(key, value);
+    }
+
+    console.log(user);
+
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+    });
+    const {data, error} = await makeApiRequest(
+      `/update-user/${user?.id}`,
+      'POST',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+
+    if (error) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Profile Update Failed',
+        errorMessage: "We couldn't update your profile. Please try again",
+        isModalOpen: true,
+      });
+    }
+
+    if (data) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: true,
+      });
+
+      setTimeout(() => {
+        setShowSuccessModal({
+          ...showSuccessModal,
+          showModal: false,
+        });
+      }, 2000);
+    }
+
+    // navigation.navigate('Setting' as never);
   };
+
+  console.log(user?.id);
 
   return (
     <ScrollView
@@ -67,7 +153,11 @@ const CreateAccountScreen = () => {
             <Image source={{uri: imageUri}} style={styles.image} />
           ) : (
             <Image
-              source={require('../../../assets/images/category/user.png')}
+              source={
+                user?.profile_image
+                  ? {uri: user?.profile_image}
+                  : require('../../../assets/images/category/user.png')
+              }
               style={styles.image}
             />
           )}
@@ -77,58 +167,125 @@ const CreateAccountScreen = () => {
             color={colorScheme === 'dark' ? '#12CCB7' : '#12CCB7'}
             style={styles.icon}
           />
+          {!imageUri && (
+            <Text
+              style={[
+                darkStyles.errorText,
+                {marginTop: 10, width: 200, textAlign: 'center'},
+              ]}>
+              Image is required
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
-
-      <Text style={styles.label}>Legal name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Legal name"
-        placeholderTextColor="#999"
-      />
-
-      <Text style={styles.label}>Country</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Country"
-        placeholderTextColor="#999"
-      />
-
-      <Text style={styles.label}>Phone number</Text>
-      <View style={styles.phoneContainer}>
-        <TouchableOpacity
-          style={styles.countryCodeButton}
-          onPress={handleCountryCodePress}>
-          <Text style={styles.countryCodeButtonText}>{countryCode}</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={[styles.input, styles.phoneInput]}
-          placeholder="555 555-1234"
-          placeholderTextColor="#999"
-          keyboardType="phone-pad"
-          value={phoneNumber}
-          onChangeText={text => setPhoneNumber(text)}
-        />
-      </View>
-
-      <Text style={styles.label}>Email address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email address"
-        placeholderTextColor="#999"
-        keyboardType="email-address"
-      />
-
-      <Text style={styles.label}>Business address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Business address"
-        placeholderTextColor="#999"
-      />
-
-      <TouchableOpacity style={styles.nextButton} onPress={handleNextPress}>
-        <Text style={styles.nexttext}>Next</Text>
-      </TouchableOpacity>
+      <Formik
+        initialValues={{
+          profile_image: user?.profile_image || '',
+          first_legal_name: user?.first_legal_name || '',
+          last_legal_name: user?.last_legal_name || '',
+          phone_number: user?.phone_number?.slice(2) || '',
+          email: user?.email || '',
+          business_address: user?.business_address || '',
+        }}
+        onSubmit={values => {
+          handleNextPress(values);
+        }}
+        validationSchema={ProviderValidationSchema}>
+        {({values, handleChange, handleBlur, handleSubmit, errors}) => (
+          <>
+            <View>
+              <Text style={styles.label}>First Legal Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="First name"
+                placeholderTextColor="#999"
+                onChangeText={handleChange('first_legal_name')}
+                onBlur={handleBlur('first_legal_name')}
+                value={values.first_legal_name}
+              />
+              {errors.first_legal_name && (
+                <Text style={darkStyles.errorText}>
+                  {errors.first_legal_name}
+                </Text>
+              )}
+            </View>
+            <View>
+              <Text style={styles.label}>Last Legal Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Last name"
+                placeholderTextColor="#999"
+                onChangeText={handleChange('last_legal_name')}
+                onBlur={handleBlur('last_legal_name')}
+                value={values.last_legal_name}
+              />
+              {errors.last_legal_name && (
+                <Text style={darkStyles.errorText}>
+                  {errors.last_legal_name}
+                </Text>
+              )}
+            </View>
+            <View>
+              <Text style={styles.label}>Phone number</Text>
+              <View style={styles.phoneContainer}>
+                <TouchableOpacity
+                  style={styles.countryCodeButton}
+                  onPress={handleCountryCodePress}>
+                  <Text style={styles.countryCodeButtonText}>
+                    {countryCode}
+                  </Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.input, styles.phoneInput]}
+                  placeholder="555 555-1234"
+                  placeholderTextColor="#999"
+                  keyboardType="phone-pad"
+                  value={values.phone_number}
+                  onChangeText={handleChange('phone_number')}
+                  onBlur={handleBlur('phone_number')}
+                />
+              </View>
+            </View>
+            <View>
+              <Text style={styles.label}>Email address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor="#999"
+                keyboardType="email-address"
+                onChangeText={handleChange('email')}
+                onBlur={handleBlur('email')}
+                value={values.email}
+              />
+              {errors.email && (
+                <Text style={darkStyles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+            <View>
+              <Text style={styles.label}>Business address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Business address"
+                placeholderTextColor="#999"
+                onChangeText={handleChange('business_address')}
+                onBlur={handleBlur('business_address')}
+                value={values.business_address}
+              />
+              {errors.business_address && (
+                <Text style={darkStyles.errorText}>
+                  {errors.business_address}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              disabled={!imageUri}
+              style={styles.nextButton}
+              onPress={() => handleSubmit()}>
+              <Text style={styles.nexttext}>Next</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </Formik>
 
       <CountryPicker
         show={isPickerVisible}
@@ -147,6 +304,13 @@ const CreateAccountScreen = () => {
             color: colorScheme === 'dark' ? '#010A0C' : '#000',
           },
         }}
+      />
+      <CustomModal {...showSuccessModal} />
+      <CustomErrorModal
+        {...showErrorModal}
+        closeModal={() =>
+          setShowErrorModal({...showErrorModal, isModalOpen: false})
+        }
       />
     </ScrollView>
   );
@@ -171,7 +335,7 @@ const lightStyles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#000',
@@ -189,7 +353,6 @@ const lightStyles = StyleSheet.create({
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#000',
@@ -198,7 +361,7 @@ const lightStyles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginTop: hp('1%'),
+
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -286,7 +449,7 @@ const darkStyles = StyleSheet.create({
     borderColor: '#51514C',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#fff',
@@ -304,7 +467,6 @@ const darkStyles = StyleSheet.create({
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#fff',
@@ -381,6 +543,10 @@ const darkStyles = StyleSheet.create({
     padding: 1,
     borderWidth: 1,
     borderColor: '#666',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: wp('3.5%'),
   },
 });
 

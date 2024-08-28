@@ -14,11 +14,24 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {TextCount} from '../../Home/chat/masglist';
+import useFetch from '../../../hooks/useFetch';
+import {RequestedService} from '../../../interfaces/apiResponses';
+import {Loader} from '../../../components';
+import Empty from '../../../components/Empty';
+
+type BidRes = {
+  message: string;
+  data: RequestedService[];
+};
 
 const BidScreen: React.FC = () => {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
   const isDarkMode = colorScheme === 'dark';
+  const {data, loading, error} = useFetch<BidRes>(
+    '/get-requested-services',
+    'GET',
+  );
 
   const handleprofile = () => {
     navigation.navigate('ProfileSetup' as never);
@@ -41,6 +54,8 @@ const BidScreen: React.FC = () => {
   const handleBid1 = () => {
     navigation.navigate('Bid1' as never);
   };
+
+  console.log('bid', data);
   return (
     <View
       style={[
@@ -65,56 +80,51 @@ const BidScreen: React.FC = () => {
           select the best fit.
         </Text>
 
-        {[
-          {
-            time: 'Posted 38 minutes ago',
-            category: 'IT and graphic design',
-            description:
-              'I need a software developer for my mobile application. I need the development to be completed in two days.',
-            location: '267 New Avenue Park, New York',
-          },
-          {
-            time: 'Posted 17 hours ago',
-            category: 'Home Improvement',
-            description:
-              'I need a home repair and handyman service, but am only available on Thursdays.',
-            location: '267 New Avenue Park, New York',
-          },
-        ].map((job, index) => (
-          <View key={index} style={styles.jobCard}>
-            <Text
-              style={[
-                styles.time,
-                isDarkMode ? styles.textDark : styles.textLight,
-              ]}>
-              {job.time}
-            </Text>
-            <Text
-              style={[
-                styles.category,
-                isDarkMode ? styles.textDark : styles.textLight,
-              ]}>
-              {job.category}
-            </Text>
-            <Text
-              style={[
-                styles.description,
-                isDarkMode ? styles.textDark : styles.textLight,
-              ]}>
-              {job.description}
-            </Text>
-            <Text
-              style={[
-                styles.location,
-                isDarkMode ? styles.textDark : styles.textLight,
-              ]}>
-              {job.location}
-            </Text>
-            <TouchableOpacity style={styles.button} onPress={handleBid1}>
-              <Text style={styles.buttonText}>SEND QUOTE</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+        {loading ? (
+          <Loader />
+        ) : data === null ? (
+          <Empty />
+        ) : error ? (
+          <Text>There is an error getting the data.</Text>
+        ) : (
+          <>
+            {data.data.map((job, index) => (
+              <View key={index} style={styles.jobCard}>
+                <Text
+                  style={[
+                    styles.time,
+                    isDarkMode ? styles.textDark : styles.textLight,
+                  ]}>
+                  {new Date(job.created_at).toDateString()}
+                </Text>
+                <Text
+                  style={[
+                    styles.category,
+                    isDarkMode ? styles.textDark : styles.textLight,
+                  ]}>
+                  {job.category}
+                </Text>
+                <Text
+                  style={[
+                    styles.description,
+                    isDarkMode ? styles.textDark : styles.textLight,
+                  ]}>
+                  {job.description}
+                </Text>
+                <Text
+                  style={[
+                    styles.location,
+                    isDarkMode ? styles.textDark : styles.textLight,
+                  ]}>
+                  {job.get_user.home_address}
+                </Text>
+                <TouchableOpacity style={styles.button} onPress={handleBid1}>
+                  <Text style={styles.buttonText}>SEND QUOTE</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </>
+        )}
       </ScrollView>
       <View
         style={[
@@ -245,6 +255,7 @@ const styles = StyleSheet.create({
     fontSize: wp('5.5%'),
     fontWeight: 'bold',
     marginBottom: wp('2%'),
+    textTransform: 'capitalize',
   },
   description: {
     fontSize: wp('4.5%'),

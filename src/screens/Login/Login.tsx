@@ -23,6 +23,7 @@ import {makeApiRequest} from '../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../components';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
+import {GoogleSignin, statusCodes} from '@react-native-community/google-signin';
 
 type LoginSuccessResponse = {
   data: User;
@@ -65,6 +66,8 @@ const Login: React.FC<Props> = ({navigation}) => {
   const [showPopup, setShowPopup] = useState(false);
   const [showInvalidCredentialsModal, setShowInvalidCredentialsModal] =
     useState(false);
+
+  const [googleUser, setGoogleUser] = useState(null);
 
   const handleLogin = async () => {
     const notVerified =
@@ -160,6 +163,26 @@ const Login: React.FC<Props> = ({navigation}) => {
         }
         navigation.navigate('Home' as never);
       }, 2000);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      setGoogleUser(userInfo);
+    } catch (error) {
+      console.log(error);
+
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // play services not available or outdated
+      } else {
+        // some other error happened
+      }
     }
   };
 
@@ -332,7 +355,7 @@ const Login: React.FC<Props> = ({navigation}) => {
           style={styles.googleButton}
           size={GoogleSigninButton.Size.Icon}
           color={GoogleSigninButton.Color.Dark}
-          onPress={() => console.log('Google Signin')}
+          onPress={handleGoogleLogin}
         />
         <TouchableOpacity
           style={styles.facebookButton}

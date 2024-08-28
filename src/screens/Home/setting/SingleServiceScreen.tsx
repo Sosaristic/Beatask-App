@@ -157,7 +157,7 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
         service_id: data.service_id,
         category_id: data.category_id,
         dates_and_times: [new Date()],
-        description: 'test',
+        description: '',
       },
     );
 

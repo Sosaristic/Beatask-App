@@ -17,8 +17,6 @@ import {
 import {RouteProp, useNavigation} from '@react-navigation/native'; // Import useNavigation hook if using React Navigation
 import {RootStackParamList} from '../../../../App';
 import {
-  Filter,
-  Provider,
   ServiceType,
   SingleServicePayload,
 } from '../../../interfaces/apiResponses';
@@ -28,6 +26,8 @@ import {GetRating} from '../../../components';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {makeApiRequest} from '../../../utils/helpers';
 import Empty from '../../../components/Empty';
+import {SortFilter} from '../../../interfaces/apiResponses';
+import FilterModal from '../../../components/FilterModal';
 
 interface Item {
   id: string;
@@ -46,7 +46,7 @@ type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Homeimp'>;
 };
 
-type FilterPayload = {
+export type FilterPayload = {
   price_min?: string;
   price_max?: string;
   rating_min?: string;
@@ -56,9 +56,9 @@ type FilterPayload = {
   services?: string;
 };
 
-type ApiResponse = {
+type SortFilterRes = {
   message: string;
-  data: Filter[];
+  services: SortFilter[];
 };
 
 interface mixed extends ServiceType {
@@ -74,10 +74,11 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
   const isDarkMode = colorScheme === 'dark';
 
   let routeData = route.params || {};
-  const [data, setData] = useState<Filter[] | null>(null);
+  const [data, setData] = useState<SortFilter[] | null>(null);
   const [filterPayload, setFilterPayload] = useState<FilterPayload>(routeData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
+  const [openFilterModal, setOpenFilterModal] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -89,14 +90,14 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const {data, error} = await makeApiRequest<ApiResponse>(
-        '/search-services-by-multiple-commands',
+      const {data, error} = await makeApiRequest<SortFilterRes>(
+        '/sorting-and-filter',
         'POST',
 
         filterPayload,
       );
       if (data) {
-        setData(data.data);
+        setData(data.services);
       }
       if (error) {
         setError(error);
@@ -105,24 +106,29 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
     };
 
     fetchData();
-  }, [filterPayload]);
+  }, [filterPayload, routeData]);
 
   const handleSortChange = (value: string) => {
     setFilterPayload({...filterPayload, services: value});
     setSortVisible(false);
     // Add sorting logic here
   };
+  const handleFilterChange = (payload: FilterPayload) => {
+    setFilterPayload({...filterPayload, ...payload});
+    setOpenFilterModal(false);
+    // Add sorting logic here
+  };
 
-  const handleView = (payload: mixed) => {
+  const handleView = (payload: SortFilter) => {
     const payloadData: SingleServicePayload = {
-      category_name: payload.category_name,
+      category_name: payload.category,
       service_image: payload.service_image,
       service_name: payload.service_name,
       real_price: payload.real_price,
       service_id: payload.id,
       category_id: payload.category_id,
       provider_id: payload.provider_id,
-      provider_name: payload.providerName,
+      provider_name: payload.provider.name,
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
@@ -130,7 +136,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
     navigation.navigate('singleservice', {data: payloadData});
   };
 
-  const renderItem = ({item}: {item: mixed}) => {
+  const renderItem = ({item}: {item: SortFilter}) => {
     const providerDetail = data?.find(
       provider => provider.service_id == item.id,
     );
@@ -141,7 +147,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
           <Image source={{uri: item.service_image}} style={styles.image} />
         </View>
         <Text style={[styles.name, isDarkMode && styles.textDark]}>
-          {`${item.providerName}`}
+          {`${item.provider.name}`}
         </Text>
         <Text style={[styles.description, isDarkMode && styles.textDark]}>
           {item?.service_description}
@@ -195,29 +201,12 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
     return <Empty />;
   }
 
-  const getServices = () => {
-    const testData: mixed[] = [];
-
-    data?.forEach(item => {
-      item.service.forEach(nexted => {
-        testData.push({
-          ...nexted,
-          providerName: item.provider.name,
-          category_name: item.category,
-          sub_category: item.sub_category,
-        });
-      });
-    });
-    return testData;
-  };
-  const dataMapped = getServices();
-
-  console.log('dataMapped', dataMapped);
+  console.log('filter data', data);
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       <FlatList
-        data={dataMapped || []}
+        data={data || []}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
         numColumns={2}
@@ -232,7 +221,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
-          onPress={handleFilterPress}>
+          onPress={() => setOpenFilterModal(true)}>
           <Icon name="filter-variant" size={24} color="#fff" />
           <Text style={styles.footerButtonText}>FILTERS</Text>
         </TouchableOpacity>
@@ -274,6 +263,13 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
           </View>
         </View>
       </Modal>
+
+      <FilterModal
+        open={openFilterModal}
+        onClose={() => setOpenFilterModal(false)}
+        category_name={routeData.category_name}
+        handleFilterChange={handleFilterChange}
+      />
     </View>
   );
 };

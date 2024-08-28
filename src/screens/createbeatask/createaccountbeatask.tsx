@@ -7,12 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   useColorScheme,
-  Alert,
-  ToastAndroid,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
-import {RouteProp, useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import Camera from 'react-native-vector-icons/Entypo';
 import CheckBox from '@react-native-community/checkbox';
 import {
   widthPercentageToDP as wp,
@@ -21,6 +19,13 @@ import {
 import {RootStackParamList} from '../../../App';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {CustomErrorModal} from '../../components';
+import {Avatar} from 'react-native-paper';
+import DocumentPicker, {
+  DocumentPickerResponse,
+} from 'react-native-document-picker';
+import {customTheme} from '../../custom_theme/customTheme';
+import {Formik} from 'formik';
+import validationSchema from '../../components/forms/providerSignUpSchema';
 
 // Define the interface for the country object
 interface Country {
@@ -31,13 +36,42 @@ interface Country {
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'CreateBeatask'>;
 };
+interface ImageFile {
+  name: string;
+  size: number;
+  type: string;
+  uri: string;
+}
 
 export const formatPhoneNumber = (callCode: string, phone: string) => {
   if (phone.startsWith('0')) {
     phone = phone.slice(1);
   }
-
   return `${callCode}${phone}`;
+};
+
+const initialValues = {
+  first_legal_name: '',
+  last_legal_name: '',
+  email: '',
+  business_address: '',
+  password: '',
+  phone: '',
+  description: '',
+  agree_terms: false,
+  two_factor_authentication: false,
+};
+
+type initialValuesType = {
+  first_legal_name: string;
+  last_legal_name: string;
+  email: string;
+  business_address: string;
+  password: string;
+  phone: string;
+  description: string;
+  agree_terms: boolean;
+  two_factor_authentication: boolean;
 };
 
 const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
@@ -45,18 +79,13 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
 
   const [isPickerVisible, setPickerVisible] = useState(false);
-  const [details, setDetails] = useState({
-    last_legal_name: '',
-    first_legal_name: '',
-    email: '',
-    business_address: '',
-  });
+
   const [countryCode, setCountryCode] = useState('+1');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [termsChecked, setTermsChecked] = useState(false); // State for terms checkbox
-  const [twoFAChecked, setTwoFAChecked] = useState(false); // State for 2FA checkbox
+
   const [isPasswordVisible, setPasswordVisible] = useState(false);
+
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState<ImageFile | null>(null);
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: 'Missing Fields',
     errorMessage: 'All fields are required',
@@ -72,40 +101,19 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
     setPickerVisible(true);
   };
 
-  const handleNextPress = () => {
-    if (!termsChecked) {
-      ToastAndroid.showWithGravity(
-        'Terms and conditions must be accepted',
-        ToastAndroid.LONG,
-        ToastAndroid.CENTER,
-      );
-      return;
-    }
-
-    const payload = {
-      ...details,
-
-      phone_number: formatPhoneNumber(countryCode, phoneNumber),
-      password,
-      two_factor: twoFAChecked ? 1 : 0,
-      is_service_provider: 1,
-    };
-
-    for (const [key, value] of Object.entries(payload)) {
-      if (value === null || value === undefined || value === '') {
-        setShowErrorModal({
-          ...showErrorModal,
-          isModalOpen: true,
-          errorMessage: 'Please fill all the required fields',
+  const handleImagePicker = async () => {
+    try {
+      const res: DocumentPickerResponse | null =
+        await DocumentPicker.pickSingle({
+          type: [DocumentPicker.types.allFiles], // You can specify a mime type to filter file types
         });
-        return;
-      }
-    }
 
-    navigation.navigate('Upload', {
-      details: payload,
-    });
+      if (res) {
+        setImage(res as ImageFile);
+      }
+    } catch (error) {}
   };
+
   const handleagree = () => {
     navigation.navigate('Agree' as never);
   };
@@ -118,120 +126,251 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
     styles.container,
     {backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF'},
   ];
-  console.log(termsChecked);
+
+  const handleFormSubmit = (values: initialValuesType) => {
+    const payload = {
+      ...values,
+
+      phone_number: formatPhoneNumber(countryCode, values.phone),
+      two_factor: values.two_factor_authentication ? 1 : 0,
+      is_service_provider: 1,
+      profile_image: image,
+    };
+    navigation.navigate('Upload', {
+      details: payload,
+    });
+  };
 
   return (
     <ScrollView contentContainerStyle={containerStyle}>
-      <Text style={styles.label}>First legal name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="First legal name"
-        placeholderTextColor="#999"
-        onChangeText={text => setDetails({...details, first_legal_name: text})}
-      />
-
-      <Text style={styles.label}>Last legal name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Last legal name"
-        placeholderTextColor="#999"
-        onChangeText={text => setDetails({...details, last_legal_name: text})}
-      />
-
-      <Text style={styles.label}>Email address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email address"
-        placeholderTextColor="#999"
-        keyboardType="email-address"
-        onChangeText={text => setDetails({...details, email: text})}
-      />
-
-      <Text style={styles.label}>Phone number</Text>
-      <View style={styles.phoneContainer}>
-        <TouchableOpacity
-          style={styles.countryCodeButton}
-          onPress={handleCountryCodePress}>
-          <Text style={styles.countryCodeButtonText}>{countryCode}</Text>
-        </TouchableOpacity>
-
-        <TextInput
-          style={[styles.input, styles.phoneInput]}
-          placeholder="555 555-1234"
-          placeholderTextColor="#999"
-          keyboardType="phone-pad"
-          value={phoneNumber}
-          onChangeText={text => setPhoneNumber(text)}
+      <View style={{alignItems: 'center', paddingVertical: 10}}>
+        <Avatar.Image
+          source={{
+            uri: image?.uri || 'https://avatar.iran.liara.run/public/28',
+          }}
         />
-      </View>
+        <Text style={{marginTop: 20}}>
+          {image?.name || 'Add a profile picture'}
+        </Text>
 
-      <Text style={styles.label}>Password</Text>
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          secureTextEntry={!isPasswordVisible}
-          value={password}
-          onChangeText={text => setPassword(text)}
-        />
         <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={togglePasswordVisibility}>
-          <Icon
-            name={isPasswordVisible ? 'eye' : 'eye-slash'}
-            size={20}
-            color="#12CCB7"
+          style={{top: -55, right: -25}}
+          onPress={handleImagePicker}>
+          <Camera
+            name="camera"
+            size={30}
+            color={colorScheme === 'dark' ? customTheme.primaryColor : 'black'}
           />
         </TouchableOpacity>
-      </View>
 
-      <Text style={styles.label}>Business address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Business address"
-        placeholderTextColor="#999"
-        onChangeText={text => setDetails({...details, business_address: text})}
-      />
-
-      {/* Terms of Use Checkbox */}
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={termsChecked}
-          onValueChange={newValue => setTermsChecked(newValue)}
-          tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-        />
-        <Text style={styles.checkboxLabel}>
-          I agree to Beatask
-          <Text style={{color: '#12CCB7'}} onPress={handleagree}>
-            {' '}
-            terms of use
-          </Text>{' '}
-          and{'\n'}
-          <Text style={{color: '#12CCB7'}} onPress={handleagree}>
-            {' '}
-            privacy policy.
+        {!image && (
+          <Text style={[darkStyles.errorText, {marginBottom: 5}]}>
+            Image is required
           </Text>
-        </Text>
+        )}
       </View>
 
-      {/* Two-Factor Authentication Checkbox */}
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={twoFAChecked}
-          onValueChange={newValue => setTwoFAChecked(newValue)}
-          tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-        />
-        <Text style={styles.checkboxLabel}>
-          Two-Factor Authentication
-          <Text style={{color: '#12CCB7'}}> (2FA)</Text>
-        </Text>
-      </View>
+      <Formik
+        initialValues={initialValues}
+        onSubmit={handleFormSubmit}
+        validationSchema={validationSchema}>
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          values,
+          errors,
+          touched,
+          setFieldValue,
+        }) => (
+          <View style={{gap: 20}}>
+            <View>
+              <Text style={styles.label}>First legal name</Text>
+              <TextInput
+                onBlur={handleBlur('first_legal_name')}
+                onChangeText={handleChange('first_legal_name')}
+                value={values.first_legal_name}
+                style={styles.input}
+                placeholder="First legal name"
+                placeholderTextColor="#999"
+              />
+              {errors.first_legal_name && touched.first_legal_name && (
+                <Text style={darkStyles.errorText}>
+                  {errors.first_legal_name}
+                </Text>
+              )}
+            </View>
 
-      {/* Next Button */}
-      <TouchableOpacity style={styles.nextButton} onPress={handleNextPress}>
-        <Text style={styles.nexttext}>Next</Text>
-      </TouchableOpacity>
+            <View>
+              <Text style={styles.label}>Last legal name</Text>
+              <TextInput
+                onBlur={handleBlur('last_legal_name')}
+                onChangeText={handleChange('last_legal_name')}
+                value={values.last_legal_name}
+                style={styles.input}
+                placeholder="Last legal name"
+                placeholderTextColor="#999"
+              />
+              {errors.last_legal_name && touched.last_legal_name && (
+                <Text style={darkStyles.errorText}>
+                  {errors.last_legal_name}
+                </Text>
+              )}
+            </View>
+
+            <View>
+              <Text style={styles.label}>Email address</Text>
+              <TextInput
+                onBlur={handleBlur('email')}
+                onChangeText={handleChange('email')}
+                value={values.email}
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor="#999"
+              />
+              {errors.email && touched.email && (
+                <Text style={darkStyles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+
+            <Text style={[styles.label, {marginBottom: -5}]}>Phone number</Text>
+            <View style={styles.phoneContainer}>
+              <TouchableOpacity
+                style={styles.countryCodeButton}
+                onPress={handleCountryCodePress}>
+                <Text style={styles.countryCodeButtonText}>{countryCode}</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={[styles.input, styles.phoneInput]}
+                placeholder="555 555-1234"
+                placeholderTextColor="#999"
+                keyboardType="phone-pad"
+                onChangeText={handleChange('phone')}
+                onBlur={handleBlur('phone')}
+                value={values.phone}
+              />
+            </View>
+            {errors.phone && touched.phone && (
+              <Text style={darkStyles.errorText}>{errors.phone}</Text>
+            )}
+            <View>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Password"
+                  placeholderTextColor="#999"
+                  secureTextEntry={!isPasswordVisible}
+                  value={values.password}
+                  onChangeText={handleChange('password')}
+                  onBlur={handleBlur('password')}
+                />
+                <TouchableOpacity
+                  style={styles.toggleButton}
+                  onPress={togglePasswordVisibility}>
+                  <Icon
+                    name={isPasswordVisible ? 'eye' : 'eye-slash'}
+                    size={20}
+                    color="#12CCB7"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.password && touched.password && (
+                <Text style={darkStyles.errorText}>{errors.password}</Text>
+              )}
+            </View>
+
+            <View>
+              <Text style={styles.label}>Business Address</Text>
+              <TextInput
+                onBlur={handleBlur('business_address')}
+                onChangeText={handleChange('business_address')}
+                value={values.business_address}
+                style={styles.input}
+                placeholder="Last legal name"
+                placeholderTextColor="#999"
+              />
+              {errors.business_address && touched.business_address && (
+                <Text style={darkStyles.errorText}>
+                  {errors.business_address}
+                </Text>
+              )}
+            </View>
+            <View>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    borderColor: '#12ccb7',
+
+                    textAlignVertical: 'top', // Align text and placeholder to the top
+                    marginTop: hp('2%'), // Ensure no top margin
+                    paddingTop: hp('2%'), // Ensure no top padding
+                    height: hp('20%'),
+                  },
+                ]}
+                value={values.description}
+                onChangeText={handleChange('description')}
+                onBlur={handleBlur('description')}
+                placeholder="Enter Description"
+                multiline
+                numberOfLines={8}
+              />
+              {errors.description && touched.description && (
+                <Text style={darkStyles.errorText}>{errors.description}</Text>
+              )}
+            </View>
+
+            <View style={styles.checkboxContainer}>
+              <CheckBox
+                value={values.agree_terms}
+                onValueChange={newValue =>
+                  setFieldValue('agree_terms', newValue)
+                }
+                tintColors={{true: '#12CCB7', false: '#12CCB7'}}
+              />
+              <Text style={styles.checkboxLabel}>
+                I agree to Beatask
+                <Text style={{color: '#12CCB7'}} onPress={handleagree}>
+                  {' '}
+                  terms of use
+                </Text>{' '}
+                and{'\n'}
+                <Text style={{color: '#12CCB7'}} onPress={handleagree}>
+                  {' '}
+                  privacy policy.
+                </Text>
+              </Text>
+            </View>
+            {errors.agree_terms && touched.agree_terms && (
+              <Text style={darkStyles.errorText}>{errors.agree_terms}</Text>
+            )}
+
+            <View style={styles.checkboxContainer}>
+              <CheckBox
+                value={values.two_factor_authentication}
+                onValueChange={newValue =>
+                  setFieldValue('two_factor_authentication', newValue)
+                }
+                tintColors={{true: '#12CCB7', false: '#12CCB7'}}
+              />
+              <Text style={styles.checkboxLabel}>
+                Two-Factor Authentication
+                <Text style={{color: '#12CCB7'}}> (2FA)</Text>
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              disabled={!image}
+              style={styles.nextButton}
+              onPress={() => handleSubmit()}>
+              <Text style={styles.nexttext}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Formik>
 
       {/* Country Picker Modal */}
       <CountryPicker
@@ -289,15 +428,14 @@ const lightStyles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#000',
   },
   phoneContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: hp('2.5%'),
+    alignItems: 'flex-end',
   },
   countryCodeButton: {
     borderWidth: 1,
@@ -307,7 +445,6 @@ const lightStyles = StyleSheet.create({
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#000',
@@ -326,7 +463,6 @@ const lightStyles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2.5%'),
   },
   passwordInput: {
     flex: 1,
@@ -341,7 +477,7 @@ const lightStyles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2%'), // Responsive margin bottom
+    // Responsive margin bottom
   },
   checkboxLabel: {
     fontSize: wp('4%'),
@@ -465,6 +601,10 @@ const darkStyles = StyleSheet.create({
     alignSelf: 'center',
     fontSize: wp('5%'),
     fontWeight: '700',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: wp('3.5%'),
   },
 });
 

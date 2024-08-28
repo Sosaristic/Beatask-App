@@ -38,6 +38,7 @@ const SubscriptionScreen: React.FC = () => {
   const handlebid = () => {
     navigation.navigate('Bid' as never);
   };
+
   return (
     <View
       style={[

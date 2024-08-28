@@ -17,11 +17,49 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {Card} from 'react-native-elements';
 import {TextCount} from '../../Home/chat/masglist';
+import useFetch from '../../../hooks/useFetch';
+import {Loader} from '../../../components';
+import Empty from '../../../components/Empty';
+import {
+  CompletedServiceProvider,
+  IncomingService,
+  UnsuccessfulRequest,
+} from '../../../interfaces/apiResponses';
+
+type UnsuccessfulRes = {
+  message: string;
+  data: UnsuccessfulRequest[];
+};
+type CompletedRes = {
+  message: string;
+  data: CompletedServiceProvider[];
+};
+
+type IncomingRes = {
+  message: string;
+  services: IncomingService[];
+};
 
 const App = () => {
   const [selectedTab, setSelectedTab] = useState('Incoming'); // Default to "Incoming" tab
   const isDarkMode = useColorScheme() === 'dark';
   const navigation = useNavigation();
+
+  const {
+    data: completed,
+    loading: completedLoading,
+    error: completedError,
+  } = useFetch<CompletedRes>('/completed-services-provider', 'GET');
+  const {
+    data: incoming,
+    loading: incomingLoading,
+    error: incomingError,
+  } = useFetch<IncomingRes>('/incoming-services', 'GET');
+  const {
+    data: cancelled,
+    loading: cancelledLoading,
+    error: cancelledError,
+  } = useFetch<UnsuccessfulRes>('/unsuccessful-services', 'GET');
 
   const handleProfile = () => {
     navigation.navigate('ProfileSetup' as never);
@@ -69,196 +107,246 @@ const App = () => {
       </View>
       <ScrollView contentContainerStyle={styles.cardsContainer}>
         {selectedTab === 'Incoming' && (
-          <View style={[styles.card]}>
-            <Image
-              source={require('../../../assets/images/category/booked.png')}
-              style={styles.cardImage}
-            />
-            <View style={styles.cardContent}>
-              <Text
-                style={[
-                  styles.cardTitle,
-                  {color: isDarkMode ? '#FFF' : '#000'},
-                ]}>
-                Maryland Winkles
-              </Text>
-              <Text
-                style={[
-                  styles.cardStatus,
-                  {color: isDarkMode ? '#FFF' : '#000'},
-                ]}>
-                Home Management
-              </Text>
-              <Text
-                style={[
-                  styles.cardSubtitle,
-                  {color: isDarkMode ? '#CCC' : '#666'},
-                ]}>
-                Residential cleaning service
-              </Text>
-              <View style={styles.cardFooter}>
-                <Text style={styles.cardCompleted}>Completed</Text>
-                <Text
-                  style={[
-                    styles.cardDate,
-                    {color: isDarkMode ? '#FFF' : '#000'},
-                  ]}>
-                  On 20-06-2024
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.chatButton} onPress={handlechat}>
-              <Icon
-                name="chat-processing-outline"
-                size={wp('7%')}
-                color={isDarkMode ? '#FFF' : '#000'}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-        {selectedTab === 'Incoming' && (
-          <View style={[styles.hr]}>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Date & Time:{' '}
-              </Text>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Today 10:00 - 12:00 AM
-              </Text>
-            </View>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Location:
-              </Text>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                {' '}
-                267 New Avenue Park, New York
-              </Text>
-            </View>
-            <TouchableOpacity>
-              <Text style={styles.mapLink}>View map location</Text>
-            </TouchableOpacity>
-            <View style={styles.bookingCardContent}>
-              <TouchableOpacity style={styles.button1}>
-                <Text style={styles.buttonText1}>REJECT</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>CONFIRM</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <>
+            {incomingLoading ? (
+              <Loader />
+            ) : incomingError ? (
+              <Text>An Error Occurred</Text>
+            ) : incoming === null ? (
+              <Empty />
+            ) : (
+              <>
+                {incoming.services.map((item, index) => (
+                  <View key={item.id}>
+                    <View style={[styles.card]}>
+                      <Image
+                        source={{uri: item.service.service_image}}
+                        style={styles.cardImage}
+                      />
+                      <View style={styles.cardContent}>
+                        <Text
+                          style={[
+                            styles.cardTitle,
+                            {color: isDarkMode ? '#FFF' : '#000'},
+                          ]}>
+                          {item.provider.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardStatus,
+                            {color: isDarkMode ? '#FFF' : '#000'},
+                          ]}>
+                          {item.service.service_name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardSubtitle,
+                            {color: isDarkMode ? '#CCC' : '#666'},
+                          ]}>
+                          {item.service.service_description}
+                        </Text>
+                        <View style={styles.cardFooter}>
+                          <Text style={styles.cardCompleted}>
+                            {item.service.is_completed ? 'Completed' : ''}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.cardDate,
+                              {color: isDarkMode ? '#FFF' : '#000'},
+                            ]}>
+                            On {new Date(item.created_at).toDateString()}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={handlechat}>
+                        <Icon
+                          name="chat-processing-outline"
+                          size={wp('7%')}
+                          color={isDarkMode ? '#FFF' : '#000'}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={[styles.hr]}>
+                      <View style={styles.bookingCardContent}>
+                        <Text
+                          style={[
+                            styles.cardInfo,
+                            isDarkMode ? styles.darkText : styles.lightText,
+                          ]}>
+                          Date & Time:{' '}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardInfo,
+                            isDarkMode ? styles.darkText : styles.lightText,
+                          ]}>
+                          Today 10:00 - 12:00 AM
+                        </Text>
+                      </View>
+                      <View style={styles.bookingCardContent}>
+                        <Text
+                          style={[
+                            styles.cardInfo,
+                            isDarkMode ? styles.darkText : styles.lightText,
+                          ]}>
+                          Location:
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardInfo,
+                            isDarkMode ? styles.darkText : styles.lightText,
+                          ]}>
+                          {' '}
+                          267 New Avenue Park, New York
+                        </Text>
+                      </View>
+                      <TouchableOpacity>
+                        <Text style={styles.mapLink}>View map location</Text>
+                      </TouchableOpacity>
+                      <View style={styles.bookingCardContent}>
+                        <TouchableOpacity style={styles.button1}>
+                          <Text style={styles.buttonText1}>REJECT</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button}>
+                          <Text style={styles.buttonText}>CONFIRM</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
         )}
 
         {selectedTab === 'Complete' && (
-          <View style={styles.card}>
-            <Image
-              source={require('../../../assets/images/category/booked.png')}
-              style={styles.cardImage}
-            />
-            <View style={styles.cardContent}>
-              <Text
-                style={[
-                  styles.cardTitle,
-                  {color: isDarkMode ? '#FFF' : '#000'},
-                ]}>
-                Maryland Winkles
-              </Text>
-              <Text
-                style={[
-                  styles.cardStatus,
-                  {color: isDarkMode ? '#FFF' : '#000'},
-                ]}>
-                Home Management
-              </Text>
-              <Text
-                style={[
-                  styles.cardSubtitle,
-                  {color: isDarkMode ? '#CCC' : '#666'},
-                ]}>
-                Residential cleaning service
-              </Text>
-              <View style={styles.cardFooter2}>
-                <Text
-                  style={[
-                    styles.cardDate,
-                    {color: isDarkMode ? '#FFF' : '#000'},
-                  ]}>
-                  On 20-06-2024
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.chatButton} onPress={handlechat}>
-              <Icon
-                name="chat-processing-outline"
-                size={wp('7%')}
-                color={isDarkMode ? '#FFF' : '#000'}
-              />
-            </TouchableOpacity>
-          </View>
+          <>
+            {completedLoading ? (
+              <Loader />
+            ) : completedError ? (
+              <Text>An Error Occurred</Text>
+            ) : completed === null ? (
+              <Empty />
+            ) : (
+              <>
+                {completed.data.map(item => (
+                  <View style={styles.card} key={item.id}>
+                    <Image
+                      source={{uri: item.service_image}}
+                      style={styles.cardImage}
+                    />
+                    <View style={styles.cardContent}>
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          {color: isDarkMode ? '#FFF' : '#000'},
+                        ]}>
+                        {item.provider.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardStatus,
+                          {color: isDarkMode ? '#FFF' : '#000'},
+                        ]}>
+                        {item.service_name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardSubtitle,
+                          {color: isDarkMode ? '#CCC' : '#666'},
+                        ]}>
+                        {item.service_description}
+                      </Text>
+                      <View style={styles.cardFooter2}>
+                        <Text
+                          style={[
+                            styles.cardDate,
+                            {color: isDarkMode ? '#FFF' : '#000'},
+                          ]}>
+                          On {new Date(item.created_at).toDateString()}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.chatButton}
+                      onPress={handlechat}>
+                      <Icon
+                        name="chat-processing-outline"
+                        size={wp('7%')}
+                        color={isDarkMode ? '#FFF' : '#000'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
         )}
 
         {selectedTab === 'Cancelled' && (
-          <View style={styles.card}>
-            <Image
-              source={require('../../../assets/images/category/booked.png')}
-              style={styles.cardImage}
-            />
-            <View style={styles.cardContent}>
-              <Text
-                style={[
-                  styles.cardTitle1,
-                  {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                ]}>
-                Maryland Winkles
-              </Text>
-              <Text
-                style={[
-                  styles.cardStatus1,
-                  {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                ]}>
-                Home Management
-              </Text>
-              <Text
-                style={[
-                  styles.cardSubtitle1,
-                  {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                ]}>
-                Residential cleaning service
-              </Text>
-              <View style={styles.cardFooter}>
-                <Text
-                  style={[
-                    styles.cardDate,
-                    {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                  ]}>
-                  On 20-06-2024
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.chatButton} onPress={handlechat}>
-              <Icon
-                name="chat-processing-outline"
-                size={wp('7%')}
-                color={isDarkMode ? '#FFF' : '#000'}
-              />
-            </TouchableOpacity>
-          </View>
+          <>
+            {cancelledLoading ? (
+              <Loader />
+            ) : cancelledError ? (
+              <Text>An Error Occurred</Text>
+            ) : cancelled === null ? (
+              <Empty />
+            ) : (
+              <>
+                {cancelled.data.map(item => (
+                  <View style={styles.card} key={item.id}>
+                    <Image
+                      source={{uri: item.service_image}}
+                      style={styles.cardImage}
+                    />
+                    <View style={styles.cardContent}>
+                      <Text
+                        style={[
+                          styles.cardTitle1,
+                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                        ]}>
+                        {item.provider.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardStatus1,
+                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                        ]}>
+                        {item.service_name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardSubtitle1,
+                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                        ]}>
+                        {item.service_description}
+                      </Text>
+                      <View style={styles.cardFooter}>
+                        <Text
+                          style={[
+                            styles.cardDate,
+                            {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                          ]}>
+                          On {new Date(item.created_at).toDateString()}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.chatButton}
+                      onPress={handlechat}>
+                      <Icon
+                        name="chat-processing-outline"
+                        size={wp('7%')}
+                        color={isDarkMode ? '#FFF' : '#000'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
         )}
       </ScrollView>
       <View style={[{marginTop: hp('2%')}]} />

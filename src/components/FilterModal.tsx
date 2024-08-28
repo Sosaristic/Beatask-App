@@ -1,43 +1,52 @@
-import React, {useState} from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  Modal,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
   useColorScheme,
 } from 'react-native';
-import {Calendar} from 'react-native-calendars'; // Correct imports for Calendar and types
-import Slider from '@react-native-community/slider';
+import React, {useState} from 'react';
+import {Calendar} from 'react-native-calendars';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {RouteProp, useNavigation} from '@react-navigation/native';
 import {Button} from 'react-native-elements';
-import {RootStackParamList} from '../../../../App';
-import {StackNavigationProp} from '@react-navigation/stack';
+import Slider from '@react-native-community/slider';
+import {FilterPayload} from '../screens/Home/provider/Homeimp';
 
-type FilterProps = {
-  route: RouteProp<RootStackParamList, 'Filter'>;
-  navigation: StackNavigationProp<RootStackParamList, 'Filter'>;
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  category_name: string;
+  handleFilterChange: (payload: FilterPayload) => void;
 };
 
-const App: React.FC<FilterProps> = ({route, navigation}) => {
+const FilterModal = ({
+  open,
+  onClose,
+  category_name,
+  handleFilterChange,
+}: Props) => {
   const [price, setPrice] = useState<[number, number]>([22, 56]);
   const [rating, setRating] = useState<number>(5);
-  const [jobCompletionRate, setJobCompletionRate] = useState<[number, number]>([
-    10, 25,
-  ]);
+
   const [distance, setDistance] = useState<[number, number]>([10, 25]);
   const [selectedDate, setSelectedDate] = useState<string | null>(
     new Date().toISOString().split('T')[0],
   ); // State to store selected date
-
   const colorScheme = useColorScheme();
 
   const onPriceChange = (values: [number, number]) => setPrice(values);
   const onRatingChange = (selectedRating: number) => setRating(selectedRating);
-  const onJobCompletionRateChange = (values: [number, number]) =>
-    setJobCompletionRate(values);
-  const onDistanceChange = (values: [number, number]) => setDistance(values);
+
+  const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
+
+  const handleClearAll = () => {
+    setPrice([22, 56]);
+    setRating(5);
+
+    setSelectedDate(null); // Clear selected date
+  };
 
   const handleSave = () => {
     const params = {
@@ -45,33 +54,24 @@ const App: React.FC<FilterProps> = ({route, navigation}) => {
 
       rating_min: rating.toString(),
       date: selectedDate as string,
-      category_name: route.params.category,
+      category_name: category_name,
     };
-    console.log(params);
+    handleFilterChange(params);
 
-    navigation.navigate('Homeimp', params);
+    onClose();
   };
-  const handleSub = () => {
-    navigation.navigate('Homeimp' as never);
-  };
-
-  const handleClearAll = () => {
-    setPrice([22, 56]);
-    setRating(5);
-    setJobCompletionRate([10, 25]);
-    setDistance([10, 25]);
-    setSelectedDate(null); // Clear selected date
-  };
-
-  // Determine which styles to use based on colorScheme
-  const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity onPress={handleClearAll}>
-        <Text style={styles.clearAll}>Clear all</Text>
-      </TouchableOpacity>
-      {/* <TouchableOpacity style={styles.subCategoryContainer} onPress={handleSub}>
+    <Modal
+      visible={open}
+      animationType="slide"
+      onDismiss={onClose}
+      onRequestClose={onClose}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <TouchableOpacity onPress={handleClearAll}>
+          <Text style={styles.clearAll}>Clear all</Text>
+        </TouchableOpacity>
+        {/* <TouchableOpacity style={styles.subCategoryContainer} onPress={handleSub}>
         <Text style={styles.subCategory}>Sub-category</Text>
         <FontAwesome
           name="angle-right"
@@ -79,51 +79,51 @@ const App: React.FC<FilterProps> = ({route, navigation}) => {
           color={styles.subCategory.color}
         />
       </TouchableOpacity> */}
-      <Text style={styles.heading}>Set availability</Text>
-      <Calendar
-        style={styles.calendar}
-        markingType={'custom'}
-        current={new Date().toISOString().split('T')[0]} // Set the current date in ISO format
-        onDayPress={day => setSelectedDate(day.dateString)} // Update selected date
-        theme={{
-          calendarBackground: styles.container.backgroundColor,
-          selectedDayBackgroundColor: '#00adf5',
-          selectedDayTextColor: '#fff',
-        }}
-        markedDates={{
-          [selectedDate || '']: {selected: true, selectedColor: '#00adf5'}, // Mark selected date
-        }}
-      />
-      <View style={styles.sliderContainer}>
-        <Text style={styles.label}>Price</Text>
-        <Slider
-          value={price[0]}
-          onValueChange={(value: number) => onPriceChange([value, price[1]])}
-          minimumValue={16}
-          maximumValue={56}
-          step={1}
-          thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
-          minimumTrackTintColor="#12CCB7"
+        <Text style={styles.heading}>Set availability</Text>
+        <Calendar
+          style={styles.calendar}
+          markingType={'custom'}
+          current={new Date().toISOString().split('T')[0]} // Set the current date in ISO format
+          onDayPress={day => setSelectedDate(day.dateString)} // Update selected date
+          theme={{
+            calendarBackground: styles.container.backgroundColor,
+            selectedDayBackgroundColor: '#00adf5',
+            selectedDayTextColor: '#fff',
+          }}
+          markedDates={{
+            [selectedDate || '']: {selected: true, selectedColor: '#00adf5'}, // Mark selected date
+          }}
         />
-        <Text style={styles.valueText}>
-          ${price[0]} - ${price[1]}
-        </Text>
-      </View>
-      <View style={styles.ratingContainer}>
-        <Text style={styles.label}>Rating</Text>
-        <View style={styles.rating}>
-          {[1, 2, 3, 4, 5].map(star => (
-            <FontAwesome
-              key={star}
-              name="star"
-              size={24}
-              color={rating >= star ? '#00adf5' : '#ccc'}
-              onPress={() => onRatingChange(star)}
-            />
-          ))}
+        <View style={styles.sliderContainer}>
+          <Text style={styles.label}>Price</Text>
+          <Slider
+            value={price[0]}
+            onValueChange={(value: number) => onPriceChange([value, price[1]])}
+            minimumValue={16}
+            maximumValue={56}
+            step={1}
+            thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
+            minimumTrackTintColor="#12CCB7"
+          />
+          <Text style={styles.valueText}>
+            ${price[0]} - ${price[1]}
+          </Text>
         </View>
-      </View>
-      {/* <View style={styles.sliderContainer}>
+        <View style={styles.ratingContainer}>
+          <Text style={styles.label}>Rating</Text>
+          <View style={styles.rating}>
+            {[1, 2, 3, 4, 5].map(star => (
+              <FontAwesome
+                key={star}
+                name="star"
+                size={24}
+                color={rating >= star ? '#00adf5' : '#ccc'}
+                onPress={() => onRatingChange(star)}
+              />
+            ))}
+          </View>
+        </View>
+        {/* <View style={styles.sliderContainer}>
         <Text style={styles.label}>Job completion rate</Text>
         <Slider
           value={jobCompletionRate[0]}
@@ -140,7 +140,7 @@ const App: React.FC<FilterProps> = ({route, navigation}) => {
           {jobCompletionRate[0]}% - {jobCompletionRate[1]}%
         </Text>
       </View> */}
-      {/* <View style={styles.sliderContainer}>
+        {/* <View style={styles.sliderContainer}>
         <Text style={styles.label}>Distance</Text>
         <Slider
           value={distance[0]}
@@ -157,14 +157,19 @@ const App: React.FC<FilterProps> = ({route, navigation}) => {
           {distance[0]}km - {distance[1]}km
         </Text>
       </View> */}
-      <Button
-        title="Save"
-        buttonStyle={styles.saveButton}
-        onPress={handleSave}
-      />
-    </ScrollView>
+        <Button
+          title="Save"
+          buttonStyle={styles.saveButton}
+          onPress={handleSave}
+        />
+      </ScrollView>
+    </Modal>
   );
 };
+
+export default FilterModal;
+
+const styles = StyleSheet.create({});
 
 const lightStyles = StyleSheet.create({
   container: {
@@ -295,5 +300,3 @@ const darkStyles = StyleSheet.create({
     paddingVertical: 20,
   },
 });
-
-export default App;

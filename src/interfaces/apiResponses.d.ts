@@ -322,3 +322,59 @@ export type BookingPriceResponse = {
   beatask_service_fee: number | string;
   total_price: number | string;
 };
+
+export type SortFilter = {
+  id: number | string;
+  category_id: string;
+  service_name: string;
+  provider_id: string;
+  years_of_experience: string;
+  experience_document: string;
+  service_image: string;
+  real_price: string;
+  discounted_price: string;
+  service_description: string;
+  availability_dates_times: string;
+  review_rating: number;
+  is_completed: number;
+  created_at: string;
+  updated_at: string;
+  category: string;
+  sub_category: string;
+  service_id: string;
+  category_image: string;
+  provider: Provider;
+};
+
+export type RequestedService = {
+  id: string | number;
+  category: string;
+  description: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  get_user: FeaturedProvider;
+};
+
+export interface UnsuccessfulRequest extends ServiceType {
+  provider: Provider;
+}
+
+export interface CompletedServiceProvider extends UnsuccessfulRequest {
+  category: Category;
+}
+
+export interface IncomingService {
+  id: number;
+  provider_id: number;
+  service_id: number;
+  category_id: number;
+  dates_and_times: string; // JSON string, should be parsed for actual use
+  description: string;
+  is_paid: number;
+  created_at: string; // ISO 8601 date string
+  updated_at: string; //
+  provider: Provider;
+  service: ServiceType;
+  category: Category;
+}

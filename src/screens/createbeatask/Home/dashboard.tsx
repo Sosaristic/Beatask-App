@@ -72,7 +72,7 @@ const HomeScreen: React.FC = () => {
       ]}>
       <View style={styles.header}>
         <Image
-          source={require('../../../assets/images/category/user.png')}
+          source={{uri: user?.profile_image}}
           style={styles.profileImage}
         />
         <Text

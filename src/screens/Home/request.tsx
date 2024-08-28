@@ -21,6 +21,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios'; // Import axios if using it
 import {makeApiRequest} from '../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../components';
+import {useUserStore} from '../../store/useUserStore';
 
 const serviceCategories = [
   'Home Improvement',
@@ -58,6 +59,7 @@ const RequestServiceScreen = () => {
     errorMessage: '',
     isModalOpen: false,
   });
+  const {user} = useUserStore(state => state);
 
   const [showSuccessModal, setShowSuccessModal] = useState({
     successTitle: 'Success',
@@ -108,6 +110,7 @@ const RequestServiceScreen = () => {
     const {data, error} = await makeApiRequest('request-service', 'POST', {
       category: selectedServiceOption,
       description: instructions,
+      user_id: user?.id,
     });
     if (error) {
       setShowSuccessModal({
