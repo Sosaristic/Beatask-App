@@ -45,3 +45,20 @@ export const formatCurrency = (value: number) => {
     currency: 'USD',
   }).format(value);
 };
+
+export function convertStringToArray(inputString: string): string[] {
+  try {
+    // Parse the input string as JSON
+    const parsedArray = JSON.parse(inputString);
+
+    // Ensure the parsed value is an array
+    if (Array.isArray(parsedArray)) {
+      return parsedArray;
+    } else {
+      throw new Error('Parsed value is not an array.');
+    }
+  } catch (error) {
+    // Handle any parsing errors
+    throw new Error('Invalid input string. Could not convert to array.');
+  }
+}

@@ -14,60 +14,121 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import useFetch from '../../../hooks/useFetch';
+import {useUserStore} from '../../../store/useUserStore';
+import {Loader} from '../../../components';
+import Empty from '../../../components/Empty';
+import {ListReviewsType} from '../../../interfaces/apiResponses';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../../../App';
+
+type ListReviewRes = {
+  message: string;
+  data: ListReviewsType[];
+};
+
+type ReviewCardProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'review1'>;
+};
 
 // Define the functional component
-const ReviewCard = () => {
+const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
   const colorScheme = useColorScheme();
-  const navigation = useNavigation();
+
   const isDarkMode = colorScheme === 'dark';
+  const {user} = useUserStore(state => state);
+
+  const {data, loading, error} = useFetch<ListReviewRes>(
+    '/list-reviews',
+    'POST',
+    {
+      provider_id: 42,
+    },
+  );
+
+  console.log(user?.id);
 
   const handlechat = () => {
     navigation.navigate('Chat' as never);
   };
+
+  if (loading) return <Loader />;
+  if (error) return <Text>Something went wrong trying to fetch reviews.</Text>;
+  if (data === null || data.data.length === 0) return <Empty />;
+
   return (
-    <View
-      style={[styles.card, isDarkMode ? styles.darkCard : styles.lightCard]}>
-      <View style={styles.header}>
-        <Image
-          source={require('../../../assets/images/category/user.png')}
-          style={styles.profileImage}
-        />
-        <View style={styles.headerText}>
-          <Text
+    <>
+      {data.data.map(item => {
+        return (
+          <View
+            key={item.id}
             style={[
-              styles.name,
-              isDarkMode ? styles.darkText : styles.lightText,
+              styles.card,
+              isDarkMode ? styles.darkCard : styles.lightCard,
             ]}>
-            Andrew Fisher
-          </Text>
-          <View style={styles.ratingContainer}>
-            <Icon name="star" type="font-awesome" color="#00f2ea" size={15} />
+            <View style={styles.header}>
+              <Image
+                source={
+                  item.user.profile_image
+                    ? {uri: item.user.profile_image}
+                    : require('../../../assets/images/profile-svgrepo-com.svg')
+                }
+                style={styles.profileImage}
+              />
+              <View style={styles.headerText}>
+                <Text
+                  style={[
+                    styles.name,
+                    isDarkMode ? styles.darkText : styles.lightText,
+                  ]}>
+                  {item.user.name}
+                </Text>
+                <View style={styles.ratingContainer}>
+                  <Icon
+                    name="star"
+                    type="font-awesome"
+                    color="#00f2ea"
+                    size={15}
+                  />
+                  <Text
+                    style={[
+                      styles.rating,
+                      isDarkMode ? styles.darkText : styles.lightText,
+                    ]}>
+                    {item.rating_stars}
+                  </Text>
+                </View>
+              </View>
+            </View>
             <Text
               style={[
-                styles.rating,
+                styles.review,
                 isDarkMode ? styles.darkText : styles.lightText,
               ]}>
-              5
+              {item.review_message}
             </Text>
+            <Text
+              style={[
+                styles.date,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              {item.created_at ? new Date(item.created_at).toDateString() : ''}
+            </Text>
+            <TouchableOpacity
+              style={styles.respondButton}
+              onPress={() =>
+                navigation.navigate('Chat', {
+                  chatId: '',
+                  providerId: item.user.email,
+                  providerName: item.user.name,
+                })
+              }>
+              <Text style={styles.respondText}>RESPOND</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-      </View>
-      <Text
-        style={[
-          styles.review,
-          isDarkMode ? styles.darkText : styles.lightText,
-        ]}>
-        Awesome! This is what I was looking for. He did an excellent job. I
-        recommend him to everyone. ❤️❤️
-      </Text>
-      <Text
-        style={[styles.date, isDarkMode ? styles.darkText : styles.lightText]}>
-        20/06/2024
-      </Text>
-      <TouchableOpacity style={styles.respondButton} onPress={handlechat}>
-        <Text style={styles.respondText}>RESPOND</Text>
-      </TouchableOpacity>
-    </View>
+        );
+      })}
+    </>
   );
 };
 

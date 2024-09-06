@@ -41,10 +41,12 @@ type UserType = {
   user: User;
   unReadMessages: number;
   isAuthenticated: boolean;
+  device_token: string;
   actions: {
     login: (user: User) => void;
     logout: () => void;
     setUnreadMessages: (value: number) => void;
+    setDeviceToken: (value: string) => void;
   };
 };
 
@@ -52,6 +54,7 @@ const initialValues = {
   user: null,
   isAuthenticated: false,
   unReadMessages: 0,
+  device_token: '',
 };
 
 export const useUserStore = create<UserType>(set => ({
@@ -65,6 +68,9 @@ export const useUserStore = create<UserType>(set => ({
     },
     setUnreadMessages: (value: number) => {
       set({unReadMessages: value});
+    },
+    setDeviceToken: (value: string) => {
+      set({device_token: value});
     },
   },
 }));

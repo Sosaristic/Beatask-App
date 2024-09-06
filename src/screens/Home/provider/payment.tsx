@@ -20,6 +20,7 @@ import {CustomErrorModal, CustomModal} from '../../../components';
 import useFetch from '../../../hooks/useFetch';
 import {BookingPriceResponse} from '../../../interfaces/apiResponses';
 import {RootStackParamList} from '../../../../App';
+import {useUserStore} from '../../../store/useUserStore';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'payment'>;
@@ -27,6 +28,7 @@ type Props = {
 
 const PaymentScreen: React.FC<Props> = ({route}) => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const {user} = useUserStore(state => state);
   const colorScheme = useColorScheme();
   const windowWidth = Dimensions.get('window').width;
   const {data: serviceData} = route.params;
@@ -63,6 +65,7 @@ const PaymentScreen: React.FC<Props> = ({route}) => {
       category_id: 1,
       dates_and_times: [new Date()],
       description: 'test',
+      user_id: user?.id,
     });
 
     if (error) {

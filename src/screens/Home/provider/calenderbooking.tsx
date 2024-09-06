@@ -23,13 +23,12 @@ import useFetch from '../../../hooks/useFetch';
 import {BookingPriceResponse} from '../../../interfaces/apiResponses';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {customTheme} from '../../../custom_theme/customTheme';
+import {useUserStore} from '../../../store/useUserStore';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'calenderbook'>;
   navigation: StackNavigationProp<RootStackParamList, 'calenderbook'>;
 };
-
-
 
 const userTimeSlots = [
   {time: '08:00 AM', selected: false},
@@ -56,7 +55,7 @@ type BookedDates = {
 
 const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
   const {data} = route.params;
-  console.log('route', data);
+  const {user} = useUserStore(state => state);
 
   const [instructions, setInstructions] = useState('');
   const [instructionsLength, setInstructionsLength] = useState(0);
@@ -119,6 +118,7 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
         category_id: data.category_id,
         dates_and_times: chosenDatesAndTime,
         description: instructions,
+        user_id: user?.id,
       },
     );
 
@@ -175,8 +175,6 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
       return newBookedDates;
     });
   };
-
-
 
   const handleInstructionsChange = (text: string) => {
     if (text.length <= 100) {

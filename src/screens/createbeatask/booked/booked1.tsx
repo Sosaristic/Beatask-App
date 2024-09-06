@@ -18,17 +18,23 @@ import {useNavigation} from '@react-navigation/native';
 import {Card} from 'react-native-elements';
 import {TextCount} from '../../Home/chat/masglist';
 import useFetch from '../../../hooks/useFetch';
-import {Loader} from '../../../components';
+import {CustomErrorModal, CustomModal, Loader} from '../../../components';
 import Empty from '../../../components/Empty';
 import {
   CompletedServiceProvider,
   IncomingService,
   UnsuccessfulRequest,
+  UpcomingService,
 } from '../../../interfaces/apiResponses';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../../../App';
+import {convertStringToArray} from '../../../utils/helperFunc';
+import {makeApiRequest} from '../../../utils/helpers';
+import {useUserStore} from '../../../store/useUserStore';
 
 type UnsuccessfulRes = {
   message: string;
-  data: UnsuccessfulRequest[];
+  data: UpcomingService[];
 };
 type CompletedRes = {
   message: string;
@@ -40,26 +46,49 @@ type IncomingRes = {
   services: IncomingService[];
 };
 
-const App = () => {
+type Props = {
+  navigation: StackNavigationProp<RootStackParamList, 'booked1'>;
+};
+
+const App: React.FC<Props> = ({navigation}) => {
   const [selectedTab, setSelectedTab] = useState('Incoming'); // Default to "Incoming" tab
   const isDarkMode = useColorScheme() === 'dark';
-  const navigation = useNavigation();
+  const {user} = useUserStore(state => state);
+  console.log(user?.id);
+  const [showSuccessModal, setShowSuccessModal] = useState({
+    successTitle: 'Success',
+    successMessage: 'Service Booked',
+    loadingMessage: 'processing..',
+    requestLoading: false,
+    showModal: false,
+  });
+  const [showErrorModal, setShowErrorModal] = useState({
+    errorTitle: '',
+    errorMessage: '',
+    isModalOpen: false,
+  });
 
   const {
     data: completed,
     loading: completedLoading,
     error: completedError,
-  } = useFetch<CompletedRes>('/completed-services-provider', 'GET');
+  } = useFetch<CompletedRes>('/completed-services-provider', 'POST', {
+    provider_id: user?.id,
+  });
   const {
     data: incoming,
     loading: incomingLoading,
     error: incomingError,
-  } = useFetch<IncomingRes>('/incoming-services', 'GET');
+  } = useFetch<IncomingRes>('/incoming-services', 'POST', {
+    provider_id: user?.id,
+  });
   const {
     data: cancelled,
     loading: cancelledLoading,
     error: cancelledError,
-  } = useFetch<UnsuccessfulRes>('/unsuccessful-services', 'GET');
+  } = useFetch<UnsuccessfulRes>('/unsuccessful-services-provider', 'POST', {
+    provider_id: user?.id,
+  });
 
   const handleProfile = () => {
     navigation.navigate('ProfileSetup' as never);
@@ -78,6 +107,88 @@ const App = () => {
   };
   const handlebid = () => {
     navigation.navigate('Bid' as never);
+  };
+
+  const handleConfirm = async (id: number) => {
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+    });
+    const {data, error} = await makeApiRequest('/confirm-booking', 'POST', {
+      booking_id: id,
+    });
+
+    if (error) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Booking Failed',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
+
+    if (data) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: true,
+      });
+
+      setTimeout(() => {
+        setShowSuccessModal({
+          ...showSuccessModal,
+          showModal: false,
+        });
+        navigation.navigate('dashboard');
+      }, 2000);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+      successMessage: 'Booking Rejected',
+    });
+    const {data, error} = await makeApiRequest('/reject-booking', 'POST', {
+      booking_id: id,
+    });
+
+    if (error) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Could not reject booking',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
+
+    if (data) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: true,
+        successMessage: 'Booking Rejected',
+      });
+
+      setTimeout(() => {
+        setShowSuccessModal({
+          ...showSuccessModal,
+          showModal: false,
+        });
+        navigation.navigate('dashboard');
+      }, 2000);
+    }
   };
 
   return (
@@ -112,110 +223,124 @@ const App = () => {
               <Loader />
             ) : incomingError ? (
               <Text>An Error Occurred</Text>
-            ) : incoming === null ? (
+            ) : incoming === null || incoming.services.length === 0 ? (
               <Empty />
             ) : (
               <>
-                {incoming.services.map((item, index) => (
-                  <View key={item.id}>
-                    <View style={[styles.card]}>
-                      <Image
-                        source={{uri: item.service.service_image}}
-                        style={styles.cardImage}
-                      />
-                      <View style={styles.cardContent}>
-                        <Text
-                          style={[
-                            styles.cardTitle,
-                            {color: isDarkMode ? '#FFF' : '#000'},
-                          ]}>
-                          {item.provider.name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.cardStatus,
-                            {color: isDarkMode ? '#FFF' : '#000'},
-                          ]}>
-                          {item.service.service_name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.cardSubtitle,
-                            {color: isDarkMode ? '#CCC' : '#666'},
-                          ]}>
-                          {item.service.service_description}
-                        </Text>
-                        <View style={styles.cardFooter}>
-                          <Text style={styles.cardCompleted}>
-                            {item.service.is_completed ? 'Completed' : ''}
+                {incoming.services.map((item, index) => {
+                  const convertedArray = convertStringToArray(
+                    item.dates_and_times,
+                  );
+                  return (
+                    <View key={item.id}>
+                      <View style={[styles.card]}>
+                        <Image
+                          source={{uri: item.service.service_image}}
+                          style={styles.cardImage}
+                        />
+                        <View style={styles.cardContent}>
+                          <Text
+                            style={[
+                              styles.cardTitle,
+                              {color: isDarkMode ? '#FFF' : '#000'},
+                            ]}>
+                            {item.user.name}
                           </Text>
                           <Text
                             style={[
-                              styles.cardDate,
+                              styles.cardStatus,
                               {color: isDarkMode ? '#FFF' : '#000'},
                             ]}>
-                            On {new Date(item.created_at).toDateString()}
+                            {item.service.service_name}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.cardSubtitle,
+                              {color: isDarkMode ? '#CCC' : '#666'},
+                            ]}>
+                            {item.service.service_description}
+                          </Text>
+                          <View style={styles.cardFooter}>
+                            <Text style={styles.cardCompleted}>
+                              {item.service.is_completed ? 'Completed' : ''}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.cardDate,
+                                {color: isDarkMode ? '#FFF' : '#000'},
+                              ]}>
+                              On {new Date(item.created_at).toDateString()}
+                            </Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.chatButton}
+                          onPress={() =>
+                            navigation.navigate('Chat', {
+                              chatId: '',
+                              providerId: item.user.email,
+                              providerName: item.user.name,
+                            })
+                          }>
+                          <Icon
+                            name="chat-processing-outline"
+                            size={wp('7%')}
+                            color={isDarkMode ? '#FFF' : '#000'}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <View style={[styles.hr]}>
+                        <View style={styles.bookingCardContent}>
+                          <Text
+                            style={[
+                              styles.cardInfo,
+                              isDarkMode ? styles.darkText : styles.lightText,
+                            ]}>
+                            Date & Time:{' '}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.cardInfo,
+                              isDarkMode ? styles.darkText : styles.lightText,
+                            ]}>
+                            {`${convertedArray[0]} \n to \n ${convertedArray[1]}`}
                           </Text>
                         </View>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.chatButton}
-                        onPress={handlechat}>
-                        <Icon
-                          name="chat-processing-outline"
-                          size={wp('7%')}
-                          color={isDarkMode ? '#FFF' : '#000'}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={[styles.hr]}>
-                      <View style={styles.bookingCardContent}>
-                        <Text
-                          style={[
-                            styles.cardInfo,
-                            isDarkMode ? styles.darkText : styles.lightText,
-                          ]}>
-                          Date & Time:{' '}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.cardInfo,
-                            isDarkMode ? styles.darkText : styles.lightText,
-                          ]}>
-                          Today 10:00 - 12:00 AM
-                        </Text>
-                      </View>
-                      <View style={styles.bookingCardContent}>
-                        <Text
-                          style={[
-                            styles.cardInfo,
-                            isDarkMode ? styles.darkText : styles.lightText,
-                          ]}>
-                          Location:
-                        </Text>
-                        <Text
-                          style={[
-                            styles.cardInfo,
-                            isDarkMode ? styles.darkText : styles.lightText,
-                          ]}>
-                          {' '}
-                          267 New Avenue Park, New York
-                        </Text>
-                      </View>
-                      <TouchableOpacity>
-                        <Text style={styles.mapLink}>View map location</Text>
-                      </TouchableOpacity>
-                      <View style={styles.bookingCardContent}>
-                        <TouchableOpacity style={styles.button1}>
-                          <Text style={styles.buttonText1}>REJECT</Text>
+                        <View style={styles.bookingCardContent}>
+                          <Text
+                            style={[
+                              styles.cardInfo,
+                              isDarkMode ? styles.darkText : styles.lightText,
+                            ]}>
+                            Location:
+                          </Text>
+                          <Text
+                            style={[
+                              styles.cardInfo,
+                              isDarkMode ? styles.darkText : styles.lightText,
+                            ]}>
+                            {item.user.home_address}
+                          </Text>
+                        </View>
+                        <TouchableOpacity>
+                          <Text style={styles.mapLink}>View map location</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.button}>
-                          <Text style={styles.buttonText}>CONFIRM</Text>
-                        </TouchableOpacity>
+                        <View style={styles.bookingCardContent}>
+                          <TouchableOpacity
+                            style={styles.button1}
+                            onPress={() => handleReject(item.id)}>
+                            <Text style={styles.buttonText1}>REJECT</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.button}
+                            onPress={() => handleConfirm(item.id)}>
+                            <Text style={styles.buttonText}>CONFIRM</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </>
             )}
           </>
@@ -227,14 +352,14 @@ const App = () => {
               <Loader />
             ) : completedError ? (
               <Text>An Error Occurred</Text>
-            ) : completed === null ? (
+            ) : completed === null || completed.data.length === 0 ? (
               <Empty />
             ) : (
               <>
                 {completed.data.map(item => (
                   <View style={styles.card} key={item.id}>
                     <Image
-                      source={{uri: item.service_image}}
+                      source={{uri: item.service.service_image}}
                       style={styles.cardImage}
                     />
                     <View style={styles.cardContent}>
@@ -243,21 +368,21 @@ const App = () => {
                           styles.cardTitle,
                           {color: isDarkMode ? '#FFF' : '#000'},
                         ]}>
-                        {item.provider.name}
+                        {item.user.name}
                       </Text>
                       <Text
                         style={[
                           styles.cardStatus,
                           {color: isDarkMode ? '#FFF' : '#000'},
                         ]}>
-                        {item.service_name}
+                        {item.service.service_name}
                       </Text>
                       <Text
                         style={[
                           styles.cardSubtitle,
                           {color: isDarkMode ? '#CCC' : '#666'},
                         ]}>
-                        {item.service_description}
+                        {item.service.sub_category}
                       </Text>
                       <View style={styles.cardFooter2}>
                         <Text
@@ -271,7 +396,13 @@ const App = () => {
                     </View>
                     <TouchableOpacity
                       style={styles.chatButton}
-                      onPress={handlechat}>
+                      onPress={() =>
+                        navigation.navigate('Chat', {
+                          chatId: '',
+                          providerId: item.user.email,
+                          providerName: item.user.name,
+                        })
+                      }>
                       <Icon
                         name="chat-processing-outline"
                         size={wp('7%')}
@@ -291,14 +422,14 @@ const App = () => {
               <Loader />
             ) : cancelledError ? (
               <Text>An Error Occurred</Text>
-            ) : cancelled === null ? (
+            ) : cancelled === null || cancelled.data.length === 0 ? (
               <Empty />
             ) : (
               <>
                 {cancelled.data.map(item => (
                   <View style={styles.card} key={item.id}>
                     <Image
-                      source={{uri: item.service_image}}
+                      source={{uri: item.service.service_image}}
                       style={styles.cardImage}
                     />
                     <View style={styles.cardContent}>
@@ -307,21 +438,21 @@ const App = () => {
                           styles.cardTitle1,
                           {color: isDarkMode ? '#FF0000' : '#FF0000'},
                         ]}>
-                        {item.provider.name}
+                        {item.user.name}
                       </Text>
                       <Text
                         style={[
                           styles.cardStatus1,
                           {color: isDarkMode ? '#FF0000' : '#FF0000'},
                         ]}>
-                        {item.service_name}
+                        {item.service.service_name}
                       </Text>
                       <Text
                         style={[
                           styles.cardSubtitle1,
                           {color: isDarkMode ? '#FF0000' : '#FF0000'},
                         ]}>
-                        {item.service_description}
+                        {item.description}
                       </Text>
                       <View style={styles.cardFooter}>
                         <Text
@@ -335,7 +466,13 @@ const App = () => {
                     </View>
                     <TouchableOpacity
                       style={styles.chatButton}
-                      onPress={handlechat}>
+                      onPress={() =>
+                        navigation.navigate('Chat', {
+                          chatId: '',
+                          providerId: item.user.email,
+                          providerName: item.user.name,
+                        })
+                      }>
                       <Icon
                         name="chat-processing-outline"
                         size={wp('7%')}
@@ -348,6 +485,13 @@ const App = () => {
             )}
           </>
         )}
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
       </ScrollView>
       <View style={[{marginTop: hp('2%')}]} />
       <View

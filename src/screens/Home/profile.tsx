@@ -61,7 +61,7 @@ const SettingsScreen: React.FC = () => {
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [isLogoutPopupVisible, setLogoutPopupVisible] = useState(false);
   const [isDarkModeEnabled, setDarkModeEnabled] = useState(isDarkMode);
-  const [isEnglishEnabled, setEnglishEnabled] = useState(isDarkMode);
+  const [isEnglishEnabled, setEnglishEnabled] = useState(true);
 
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: '',
@@ -242,6 +242,7 @@ const SettingsScreen: React.FC = () => {
                   <Text style={styles.selectedFileText}>
                     {governmentIdInfo.selectedFile}
                   </Text>
+                  <Text style={styles.label}>First Legal Name</Text>
                   <TextInput
                     style={[styles.input, isDarkMode && styles.darkInput]}
                     placeholder="First legal name"
@@ -254,6 +255,7 @@ const SettingsScreen: React.FC = () => {
                       })
                     }
                   />
+                  <Text style={styles.label}>Last Legal Name</Text>
                   <TextInput
                     style={[styles.input, isDarkMode && styles.darkInput]}
                     placeholder="Last legal name"
@@ -266,6 +268,7 @@ const SettingsScreen: React.FC = () => {
                       })
                     }
                   />
+                  <Text style={styles.label}>Email</Text>
                   <TextInput
                     style={[styles.input, isDarkMode && styles.darkInput]}
                     placeholder="Email address"
@@ -275,6 +278,7 @@ const SettingsScreen: React.FC = () => {
                       setProfileDetails({...profileDetails, email: text})
                     }
                   />
+                  <Text style={styles.label}>Phone Number</Text>
                   <View style={styles.phoneContainer}>
                     <TouchableOpacity
                       style={[
@@ -303,6 +307,7 @@ const SettingsScreen: React.FC = () => {
                       onChangeText={text => setPhoneNumber(text)}
                     />
                   </View>
+                  <Text style={styles.label}>Home Address</Text>
                   <TextInput
                     style={[styles.input, isDarkMode && styles.darkInput]}
                     placeholder="Home address"
@@ -327,22 +332,6 @@ const SettingsScreen: React.FC = () => {
                     styles.detailsContainer,
                     isDarkMode && styles.darkdetailsContainer,
                   ]}>
-                  <View style={styles.darkModeToggleContainer}>
-                    <Text
-                      style={[
-                        styles.sectionText,
-                        isDarkMode && styles.darkSectionText,
-                      ]}>
-                      Dark mode
-                    </Text>
-                    <Switch
-                      trackColor={{false: '#767577', true: '#12CCB7'}}
-                      thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
-                      ios_backgroundColor="#3e3e3e"
-                      onValueChange={handleDarkModeToggle}
-                      value={isDarkModeEnabled}
-                    />
-                  </View>
                   <TouchableOpacity
                     onPress={handlePrivacyPolicy}
                     style={[styles.section3, isDarkMode && styles.darkSection]}>
@@ -388,7 +377,7 @@ const SettingsScreen: React.FC = () => {
                       trackColor={{false: '#767577', true: '#12CCB7'}}
                       thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
                       ios_backgroundColor="#3e3e3e"
-                      onValueChange={handleEnglishToggle}
+                      disabled
                       value={isEnglishEnabled}
                     />
                   </View>

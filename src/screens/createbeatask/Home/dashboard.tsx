@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
+  ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,6 +18,12 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {useUserStore} from '../../../store/useUserStore';
 import {TextCount} from '../../Home/chat/masglist';
+import useFetch from '../../../hooks/useFetch';
+import {PendingTask, UpcomingService} from '../../../interfaces/apiResponses';
+import Empty from '../../../components/Empty';
+import {convertStringToArray} from '../../../utils/helperFunc';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../../../App';
 
 type CardProps = {
   children: React.ReactNode;
@@ -39,11 +46,40 @@ const getGreeting = () => {
   }
 };
 
-const HomeScreen: React.FC = () => {
+type UpcomingRes = {
+  message: string;
+  data: UpcomingService[];
+};
+
+type PendingTaskRes = {
+  message: string;
+  data: PendingTask[];
+};
+
+type Props = {
+  navigation: StackNavigationProp<RootStackParamList, 'dashboard'>;
+};
+
+const HomeScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const navigation = useNavigation();
+
   const {user} = useUserStore(state => state);
+  const {data, loading, error} = useFetch<UpcomingRes>(
+    '/upcoming-bookings',
+    'POST',
+    {
+      provider_id: user?.id,
+    },
+  );
+
+  const {
+    data: pendingData,
+    loading: pendingLoading,
+    error: pendingError,
+  } = useFetch<PendingTaskRes>('/pending-tasks', 'POST', {
+    provider_id: user?.id,
+  });
 
   const handleprofile = () => {
     navigation.navigate('ProfileSetup' as never);
@@ -80,7 +116,7 @@ const HomeScreen: React.FC = () => {
             styles.greeting,
             isDarkMode ? styles.darkText : styles.lightText,
           ]}>
-          {getGreeting()} {user?.name}
+          {getGreeting()} {user?.first_legal_name}
         </Text>
         <TouchableOpacity style={styles.settingsIcon} onPress={handlesetting}>
           <Ionicons
@@ -98,8 +134,191 @@ const HomeScreen: React.FC = () => {
         ]}>
         Upcoming bookings
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {[...Array(5)].map((_, index) => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{paddingBottom: 10}}>
+        {loading ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingLeft: 10,
+
+              width: wp('100%'),
+            }}>
+            <ActivityIndicator size="large" color="#12CCB7" />
+          </View>
+        ) : error || data?.data.length === 0 ? (
+          <>
+            <Empty height={hp('20%')} />
+          </>
+        ) : (
+          <>
+            {data?.data.map(item => {
+              const dates = convertStringToArray(item.dates_and_times);
+              return (
+                <Card
+                  key={item.id}
+                  style={[
+                    styles.bookingCard,
+                    isDarkMode ? styles.darkCard : styles.lightCard,
+                  ]}>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.category.category}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('Chat', {
+                          chatId: '',
+                          providerId: item.user.email,
+                          providerName: item.user.name,
+                        })
+                      }>
+                      <Icon
+                        name="chat-processing-outline"
+                        size={wp('5%')}
+                        color={isDarkMode ? 'white' : 'black'}
+                        style={styles.chatIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <Text
+                    style={[
+                      styles.cardSubtitle,
+                      isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
+                    ]}>
+                    {item.service.service_name}
+                  </Text>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      Date & Time:{' '}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {dates[0]} - {dates[dates.length - 1]}
+                    </Text>
+                  </View>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      Customer Name:{' '}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.user.name}
+                    </Text>
+                  </View>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      Specific info:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {' '}
+                      {item.description}
+                    </Text>
+                  </View>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      Location:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.user.home_address ? item.user.home_address : ''}
+                    </Text>
+                  </View>
+                  <TouchableOpacity>
+                    <Text style={styles.mapLink}>View map location</Text>
+                  </TouchableOpacity>
+                  <View style={styles.cardFooter}>
+                    <Text
+                      style={[
+                        styles.totalCostLabel,
+                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
+                      ]}>
+                      Total cost
+                    </Text>
+                    <Text
+                      style={[
+                        styles.totalCost,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      ${item.total_price_before_fee}
+                    </Text>
+                  </View>
+                  <View style={styles.cardFooter}>
+                    <Text
+                      style={[
+                        styles.totalCostLabel,
+                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
+                      ]}>
+                      Service Fee:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.totalCost,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      ${item.service_fee} (12%)
+                    </Text>
+                  </View>
+                  <View style={styles.cardFooter}>
+                    <Text
+                      style={[
+                        styles.totalCostLabel,
+                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
+                      ]}>
+                      Final You Receive:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.totalCost,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      ${item.final_total_price}
+                    </Text>
+                  </View>
+                </Card>
+              );
+            })}
+          </>
+        )}
+
+        {/* {[...Array(5)].map((_, index) => (
           <Card
             key={index}
             style={[
@@ -200,7 +419,7 @@ const HomeScreen: React.FC = () => {
               </Text>
             </View>
           </Card>
-        ))}
+        ))} */}
       </ScrollView>
 
       <Text
@@ -210,8 +429,90 @@ const HomeScreen: React.FC = () => {
         ]}>
         Pending tasks
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {[...Array(5)].map((_, index) => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{padding: 10, gap: 8}}>
+        {pendingLoading ? (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingLeft: 10,
+
+              width: wp('100%'),
+            }}>
+            <ActivityIndicator size="large" color="#12CCB7" />
+          </View>
+        ) : pendingError || pendingData?.data.length == 0 ? (
+          <Empty height={hp('20%')} />
+        ) : (
+          <>
+            {pendingData?.data.map(item => {
+              const dates = convertStringToArray(item.dates_and_times);
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    {width: wp('45%'), padding: wp('2%'), borderRadius: 10},
+                    isDarkMode ? styles.darkCard : styles.lightCard,
+                  ]}>
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.category.category}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('Chat', {
+                          chatId: '',
+                          providerId: item.user.email,
+                          providerName: item.user.name,
+                        })
+                      }>
+                      <Icon
+                        name="chat-processing-outline"
+                        size={wp('5%')}
+                        color={isDarkMode ? 'white' : 'black'}
+                        style={styles.chatIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.bookingCardContent}>
+                    <Text
+                      style={[
+                        styles.cardInfo,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.user.name}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
+                    {dates[0]}
+                  </Text>
+                  <Text
+                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
+                    {' '}
+                    -{' '}
+                  </Text>
+                  <Text
+                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
+                    {dates[dates.length - 1]}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        )}
+
+        {/* {[...Array(5)].map((_, index) => (
           <Card
             key={index}
             style={[
@@ -255,7 +556,7 @@ const HomeScreen: React.FC = () => {
               4:00pm
             </Text>
           </Card>
-        ))}
+        ))} */}
       </ScrollView>
 
       <View
@@ -390,7 +691,7 @@ const styles = StyleSheet.create({
   },
   bookingCard: {
     width: wp('85%'),
-    height: hp('40%'),
+    // height: hp('43%'),
   },
   taskCard: {
     width: wp('40%'),
@@ -410,6 +711,7 @@ const styles = StyleSheet.create({
     fontSize: wp('3.5%'),
     fontWeight: 'bold',
     alignSelf: 'center',
+    textTransform: 'capitalize',
   },
   darkText: {
     color: 'white',
@@ -444,9 +746,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: wp('0.2%'),
-    paddingTop: hp('1%'),
-    marginTop: hp('4%'),
+    gap: 4,
   },
   totalCostLabel: {
     fontSize: wp('3%'),

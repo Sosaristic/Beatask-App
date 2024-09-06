@@ -124,8 +124,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
       formData.append(key, value);
     }
 
-    console.log(formData);
-
     setShowSuccessModal({
       ...showSuccessModal,
       requestLoading: true,

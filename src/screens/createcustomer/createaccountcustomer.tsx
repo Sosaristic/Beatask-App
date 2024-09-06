@@ -23,6 +23,7 @@ import {makeApiRequest} from '../../utils/helpers';
 import {formatPhoneNumber} from '../createbeatask/createaccountbeatask';
 import {StackNavigationProp, StackScreenProps} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
+import {useUserStore} from '../../store/useUserStore';
 
 // Define the interface for the country object
 interface Country {
@@ -37,6 +38,7 @@ type Props = {
 const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
+  const {device_token} = useUserStore(state => state);
 
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [countryCode, setCountryCode] = useState('+1');
@@ -131,6 +133,7 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
         password,
         two_factor: twoFAChecked ? 1 : 0,
         is_service_provider: 0,
+        device_token,
       };
       if (!termsChecked) {
         ToastAndroid.showWithGravity(

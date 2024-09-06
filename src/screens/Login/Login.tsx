@@ -25,7 +25,7 @@ import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
 import {GoogleSignin, statusCodes} from '@react-native-community/google-signin';
 
-type LoginSuccessResponse = {
+export type LoginSuccessResponse = {
   data: User;
   msg: string;
   success: boolean;
@@ -38,7 +38,10 @@ type Props = {
 const Login: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const {login} = useUserStore(state => state.actions);
+  const {
+    actions: {login},
+    device_token,
+  } = useUserStore(state => state);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState({
@@ -103,12 +106,14 @@ const Login: React.FC<Props> = ({navigation}) => {
     });
 
     setLoginAttempts(prev => prev + 1);
+
     const {data, error} = await makeApiRequest<LoginSuccessResponse>(
       '/login',
       'POST',
       {
         email,
         password,
+        device_token,
       },
     );
     if (error) {

@@ -40,6 +40,8 @@ import {StackNavigationProp} from '@react-navigation/stack';
 import useFetch from '../../hooks/useFetch';
 import Empty from '../../components/Empty';
 import {useDebouncedCallback} from 'use-debounce';
+import notifee from '@notifee/react-native';
+import {Button} from 'react-native';
 
 const greetingTime = new Date().getHours();
 
@@ -190,6 +192,31 @@ const HomeScreen = ({navigation}: Props) => {
     setShowModal(true);
   };
 
+  async function onDisplayNotification() {
+    // Request permissions (required for iOS)
+    await notifee.requestPermission();
+
+    // Create a channel (required for Android)
+    const channelId = await notifee.createChannel({
+      id: 'default',
+      name: 'Default Channel',
+    });
+
+    // Display a notification
+    await notifee.displayNotification({
+      title: 'A Provider has accepted your request',
+      body: 'A Provider has accepted your booking request',
+      android: {
+        channelId,
+        // optional, defaults to 'ic_launcher'.
+        // pressAction is needed if you want the notification to open the app when pressed
+        pressAction: {
+          id: 'default',
+        },
+      },
+    });
+  }
+
   const closeSearchModal = () => {
     setShowModal(false);
   };
@@ -275,13 +302,13 @@ const HomeScreen = ({navigation}: Props) => {
     const payloadData: SingleServicePayload = {
       category_name: '',
       real_price: payload.service.real_price.toString(),
-      provider_id: payload.service.provider.id,
+      provider_id: payload.service.provider_id,
       service_id: payload.service_id,
       category_id: payload.service.category_id,
       service_name: payload.service.service_name,
       service_image: payload.service.service_image,
       provider_name: payload.service.provider_id,
-      sub_category_name: '',
+      sub_category_name: payload.service.sub_category,
       service_description: payload.service.service_description,
     };
 
@@ -298,15 +325,15 @@ const HomeScreen = ({navigation}: Props) => {
       service_name: payload.service_name,
       service_image: payload.service_image,
       provider_name: payload.provider.name,
-      sub_category_name: '',
+      sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
     navigation.navigate('singleservice', {data: payloadData});
   };
 
-  const handleWomenFeatured = (payload: WomenService) => {
+  const handleWomenFeatured = (payload: WomenenServiceType) => {
     const payloadData: SingleServicePayload = {
-      category_name: '',
+      category_name: payload.category.category,
       real_price: payload.real_price.toString(),
       provider_id: payload.provider_id,
       category_id: payload.category_id,
@@ -314,7 +341,7 @@ const HomeScreen = ({navigation}: Props) => {
       service_name: payload.service_name,
       service_image: payload.service_image,
       provider_name: '',
-      sub_category_name: '',
+      sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
     navigation.navigate('singleservice', {data: payloadData});
@@ -323,26 +350,17 @@ const HomeScreen = ({navigation}: Props) => {
   // Function to toggle like based on provider
 
   const womanDataComponent = () => {
-    if (womenServices === null && womenServiceLoading) return null;
+    if (
+      womenServices === null ||
+      (womenServices === undefined && womenServiceLoading)
+    )
+      return null;
 
-    let womenData = null;
-
-    if (womenServices !== null && !womenServiceLoading) {
-      const getServices = () => {
-        const testData: WomenService[] = [];
-
-        womenServices?.data?.forEach(item => {
-          testData.push(item.service_info);
-        });
-        return testData;
-      };
-      const dataMapped = getServices();
-      womenData = chunkArray(dataMapped, 2);
-    }
+    let womenData = chunkArray(womenServices?.data, 2);
 
     return (
       <View>
-        {womenData?.map((item, index) => (
+        {womenData.map(item => (
           <View
             key={new Date().getTime()}
             style={{
@@ -456,7 +474,7 @@ const HomeScreen = ({navigation}: Props) => {
               {searchedResults.length > 0 &&
                 searchedResults.map((option, index) => (
                   <TouchableOpacity
-                    key={index}
+                    key={Math.random()}
                     onPress={() => handleSearchResult(option)}>
                     <View style={styles.optionItem}>
                       <Text
@@ -504,7 +522,9 @@ const HomeScreen = ({navigation}: Props) => {
                 }>
                 <View style={styles.backgroundImage}>
                   <Image
-                    source={require('../../assets/images/category/Home1.jpg')}
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Home1%20(1).webp',
+                    }}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -525,7 +545,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/BUSINESS.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/BUSINESS.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Business</Text>
@@ -540,7 +562,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/It.jpg')}
+                  source={{
+                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554471/It_1_cvjo9d.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>IT and Graphic Design</Text>
@@ -555,7 +579,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/WELLNESS.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/WELLNESS.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Wellness</Text>
@@ -570,7 +596,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/PETS.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/PETS.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Pets</Text>
@@ -585,7 +613,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/Events.jpg')}
+                  source={{
+                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554623/Events_qtvps0.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Events</Text>
@@ -600,7 +630,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/Troubleshooting.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Troubleshooting.webp?updatedAt=1725551207520',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>
@@ -617,7 +649,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/Lessons.jpg')}
+                  source={{
+                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554746/Lessons_uqbknv.webp',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Lessons</Text>
@@ -632,7 +666,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/Personal.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Personal.webp?updatedAt=1725550542186',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Personal</Text>
@@ -647,7 +683,9 @@ const HomeScreen = ({navigation}: Props) => {
                   })
                 }>
                 <Image
-                  source={require('../../assets/images/category/Legal.jpg')}
+                  source={{
+                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Legal.webp?updatedAt=1725550306084',
+                  }}
                   style={{width: '100%', height: '100%', position: 'absolute'}}
                 />
                 <Text style={styles.categoryText}>Legal</Text>
@@ -673,7 +711,7 @@ const HomeScreen = ({navigation}: Props) => {
               alignContent: 'center',
               justifyContent: 'center',
             }}>
-            <Text>No Providers found</Text>
+            <Empty />
           </View>
         ) : (
           <Swiper
@@ -686,7 +724,7 @@ const HomeScreen = ({navigation}: Props) => {
             loop={true}>
             {chunkArray(featuredProviders, 2).map((item, index) => (
               <View
-                key={index}
+                key={Math.random()}
                 style={{
                   flexDirection: 'row',
                   gap: 8,
@@ -696,7 +734,7 @@ const HomeScreen = ({navigation}: Props) => {
                 }}>
                 {item.map(provider => (
                   <TouchableOpacity
-                    key={provider.id}
+                    key={Math.random()}
                     style={styles.providerCard}
                     onPress={() => handleprovider(provider.id)}>
                     <View style={styles.providerImageWrapper}>
@@ -744,7 +782,7 @@ const HomeScreen = ({navigation}: Props) => {
               alignContent: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{textAlign: 'center'}}>No most booked found</Text>
+            <Empty />
           </View>
         ) : (
           <Swiper
@@ -757,7 +795,7 @@ const HomeScreen = ({navigation}: Props) => {
             loop={true}>
             {chunkArray(mostBookedServices, 2).map((item, index) => (
               <View
-                key={index}
+                key={Math.random()}
                 style={{
                   flexDirection: 'row',
                   gap: 8,
@@ -767,12 +805,16 @@ const HomeScreen = ({navigation}: Props) => {
                 }}>
                 {item.map(service => (
                   <TouchableOpacity
-                    key={service.service_id}
+                    key={Math.random()}
                     style={{width: width * 0.6}}
                     onPress={() => handleMostBooked(service)}>
                     <View style={styles.providerImageWrapper1}>
                       <Image
-                        source={{uri: service.service.service_image as string}}
+                        source={{
+                          uri: service.service.service_image
+                            ? service.service.service_image
+                            : 'https://via.placeholder.com/150',
+                        }}
                         style={styles.fullImage1}
                       />
                       <Text
@@ -929,7 +971,7 @@ const HomeScreen = ({navigation}: Props) => {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text>No half price deals found</Text>
+            <Empty />
           </View>
         ) : (
           <Swiper
@@ -942,7 +984,7 @@ const HomeScreen = ({navigation}: Props) => {
             loop={true}>
             {chunkArray(halfPriceServices, 2).map((item, index) => (
               <View
-                key={new Date().getTime()}
+                key={Math.random()}
                 style={{
                   flexDirection: 'row',
                   gap: 8,
@@ -952,12 +994,16 @@ const HomeScreen = ({navigation}: Props) => {
                 }}>
                 {item.map(service => (
                   <TouchableOpacity
-                    key={service.id}
+                    key={Math.random()}
                     style={{width: '48%'}}
                     onPress={() => handleHalfPrice(service)}>
                     <View style={styles.providerImageWrapper1}>
                       <Image
-                        source={{uri: service.service_image as string}}
+                        source={{
+                          uri: service.service_image
+                            ? service.service_image
+                            : 'https://via.placeholder.com/150',
+                        }}
                         style={styles.fullImage1}
                       />
                     </View>
@@ -989,6 +1035,7 @@ const HomeScreen = ({navigation}: Props) => {
           </Swiper>
         )}
       </ScrollView>
+
       <TouchableOpacity style={styles.fab} onPress={handleFABPress}>
         <Icon name="briefcase-variant-outline" size={26} color="#fff" />
       </TouchableOpacity>

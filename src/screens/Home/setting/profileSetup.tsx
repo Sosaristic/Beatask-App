@@ -23,6 +23,7 @@ import {Formik, useFormikContext} from 'formik';
 import {ProviderValidationSchema} from '../../../components/forms/providerProfile';
 import {makeApiRequest} from '../../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../../components';
+import {LoginSuccessResponse} from '../../Login/Login';
 
 interface Country {
   dial_code: string;
@@ -40,14 +41,19 @@ type InitialValues = {
 const CreateAccountScreen = () => {
   const colorScheme = useColorScheme();
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
+  const {
+    user,
+    actions: {login},
+  } = useUserStore(state => state);
 
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [countryCode, setCountryCode] = useState('+1');
-  const [phoneNumber, setPhoneNumber] = useState('');
 
   const navigation = useNavigation();
-  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
-  const {user} = useUserStore(state => state);
+
+  const [imageUri, setImageUri] = useState<string | undefined>(
+    user?.profile_image || '',
+  );
   const [showSuccessModal, setShowSuccessModal] = useState({
     successTitle: 'Success',
     successMessage: 'Profile Updated',
@@ -81,7 +87,7 @@ const CreateAccountScreen = () => {
   const handleNextPress = async (values: InitialValues) => {
     const payload = {
       ...values,
-      phone_number: `${countryCode}${phoneNumber}`,
+      phone_number: `${countryCode}${values.phone_number}`,
       profile_image: imageUri,
     };
 
@@ -97,7 +103,7 @@ const CreateAccountScreen = () => {
       requestLoading: true,
       showModal: true,
     });
-    const {data, error} = await makeApiRequest(
+    const {data, error} = await makeApiRequest<LoginSuccessResponse>(
       `/update-user/${user?.id}`,
       'POST',
       formData,
@@ -122,6 +128,8 @@ const CreateAccountScreen = () => {
     }
 
     if (data) {
+      login(data.data);
+
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,

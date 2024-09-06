@@ -54,7 +54,7 @@ import withdraw from './src/screens/createbeatask/setting/withdraw';
 import withdraw1 from './src/screens/createbeatask/setting/withdraw1';
 import spiner from './src/screens/Home/setting/spiner';
 import {UploadTypes} from './src/navigation/types';
-import {User, useUserStore} from './src/store/useUserStore';
+
 import useChats from './src/hooks/useChats';
 import OtpScreen from './src/screens/OtpScreen';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -63,6 +63,8 @@ import {
   SingleServicePayload,
 } from './src/interfaces/apiResponses';
 import SingleServiceScreen from './src/screens/Home/setting/SingleServiceScreen';
+import messaging from '@react-native-firebase/messaging';
+import {useUserStore} from './src/store/useUserStore';
 
 // Define RootStackParamList with appropriate types
 export type RootStackParamList = {
@@ -149,7 +151,20 @@ const CustomerTabs = () => {
 const App = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const {
+    actions: {setDeviceToken},
+  } = useUserStore(state => state);
   useChats();
+
+  useEffect(() => {
+    (async () => {
+      await messaging().registerDeviceForRemoteMessages();
+
+      // Get the token
+      const token = await messaging().getToken();
+      if (token) setDeviceToken(token);
+    })();
+  }, []);
 
   useEffect(() => {
     GoogleSignin.configure({

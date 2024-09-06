@@ -153,6 +153,14 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.innerContainer}>
           <View style={styles.innerContainer}>
+            {messages?.length === 0 && (
+              <View>
+                <Text style={{textAlign: 'center', padding: 10}}>
+                  All Conversations will be shown here
+                </Text>
+              </View>
+            )}
+
             {messages.map((message, index) => {
               console.log('test message time', message.lastMessageTimestamp);
               const date = new Date(message.lastMessageTimestamp);

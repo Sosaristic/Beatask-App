@@ -26,6 +26,7 @@ import DocumentPicker, {
 import {customTheme} from '../../custom_theme/customTheme';
 import {Formik} from 'formik';
 import validationSchema from '../../components/forms/providerSignUpSchema';
+import {useUserStore} from '../../store/useUserStore';
 
 // Define the interface for the country object
 interface Country {
@@ -77,6 +78,7 @@ type initialValuesType = {
 const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
+  const {device_token} = useUserStore(state => state);
 
   const [isPickerVisible, setPickerVisible] = useState(false);
 
@@ -134,6 +136,7 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
       phone_number: formatPhoneNumber(countryCode, values.phone),
       two_factor: values.two_factor_authentication ? 1 : 0,
       is_service_provider: 1,
+      device_token,
       profile_image: image,
     };
     navigation.navigate('Upload', {
@@ -288,7 +291,7 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
                 onChangeText={handleChange('business_address')}
                 value={values.business_address}
                 style={styles.input}
-                placeholder="Last legal name"
+                placeholder="Business name"
                 placeholderTextColor="#999"
               />
               {errors.business_address && touched.business_address && (

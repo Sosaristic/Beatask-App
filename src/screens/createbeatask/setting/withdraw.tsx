@@ -119,7 +119,9 @@ const TransactionScreen: React.FC = () => {
         isDarkMode ? styles.containerDark : styles.containerLight
       }>
       <ImageBackground
-        source={require('../../../assets/images/category/bg.png')}
+        source={{
+          uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/bg.webp?updatedAt=1725550269784',
+        }}
         style={styles.balanceCard}
         imageStyle={styles.image}>
         <View style={styles.balanceContainer}>

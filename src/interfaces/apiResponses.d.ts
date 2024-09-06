@@ -36,6 +36,36 @@ export interface FeaturedProvider {
   profile_photo_url: string;
 }
 
+export type ServiceType = {
+  id: number | string;
+  category_id: string;
+  service_name: string;
+  sub_category: string;
+  provider_id: string | number;
+  years_of_experience: string;
+  experience_document: string;
+  service_image: string;
+  real_price: string;
+  discounted_price: string;
+  service_description: string;
+  availability_dates_times: string;
+  review_rating: number;
+  is_completed: boolean | null;
+  created_at: string;
+  updated_at: string;
+};
+
+interface Category {
+  id: number;
+  category: string;
+  sub_category: string;
+  provider_id: number;
+  service_id: string;
+  category_image: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface MostBookedInfo {
   id: number;
   category_id: string;
@@ -61,6 +91,7 @@ export interface MostBookedService {
   service: {
     id: number;
     category_id: string;
+    sub_category: string;
     service_name: string;
     provider_id: string;
     years_of_experience: string;
@@ -81,8 +112,9 @@ export interface MostBookedService {
 export interface HalfPrice {
   id: number;
   category_id: string;
+  sub_category: string;
   service_name: string;
-  provider_id: string | number;
+  provider_id: string;
   years_of_experience: string;
   experience_document: string;
   service_image: string;
@@ -137,7 +169,6 @@ interface Provider {
 
 export interface BookedServiceType {
   id: number;
-  category: string;
   sub_category: string;
   provider_id: string;
   years_of_experience: string;
@@ -151,6 +182,8 @@ export interface BookedServiceType {
   created_at: string;
   updated_at: string;
   provider: Provider;
+  service: ServiceType;
+  category: Category;
 }
 
 type Review = {
@@ -211,24 +244,6 @@ export interface UserReview {
   provider: Provider;
 }
 
-export type ServiceType = {
-  id: number | string;
-  category_id: string;
-  service_name: string;
-  provider_id: string | number;
-  years_of_experience: string;
-  experience_document: string;
-  service_image: string;
-  real_price: string;
-  discounted_price: string;
-  service_description: string;
-  availability_dates_times: string;
-  review_rating: number;
-  is_completed: boolean | null;
-  created_at: string;
-  updated_at: string;
-};
-
 export interface Filter {
   id: number | string;
   category: string;
@@ -240,17 +255,6 @@ export interface Filter {
   updated_at: string;
   service: ServiceType[];
   provider: Provider;
-}
-
-interface Category {
-  id: number;
-  category: string;
-  sub_category: string;
-  provider_id: number;
-  service_id: string;
-  category_image: string | null;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface SearchedResults {
@@ -292,15 +296,23 @@ export interface WomenService {
 
 export type WomenenServiceType = {
   id: string | number;
-  category: string;
+  category_id: string;
   sub_category: string;
-  provider_id: string | number;
-  service_id: string | number;
-  category_image: null;
+  service_name: string;
+  provider_id: string;
+  years_of_experience: string;
+  experience_document: string;
+  service_image: string;
+  real_price: string;
+  discounted_price: string;
+  service_description: string;
+  availability_dates_times: string;
+  review_rating: number;
+  is_completed: number;
   created_at: string;
   updated_at: string;
   provider: Provider;
-  service_info: WomenService;
+  category: Category;
 };
 
 export type SingleServicePayload = {
@@ -312,7 +324,7 @@ export type SingleServicePayload = {
   sub_category_name: string;
   real_price: string;
   service_description: string;
-  provider_id: string | number;
+  provider_id: string;
   service_id: number | string;
 };
 
@@ -357,7 +369,8 @@ export type RequestedService = {
 };
 
 export interface UnsuccessfulRequest extends ServiceType {
-  provider: Provider;
+  user: Provider;
+  service: ServiceType;
 }
 
 export interface CompletedServiceProvider extends UnsuccessfulRequest {
@@ -374,7 +387,68 @@ export interface IncomingService {
   is_paid: number;
   created_at: string; // ISO 8601 date string
   updated_at: string; //
-  provider: Provider;
+  user: Provider;
   service: ServiceType;
   category: Category;
 }
+
+export type ListReviewsType = {
+  id: number | string;
+  user_id: string;
+  provider_id: string;
+  rating_stars: string;
+  review_message: string;
+  created_at: null | string;
+  updated_at: null | string;
+  provider: Provider;
+  user: Provider;
+};
+
+export type FetchedCategory = {
+  id: number | string;
+  category: string;
+  sub_category: string[];
+  provider_id: string | number;
+  service_id: string;
+  category_image: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UpcomingService = {
+  id: number;
+  provider_id: string | number;
+  service_id: string | number;
+  category_id: string | number;
+  dates_and_times: string;
+  final_total_price: number;
+  total_price_before_fee: number;
+  service_fee: number;
+  description: string;
+  is_paid: number;
+  is_confirm: number;
+  created_at: string;
+  updated_at: string;
+  provider: Provider;
+  service: ServiceType;
+  category: Category;
+  user: Provider;
+};
+
+export type PendingTask = {
+  id: number;
+  provider_id: string | number;
+  service_id: string | number;
+  category_id: string | number;
+  dates_and_times: string;
+  description: string;
+  is_paid: number;
+  is_confirm: number;
+  is_completed: number;
+  created_at: string;
+  updated_at: string;
+
+  service: ServiceType;
+  category: Category;
+  user: Provider;
+};

@@ -14,9 +14,9 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {useNavigation} from '@react-navigation/native';
+
 import {BookedServiceType} from '../../../interfaces/apiResponses';
-import {makeApiRequest} from '../../../utils/helpers';
+
 import {ActivityIndicator} from 'react-native-paper';
 import useFetch from '../../../hooks/useFetch';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -37,24 +37,32 @@ type BookedServiceRes = {
 const App = ({navigation}: Prop) => {
   const [selectedTab, setSelectedTab] = useState('Completed');
   const isDarkMode = useColorScheme() === 'dark';
+  const {user} = useUserStore(state => state);
   const {unReadMessages} = useUserStore(state => state);
+  console.log(user?.id);
 
   const {
     data: bookedSuccess,
     error: bookedSuccessError,
     loading: bookedSuccessIsLoading,
-  } = useFetch<BookedServiceRes>('/completed-services');
+  } = useFetch<BookedServiceRes>('/completed-services', 'POST', {
+    user_id: user?.id,
+  });
   const {
     data: bookedAwaiting,
     error: bookedAwaitingError,
     loading: bookedAwaitingIsLoading,
-  } = useFetch<BookedServiceRes>('/awaiting-services');
+  } = useFetch<BookedServiceRes>('/awaiting-services', 'POST', {
+    user_id: user?.id,
+  });
 
   const {
     data: bookedUnsuccess,
     error: bookedUnsuccessError,
     loading: bookedUnsuccessIsLoading,
-  } = useFetch<BookedServiceRes>('/unsuccessful-services');
+  } = useFetch<BookedServiceRes>('/unsuccessful-services', 'POST', {
+    user_id: user?.id,
+  });
 
   const handleProfile = () => {
     navigation.navigate('Profile' as never);
@@ -72,6 +80,8 @@ const App = ({navigation}: Prop) => {
   const handlebooked = () => {
     navigation.navigate('Booked' as never);
   };
+
+  console.log(bookedAwaiting);
 
   return (
     <View
@@ -121,23 +131,29 @@ const App = ({navigation}: Prop) => {
                 {bookedSuccess.data.map((item, index) => (
                   <View style={styles.card} key={item.id}>
                     <Image
-                      source={{uri: item.service_image as string}}
+                      source={{uri: item.service.service_image as string}}
                       style={styles.cardImage}
                     />
                     <View style={styles.cardContent}>
                       <Text
                         style={[
                           styles.cardTitle,
-                          {color: isDarkMode ? '#FFF' : '#000'},
+                          {
+                            color: isDarkMode ? '#FFF' : '#000',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.category}
+                        {item.category.category}
                       </Text>
                       <Text
                         style={[
                           styles.cardSubtitle,
-                          {color: isDarkMode ? '#CCC' : '#666'},
+                          {
+                            color: isDarkMode ? '#CCC' : '#666',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.sub_category}
+                        {item.service.sub_category}
                       </Text>
                       <Text
                         style={[
@@ -193,23 +209,29 @@ const App = ({navigation}: Prop) => {
                 {bookedUnsuccess.data.map((item, index) => (
                   <View style={styles.card} key={item.id}>
                     <Image
-                      source={{uri: item.service_image as string}}
+                      source={{uri: item.service.service_image as string}}
                       style={styles.cardImage}
                     />
                     <View style={styles.cardContent}>
                       <Text
                         style={[
                           styles.cardTitle,
-                          {color: isDarkMode ? '#FFF' : '#000'},
+                          {
+                            color: isDarkMode ? '#FFF' : '#000',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.category}
+                        {item.category.category}
                       </Text>
                       <Text
                         style={[
                           styles.cardSubtitle,
-                          {color: isDarkMode ? '#CCC' : '#666'},
+                          {
+                            color: isDarkMode ? '#CCC' : '#666',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.sub_category}
+                        {item.service.sub_category}
                       </Text>
                       <Text
                         style={[
@@ -272,23 +294,29 @@ const App = ({navigation}: Prop) => {
                 {bookedAwaiting.data.map(item => (
                   <View style={styles.card} key={item.id}>
                     <Image
-                      source={{uri: item.service_image as string}}
+                      source={{uri: item.service.service_image as string}}
                       style={styles.cardImage}
                     />
                     <View style={styles.cardContent}>
                       <Text
                         style={[
                           styles.cardTitle,
-                          {color: isDarkMode ? '#FFF' : '#000'},
+                          {
+                            color: isDarkMode ? '#FFF' : '#000',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.category}
+                        {item.category.category}
                       </Text>
                       <Text
                         style={[
                           styles.cardSubtitle,
-                          {color: isDarkMode ? '#CCC' : '#666'},
+                          {
+                            color: isDarkMode ? '#CCC' : '#666',
+                            textTransform: 'capitalize',
+                          },
                         ]}>
-                        {item.sub_category}
+                        {item.service.sub_category}
                       </Text>
                       <Text
                         style={[
