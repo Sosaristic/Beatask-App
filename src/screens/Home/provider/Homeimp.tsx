@@ -28,6 +28,7 @@ import {makeApiRequest} from '../../../utils/helpers';
 import Empty from '../../../components/Empty';
 import {SortFilter} from '../../../interfaces/apiResponses';
 import FilterModal from '../../../components/FilterModal';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 interface Item {
   id: string;
@@ -149,7 +150,10 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
         <Text style={[styles.name, isDarkMode && styles.textDark]}>
           {`${item.provider.name}`}
         </Text>
-        <Text style={[styles.description, isDarkMode && styles.textDark]}>
+        <Text
+          numberOfLines={3}
+          ellipsizeMode="tail"
+          style={[styles.description, isDarkMode && styles.textDark]}>
           {item?.service_description}
         </Text>
         <View style={styles.ratingContainer}>
@@ -172,7 +176,11 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
         ${item?.real_price}
       </Text> */}
         <TouchableOpacity
-          style={[styles.button, isDarkMode && styles.buttonDark]}
+          style={[
+            styles.button,
+            isDarkMode && styles.buttonDark,
+            {marginTop: 'auto'},
+          ]}
           onPress={() => handleView(item)}>
           <Text style={styles.buttonText}>VIEW</Text>
         </TouchableOpacity>
@@ -204,73 +212,75 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
   console.log('filter data', data);
 
   return (
-    <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <FlatList
-        data={data || []}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.list}
-      />
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setSortVisible(!sortVisible)}>
-          <Icon name="sort" size={24} color="#fff" />
-          <Text style={styles.footerButtonText}>SORT</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => setOpenFilterModal(true)}>
-          <Icon name="filter-variant" size={24} color="#fff" />
-          <Text style={styles.footerButtonText}>FILTERS</Text>
-        </TouchableOpacity>
-      </View>
-      <Modal visible={sortVisible} transparent={true} animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeading}>
-              <Text style={styles.modalHeadingText}>Sort by</Text>
-              <TouchableOpacity onPress={() => setSortVisible(false)}>
-                <Icon name="close" size={24} color="#010A0C" />
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <View style={[styles.container, isDarkMode && styles.containerDark]}>
+        <FlatList
+          data={data || []}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.list}
+        />
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() => setSortVisible(!sortVisible)}>
+            <Icon name="sort" size={24} color="#fff" />
+            <Text style={styles.footerButtonText}>SORT</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() => setOpenFilterModal(true)}>
+            <Icon name="filter-variant" size={24} color="#fff" />
+            <Text style={styles.footerButtonText}>FILTERS</Text>
+          </TouchableOpacity>
+        </View>
+        <Modal visible={sortVisible} transparent={true} animationType="slide">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeading}>
+                <Text style={styles.modalHeadingText}>Sort by</Text>
+                <TouchableOpacity onPress={() => setSortVisible(false)}>
+                  <Icon name="close" size={24} color="#010A0C" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                onPress={() => handleSortChange('newest_listing')}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Newest listing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleSortChange('most_jobs_completed')}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Most jobs completed</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleSortChange('best_reviews')}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Best reviews</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleSortChange('high_to_low_price')}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>High to low price</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleSortChange('low_to_high_price')}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Low to high price</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => handleSortChange('newest_listing')}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Newest listing</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleSortChange('most_jobs_completed')}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Most jobs completed</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleSortChange('best_reviews')}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Best reviews</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleSortChange('high_to_low_price')}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>High to low price</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleSortChange('low_to_high_price')}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Low to high price</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <FilterModal
-        open={openFilterModal}
-        onClose={() => setOpenFilterModal(false)}
-        category_name={routeData.category_name}
-        handleFilterChange={handleFilterChange}
-      />
-    </View>
+        <FilterModal
+          open={openFilterModal}
+          onClose={() => setOpenFilterModal(false)}
+          category_name={routeData.category_name}
+          handleFilterChange={handleFilterChange}
+        />
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 

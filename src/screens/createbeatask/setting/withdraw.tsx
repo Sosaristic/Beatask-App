@@ -14,6 +14,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import {useNavigation} from '@react-navigation/native';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 interface TransactionCardProps {
   type: 'withdrawal' | 'fee' | 'received';
@@ -114,96 +115,98 @@ const TransactionScreen: React.FC = () => {
     navigation.navigate('withdraw1' as never);
   };
   return (
-    <ScrollView
-      contentContainerStyle={
-        isDarkMode ? styles.containerDark : styles.containerLight
-      }>
-      <ImageBackground
-        source={{
-          uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/bg.webp?updatedAt=1725550269784',
-        }}
-        style={styles.balanceCard}
-        imageStyle={styles.image}>
-        <View style={styles.balanceContainer}>
-          <Text style={styles.balanceText}>Available balance</Text>
-          <TouchableOpacity onPress={toggleBalanceVisibility}>
-            <Icon
-              name={balanceVisible ? 'eye-off' : 'eye'}
-              color="#12CCB7"
-              size={20}
-              style={styles.eyeIcon}
-            />
+    <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={
+          isDarkMode ? styles.containerDark : styles.containerLight
+        }>
+        <ImageBackground
+          source={{
+            uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/bg.webp?updatedAt=1725550269784',
+          }}
+          style={styles.balanceCard}
+          imageStyle={styles.image}>
+          <View style={styles.balanceContainer}>
+            <Text style={styles.balanceText}>Available balance</Text>
+            <TouchableOpacity onPress={toggleBalanceVisibility}>
+              <Icon
+                name={balanceVisible ? 'eye-off' : 'eye'}
+                color="#12CCB7"
+                size={20}
+                style={styles.eyeIcon}
+              />
+            </TouchableOpacity>
+          </View>
+          <View>
+            <Text style={styles.balanceAmount}>
+              {balanceVisible ? '$3,578' : '****'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.withdrawButton}
+            onPress={handlewithdraw1}>
+            <Text style={styles.withdrawText}>WITHDRAW</Text>
           </TouchableOpacity>
-        </View>
-        <View>
-          <Text style={styles.balanceAmount}>
-            {balanceVisible ? '$3,578' : '****'}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.withdrawButton}
-          onPress={handlewithdraw1}>
-          <Text style={styles.withdrawText}>WITHDRAW</Text>
-        </TouchableOpacity>
-      </ImageBackground>
+        </ImageBackground>
 
-      <View style={styles.transactionHistory}>
-        <Text
-          style={[
-            styles.historyTitle,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          Transaction history
-        </Text>
-        <Text
-          style={[
-            styles.historySubtitle,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          June 2024
-        </Text>
-        <Text
-          style={[
-            styles.historyInOut,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          In: $5,178 Out: $1,600
-        </Text>
-        <TouchableOpacity style={styles.arrowButton}>
-          <Icon name="chevron-right" color="#00f2ea" size={20} />
-        </TouchableOpacity>
-        <TransactionCard
-          type="withdrawal"
-          amount="-1,600"
-          status="Successful"
-          date="Jul 2nd, 11:30:16"
-        />
-        <TransactionCard
-          type="withdrawal"
-          amount="-1,600"
-          status="Unsuccessful"
-          date="Jul 2nd, 11:30:16"
-        />
-        <TransactionCard
-          type="fee"
-          amount="20"
-          status="Successful"
-          date="Jul 2nd, 11:30:16"
-        />
-        <TransactionCard
-          type="received"
-          amount="2,000"
-          status="Successful"
-          date="Jul 2nd, 11:30:16"
-        />
-        <TransactionCard
-          type="received"
-          amount="3,178"
-          status="Successful"
-          date="Jul 2nd, 11:30:16"
-        />
-      </View>
-    </ScrollView>
+        <View style={styles.transactionHistory}>
+          <Text
+            style={[
+              styles.historyTitle,
+              isDarkMode ? styles.textDark : styles.textLight,
+            ]}>
+            Transaction history
+          </Text>
+          <Text
+            style={[
+              styles.historySubtitle,
+              isDarkMode ? styles.textDark : styles.textLight,
+            ]}>
+            June 2024
+          </Text>
+          <Text
+            style={[
+              styles.historyInOut,
+              isDarkMode ? styles.textDark : styles.textLight,
+            ]}>
+            In: $5,178 Out: $1,600
+          </Text>
+          <TouchableOpacity style={styles.arrowButton}>
+            <Icon name="chevron-right" color="#00f2ea" size={20} />
+          </TouchableOpacity>
+          <TransactionCard
+            type="withdrawal"
+            amount="-1,600"
+            status="Successful"
+            date="Jul 2nd, 11:30:16"
+          />
+          <TransactionCard
+            type="withdrawal"
+            amount="-1,600"
+            status="Unsuccessful"
+            date="Jul 2nd, 11:30:16"
+          />
+          <TransactionCard
+            type="fee"
+            amount="20"
+            status="Successful"
+            date="Jul 2nd, 11:30:16"
+          />
+          <TransactionCard
+            type="received"
+            amount="2,000"
+            status="Successful"
+            date="Jul 2nd, 11:30:16"
+          />
+          <TransactionCard
+            type="received"
+            amount="3,178"
+            status="Successful"
+            date="Jul 2nd, 11:30:16"
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaViewContainer>
   );
 };
 

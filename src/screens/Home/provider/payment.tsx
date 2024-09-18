@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -11,34 +11,54 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import {RadioButton} from 'react-native-paper';
-import Icon from 'react-native-vector-icons/Ionicons';
-import {RouteProp, useNavigation} from '@react-navigation/native';
+import {RadioButton, useTheme, Text as PaperText} from 'react-native-paper';
+import {RouteProp} from '@react-navigation/native';
 import {makeApiRequest} from '../../../utils/helpers';
-import {CustomErrorModal, CustomModal} from '../../../components';
+import {CustomErrorModal, CustomModal, Loader} from '../../../components';
 import useFetch from '../../../hooks/useFetch';
 import {BookingPriceResponse} from '../../../interfaces/apiResponses';
 import {RootStackParamList} from '../../../../App';
+
+import {useStripe} from '@stripe/stripe-react-native';
+import {customTheme} from '../../../custom_theme/customTheme';
+import {StackNavigationProp} from '@react-navigation/stack';
 import {useUserStore} from '../../../store/useUserStore';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'payment'>;
+  navigation: StackNavigationProp<RootStackParamList, 'payment'>;
 };
 
-const PaymentScreen: React.FC<Props> = ({route}) => {
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const {user} = useUserStore(state => state);
+type StripRes = {
+  customer: string;
+  paymentIntent: string;
+  error: boolean;
+  ephemeralKey: string;
+  publishableKey: string;
+};
+
+const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
+  const [selectedMethod, setSelectedMethod] = useState<string | null>('stripe');
+
   const colorScheme = useColorScheme();
   const windowWidth = Dimensions.get('window').width;
   const {data: serviceData} = route.params;
   const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
-  const navigation = useNavigation();
+  const [sheetLoading, setSheetLoading] = useState(false);
+  const {user} = useUserStore(state => state);
+
+  const {colors} = useTheme();
+
+  const {initPaymentSheet, presentPaymentSheet} = useStripe();
   const {loading, error, data} = useFetch<BookingPriceResponse>(
     '/get-service-price',
     'POST',
     {id: serviceData.service_id},
   );
+
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: '',
     errorMessage: '',
@@ -53,50 +73,26 @@ const PaymentScreen: React.FC<Props> = ({route}) => {
     showModal: false,
   });
 
-  const handleSend = async () => {
-    setShowSuccessModal({
-      ...showSuccessModal,
-      requestLoading: true,
-      showModal: true,
-    });
-    const {data, error} = await makeApiRequest('/book-services', 'POST', {
-      provider_id: 2,
-      service_id: 4,
-      category_id: 1,
-      dates_and_times: [new Date()],
-      description: 'test',
-      user_id: user?.id,
-    });
-
-    if (error) {
-      setShowSuccessModal({
-        ...showSuccessModal,
-        requestLoading: false,
-        showModal: false,
-      });
-      setShowErrorModal({
-        errorTitle: 'Unable to Book Provider',
-        errorMessage: error.msg,
-        isModalOpen: true,
-      });
+  const getDetails = async (): Promise<StripRes | undefined> => {
+    const {data: apiRes, error: errRes} = await makeApiRequest<StripRes>(
+      '/stripe',
+      'POST',
+      {
+        service_id: serviceData.service_id,
+        provider_id: serviceData.provider_id,
+        total_price: data?.total_price,
+        user_id: user?.id,
+      },
+    );
+    if (apiRes) {
+      return {
+        customer: apiRes.customer,
+        paymentIntent: apiRes.paymentIntent,
+        error: apiRes.error,
+        ephemeralKey: apiRes.ephemeralKey,
+        publishableKey: apiRes.publishableKey,
+      };
     }
-    if (data) {
-      setShowSuccessModal({
-        ...showSuccessModal,
-        requestLoading: false,
-        showModal: true,
-      });
-
-      setTimeout(() => {
-        setShowSuccessModal({
-          ...showSuccessModal,
-          showModal: false,
-        });
-        navigation.navigate('Home' as never);
-      }, 2000);
-    }
-
-    // You can also perform other actions upon sending here
   };
 
   const isDarkMode = colorScheme === 'dark';
@@ -119,99 +115,126 @@ const PaymentScreen: React.FC<Props> = ({route}) => {
     );
   }
 
+  const openPaymentSheet = async () => {
+    const res = await getDetails();
+
+    if (res === undefined) return;
+
+    const {error: iniError, paymentOption} = await initPaymentSheet({
+      merchantDisplayName: 'Beatask',
+      customerId: res.customer,
+      customerEphemeralKeySecret: res.ephemeralKey,
+      paymentIntentClientSecret: res.paymentIntent,
+      // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
+      //methods that complete payment after a delay, like SEPA Debit and Sofort.
+      allowsDelayedPaymentMethods: true,
+      defaultBillingDetails: {
+        name: 'Jane Doe',
+      },
+    });
+
+    if (iniError) {
+      Alert.alert('Something went wrong in init');
+      return;
+    }
+
+    setSheetLoading(true);
+
+    const {error} = await presentPaymentSheet();
+    if (error) {
+      setSheetLoading(false);
+    } else {
+      navigation.replace('success', {redirectTo: 'Home'});
+      setSheetLoading(false);
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>
-        Select the payment method you want to use
-      </Text>
+    <SafeAreaViewContainer>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>
+          Select the payment method you want to use
+        </Text>
 
-      <TouchableOpacity
-        style={styles.paymentOption}
-        onPress={() => setSelectedMethod('PayPal')}>
-        <Icon name="logo-paypal" size={windowWidth * 0.1} color="#0070BA" />
-        <Text style={styles.paymentText}>PayPal</Text>
-        <RadioButton
-          value="PayPal"
-          status={selectedMethod === 'PayPal' ? 'checked' : 'unchecked'}
-          onPress={() => setSelectedMethod('PayPal')}
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.paymentOption}
-        onPress={() => setSelectedMethod('GooglePay')}>
-        <Image
-          source={require('../../../assets/images/google.png')}
-          style={styles.modalIcon}
-        />
-        <Text style={styles.paymentText}>Google Pay</Text>
-        <RadioButton
-          value="GooglePay"
-          status={selectedMethod === 'GooglePay' ? 'checked' : 'unchecked'}
-          onPress={() => setSelectedMethod('GooglePay')}
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.paymentOption}
-        onPress={() => setSelectedMethod('ApplePay')}>
-        <Icon name="logo-apple" size={windowWidth * 0.1} color="#000" />
-        <Text style={styles.paymentText}>Apple Pay</Text>
-        <RadioButton
-          value="ApplePay"
-          status={selectedMethod === 'ApplePay' ? 'checked' : 'unchecked'}
-          onPress={() => setSelectedMethod('ApplePay')}
-        />
-      </TouchableOpacity>
-
-      <View style={styles.totalCostContainer}>
-        <View style={styles.costRow}>
-          <Text style={styles.costLabel}>Booking fee</Text>
-          <Text style={styles.costValue}>${data?.beatask_service_fee}</Text>
-        </View>
-        <View style={styles.costRow}>
-          <Text style={styles.costLabel}>Service</Text>
-          <Text style={styles.costValue}>${data?.service_price}</Text>
-        </View>
-
-        <View style={styles.costRow}>
-          <Text style={styles.costLabelTotal}>Total</Text>
-          <Text style={styles.costValueTotal}>${data?.total_price}</Text>
-        </View>
-      </View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-        }}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Image
-              source={require('../../../assets/images/verified.png')}
-              style={styles.modalIcon}
+        <TouchableOpacity
+          style={styles.paymentOption}
+          onPress={() => setSelectedMethod('GooglePay')}>
+          <Image
+            source={require('../../../assets/images/stripe-s.png')}
+            style={styles.modalIcon}
+          />
+          <PaperText variant="titleLarge" style={{marginLeft: 20}}>
+            Stripe
+          </PaperText>
+          <View style={{marginLeft: 'auto'}}>
+            <RadioButton
+              value="stripe"
+              status={selectedMethod === 'stripe' ? 'checked' : 'unchecked'}
+              onPress={() => setSelectedMethod('stripe')}
             />
-            <Text style={styles.modalText}>Booking successful</Text>
-            <Text style={styles.modalSubText}>
-              Payment successful, and booking confirmed. Redirecting to
-              homepage.
-            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.totalCostContainer}>
+          <View style={styles.costRow}>
+            <Text style={styles.costLabel}>Booking fee</Text>
+            <Text style={styles.costValue}>${data?.beatask_service_fee}</Text>
+          </View>
+          <View style={styles.costRow}>
+            <Text style={styles.costLabel}>Service</Text>
+            <Text style={styles.costValue}>${data?.service_price}</Text>
+          </View>
+
+          <View style={styles.costRow}>
+            <Text style={styles.costLabelTotal}>Total</Text>
+            <Text style={styles.costValueTotal}>${data?.total_price}</Text>
           </View>
         </View>
-      </Modal>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(false);
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Image
+                source={require('../../../assets/images/verified.png')}
+                style={styles.modalIcon}
+              />
+              <Text style={styles.modalText}>Booking successful</Text>
+              <Text style={styles.modalSubText}>
+                Payment successful, and booking confirmed. Redirecting to
+                homepage.
+              </Text>
+            </View>
+          </View>
+        </Modal>
 
-      <TouchableOpacity style={styles.payButton} onPress={handleSend}>
-        <Text style={styles.payButtonText}>PAY</Text>
-      </TouchableOpacity>
-      <CustomModal {...showSuccessModal} />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </ScrollView>
+        <TouchableOpacity
+          style={[
+            styles.payButton,
+            {
+              backgroundColor: !selectedMethod
+                ? 'gray'
+                : customTheme.primaryColor,
+            },
+          ]}
+          disabled={!selectedMethod}
+          onPress={openPaymentSheet}>
+          <Text style={styles.payButtonText}>PAY</Text>
+        </TouchableOpacity>
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
+        {sheetLoading && <Loader />}
+      </ScrollView>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -230,7 +253,7 @@ const createStyles = (isDarkMode: boolean, windowWidth: number) =>
     paymentOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDarkMode ? '#fff' : '#FFF',
+      backgroundColor: isDarkMode ? '#333' : '#FFF',
       padding: windowWidth * 0.02,
       borderRadius: windowWidth * 0.02,
       marginBottom: windowWidth * 0.034,

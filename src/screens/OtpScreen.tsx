@@ -53,7 +53,9 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
       title:
         type === 'email-verify'
           ? 'Email Verification'
-          : 'Two Factor Authentication',
+          : type === '2fa'
+          ? 'Two Factor Authentication'
+          : 'OTP Verification',
     });
   }, [type]);
 
@@ -74,7 +76,8 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
   const handleNextPress = async () => {
     setShowModal(true);
 
-    console.log(otp);
+    const verificationLink =
+      type === 'forgot-password' ? '/forget-password-verified' : '/verified';
 
     setShowSuccessModal({
       ...showSuccessModal,
@@ -82,7 +85,7 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
       showModal: true,
     });
 
-    const {data, error} = await makeApiRequest('/verified', 'POST', {
+    const {data, error} = await makeApiRequest(verificationLink, 'POST', {
       email,
       otp,
     });
@@ -106,7 +109,10 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
         requestLoading: false,
         showModal: true,
         successTitle: 'Background check',
-        successMessage: 'Your account is now fully active. ',
+        successMessage:
+          type === 'forgot-password'
+            ? 'Otp verified successfully. Please reset your password.'
+            : 'Your account is now fully active. ',
         loadingMessage: 'Background check is in progress. Please hold on.',
       });
       otpRef.current?.clear();
@@ -115,6 +121,11 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
           ...showSuccessModal,
           showModal: false,
         });
+
+        if (type === 'forgot-password') {
+          navigation.replace('resetPassword', {email});
+          return;
+        }
 
         if (type === '2fa') {
           if (is_service_provider === 1) {
@@ -215,38 +226,43 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
           }}
         />
       </View>
-      <View style={styles.resendContainer}>
-        {!showResendButton ? (
-          <Text>
-            <Text
-              style={[
-                styles.resendLabelText,
-                colorScheme === 'dark' ? styles.darkText : styles.lightText,
-              ]}>
-              Resend code
+
+      {type !== 'forgot-password' ? (
+        <View style={styles.resendContainer}>
+          {!showResendButton ? (
+            <Text>
+              <Text
+                style={[
+                  styles.resendLabelText,
+                  colorScheme === 'dark' ? styles.darkText : styles.lightText,
+                ]}>
+                Resend code
+              </Text>
+              <Text style={styles.resendLabelspace}> </Text>
+              <Text
+                style={[
+                  styles.countdownText,
+                  colorScheme === 'dark' ? styles.darkText : styles.lightText,
+                ]}>
+                {Math.floor(resendTimer / 60)}:
+                {resendTimer % 60 < 10 ? '0' : ''}
+                {resendTimer % 60}
+              </Text>
             </Text>
-            <Text style={styles.resendLabelspace}> </Text>
-            <Text
-              style={[
-                styles.countdownText,
-                colorScheme === 'dark' ? styles.darkText : styles.lightText,
-              ]}>
-              {Math.floor(resendTimer / 60)}:{resendTimer % 60 < 10 ? '0' : ''}
-              {resendTimer % 60}
-            </Text>
-          </Text>
-        ) : (
-          <TouchableOpacity onPress={handleResendCode}>
-            <Text
-              style={[
-                styles.resendText,
-                colorScheme === 'dark' ? styles.darkText : styles.lightText,
-              ]}>
-              RESEND CODE
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          ) : (
+            <TouchableOpacity onPress={handleResendCode}>
+              <Text
+                style={[
+                  styles.resendText,
+                  colorScheme === 'dark' ? styles.darkText : styles.lightText,
+                ]}>
+                RESEND CODE
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null}
+
       <TouchableOpacity
         onPress={handleNextPress}
         style={[styles.submitButton, {opacity: otp.length === 6 ? 1 : 0.5}]}

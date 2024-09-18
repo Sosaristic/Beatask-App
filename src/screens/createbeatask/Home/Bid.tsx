@@ -18,6 +18,8 @@ import useFetch from '../../../hooks/useFetch';
 import {RequestedService} from '../../../interfaces/apiResponses';
 import {Loader} from '../../../components';
 import Empty from '../../../components/Empty';
+import {useUserStore} from '../../../store/useUserStore';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type BidRes = {
   message: string;
@@ -27,6 +29,7 @@ type BidRes = {
 const BidScreen: React.FC = () => {
   const colorScheme = useColorScheme();
   const navigation = useNavigation();
+  const {user} = useUserStore(state => state);
   const isDarkMode = colorScheme === 'dark';
   const {data, loading, error} = useFetch<BidRes>(
     '/get-requested-services',
@@ -52,160 +55,167 @@ const BidScreen: React.FC = () => {
     navigation.navigate('Bid' as never);
   };
   const handleBid1 = () => {
-    navigation.navigate('Bid1' as never);
+    if (
+      user?.is_subscribed_to_one_month_premium === 0 &&
+      user?.is_subscribed_to_two_months_subscription === 0
+    ) {
+      navigation.navigate('Bid1' as never);
+      return;
+    }
   };
 
-  console.log('bid', data);
   return (
-    <View
-      style={[
-        styles.container,
-        isDarkMode ? styles.darkContainer : styles.lightContainer,
-      ]}>
-      <ScrollView
-        style={isDarkMode ? styles.containerDark : styles.containerLight}>
-        <Text
-          style={[
-            styles.header,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          Bid to be hired
-        </Text>
-        <Text
-          style={[
-            styles.subHeader,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          Here you can see service request from users, compare their needs, and
-          select the best fit.
-        </Text>
-
-        {loading ? (
-          <Loader />
-        ) : data === null ? (
-          <Empty />
-        ) : error ? (
-          <Text>There is an error getting the data.</Text>
-        ) : (
-          <>
-            {data.data.map((job, index) => (
-              <View key={index} style={styles.jobCard}>
-                <Text
-                  style={[
-                    styles.time,
-                    isDarkMode ? styles.textDark : styles.textLight,
-                  ]}>
-                  {new Date(job.created_at).toDateString()}
-                </Text>
-                <Text
-                  style={[
-                    styles.category,
-                    isDarkMode ? styles.textDark : styles.textLight,
-                  ]}>
-                  {job.category}
-                </Text>
-                <Text
-                  style={[
-                    styles.description,
-                    isDarkMode ? styles.textDark : styles.textLight,
-                  ]}>
-                  {job.description}
-                </Text>
-                <Text
-                  style={[
-                    styles.location,
-                    isDarkMode ? styles.textDark : styles.textLight,
-                  ]}>
-                  {job.get_user.home_address}
-                </Text>
-                <TouchableOpacity style={styles.button} onPress={handleBid1}>
-                  <Text style={styles.buttonText}>SEND QUOTE</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </>
-        )}
-      </ScrollView>
+    <SafeAreaViewContainer>
       <View
         style={[
-          styles.footer,
-          {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
+          styles.container,
+          isDarkMode ? styles.darkContainer : styles.lightContainer,
         ]}>
-        <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
-          <Icon
-            name="home-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
+        <ScrollView
+          style={isDarkMode ? styles.containerDark : styles.containerLight}>
           <Text
             style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
+              styles.header,
+              isDarkMode ? styles.textDark : styles.textLight,
             ]}>
-            HOME
+            Bid to be hired
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
-          <Icon
-            name="calendar-check-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
           <Text
             style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
+              styles.subHeader,
+              isDarkMode ? styles.textDark : styles.textLight,
             ]}>
-            BOOKED
+            Here you can see service request from users, compare their needs,
+            and select the best fit.
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
-          <Icon
-            name="chat-processing-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <View style={{position: 'absolute', top: 0, right: -4}}>
-            <TextCount />
-          </View>
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            MESSAGE
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
-          <Icon
-            name="briefcase-variant-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            BID
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
-          <Icon
-            name="account-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            PROFILE
-          </Text>
-        </TouchableOpacity>
+
+          {loading ? (
+            <Loader />
+          ) : data === null ? (
+            <Empty />
+          ) : error ? (
+            <Text>There is an error getting the data.</Text>
+          ) : (
+            <>
+              {data.data.map((job, index) => (
+                <View key={index} style={styles.jobCard}>
+                  <Text
+                    style={[
+                      styles.time,
+                      isDarkMode ? styles.textDark : styles.textLight,
+                    ]}>
+                    {new Date(job.created_at).toDateString()}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.category,
+                      isDarkMode ? styles.textDark : styles.textLight,
+                    ]}>
+                    {job.category}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.description,
+                      isDarkMode ? styles.textDark : styles.textLight,
+                    ]}>
+                    {job.description}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.location,
+                      isDarkMode ? styles.textDark : styles.textLight,
+                    ]}>
+                    {job.get_user.home_address}
+                  </Text>
+                  <TouchableOpacity style={styles.button} onPress={handleBid1}>
+                    <Text style={styles.buttonText}>SEND QUOTE</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
+          )}
+        </ScrollView>
+        <View
+          style={[
+            styles.footer,
+            {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
+          ]}>
+          <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
+            <Icon
+              name="home-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              HOME
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
+            <Icon
+              name="calendar-check-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              BOOKED
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
+            <Icon
+              name="chat-processing-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <View style={{position: 'absolute', top: 0, right: -4}}>
+              <TextCount />
+            </View>
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              MESSAGE
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
+            <Icon
+              name="briefcase-variant-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              BID
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
+            <Icon
+              name="account-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              PROFILE
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaViewContainer>
   );
 };
 

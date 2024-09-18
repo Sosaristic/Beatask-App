@@ -18,6 +18,7 @@ import {useUserStore} from '../../../store/useUserStore';
 import useFetch from '../../../hooks/useFetch';
 import {UserReview} from '../../../interfaces/apiResponses';
 import Empty from '../../../components/Empty';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type ReviewResponse = {
   message: string;
@@ -47,89 +48,98 @@ const ReviewScreen = () => {
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        isDarkMode ? styles.darkContainer : styles.lightContainer,
-      ]}>
-      {data?.data.map(item => {
-        return (
-          <View key={item.id}>
-            <TouchableOpacity
-              key={item.id}
-              onPress={() =>
-                setOpenUserReview(prev => (prev?.id === item.id ? null : item))
-              }
-              style={styles.section}>
-              <Text
-                style={[
-                  styles.sectionText,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                {item.provider.name}
-              </Text>
-              <Icon
-                name={
-                  openUserReview?.id === item.id ? 'chevron-down' : 'chevron-up'
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <View
+        style={[
+          styles.container,
+          isDarkMode ? styles.darkContainer : styles.lightContainer,
+        ]}>
+        {data?.data.map(item => {
+          return (
+            <View key={item.id}>
+              <TouchableOpacity
+                key={item.id}
+                onPress={() =>
+                  setOpenUserReview(prev =>
+                    prev?.id === item.id ? null : item,
+                  )
                 }
-                size={wp('4%')}
-                style={[
-                  styles.chevron,
-                  isDarkMode ? styles.darkChevron : styles.lightChevron,
-                ]}
-              />
-            </TouchableOpacity>
-            {openUserReview?.id === item.id && (
-              <View
-                style={[
-                  styles.detailsContainer,
-                  isDarkMode
-                    ? styles.darkDetailsContainer
-                    : styles.lightDetailsContainer,
-                ]}>
+                style={styles.section}>
                 <Text
                   style={[
-                    styles.title,
+                    styles.sectionText,
                     isDarkMode ? styles.darkText : styles.lightText,
                   ]}>
-                  Rate
+                  {item.provider.name}
                 </Text>
-                <View style={styles.ratingContainer}>
-                  {Array.from({length: item.rating_stars as number}, (_, i) => (
-                    <Icon
-                      key={i}
-                      name="star"
-                      size={24}
-                      color="gold"
-                      style={styles.star}
-                    />
-                  ))}
-                </View>
-                <Text
+                <Icon
+                  name={
+                    openUserReview?.id === item.id
+                      ? 'chevron-down'
+                      : 'chevron-up'
+                  }
+                  size={wp('4%')}
                   style={[
-                    styles.title,
-                    isDarkMode ? styles.darkText : styles.lightText,
-                  ]}>
-                  Review
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    isDarkMode ? styles.darkInput : styles.lightInput,
+                    styles.chevron,
+                    isDarkMode ? styles.darkChevron : styles.lightChevron,
                   ]}
-                  placeholder="What was your experience with this service provider?"
-                  placeholderTextColor={isDarkMode ? '#888' : '#555'}
-                  value={item.review_message}
-                  editable={false}
-                  // onChangeText={setReview}
-                  multiline
                 />
-              </View>
-            )}
-          </View>
-        );
-      })}
-    </View>
+              </TouchableOpacity>
+              {openUserReview?.id === item.id && (
+                <View
+                  style={[
+                    styles.detailsContainer,
+                    isDarkMode
+                      ? styles.darkDetailsContainer
+                      : styles.lightDetailsContainer,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.title,
+                      isDarkMode ? styles.darkText : styles.lightText,
+                    ]}>
+                    Rate
+                  </Text>
+                  <View style={styles.ratingContainer}>
+                    {Array.from(
+                      {length: item.rating_stars as number},
+                      (_, i) => (
+                        <Icon
+                          key={i}
+                          name="star"
+                          size={24}
+                          color="gold"
+                          style={styles.star}
+                        />
+                      ),
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.title,
+                      isDarkMode ? styles.darkText : styles.lightText,
+                    ]}>
+                    Review
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      isDarkMode ? styles.darkInput : styles.lightInput,
+                    ]}
+                    placeholder="What was your experience with this service provider?"
+                    placeholderTextColor={isDarkMode ? '#888' : '#555'}
+                    value={item.review_message}
+                    editable={false}
+                    // onChangeText={setReview}
+                    multiline
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 

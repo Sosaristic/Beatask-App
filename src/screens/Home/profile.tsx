@@ -24,6 +24,7 @@ import {formatPhoneNumber} from '../createbeatask/createaccountbeatask';
 import {User, useUserStore} from '../../store/useUserStore';
 import {makeApiRequest} from '../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../components';
+import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
 
 type UpdateSuccessResponse = {
   data: User;
@@ -204,274 +205,292 @@ const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          isDarkMode && styles.darkContainer,
-        ]}>
-        {sections.map(section => (
-          <View key={section} style={styles.sectionContainer}>
-            <TouchableOpacity
-              onPress={() => toggleSection(section)}
-              style={[styles.section, isDarkMode && styles.darkSection]}>
-              <Text
-                style={[
-                  styles.sectionText,
-                  isDarkMode && styles.darkSectionText,
-                ]}>
-                {section}
-              </Text>
-              <FontAwesomeIcon
-                name={
-                  expandedSections.includes(section)
-                    ? 'chevron-down'
-                    : 'chevron-up'
-                }
-                size={wp('6%')}
-                style={[styles.chevron, isDarkMode && styles.darkChevron]}
-              />
-            </TouchableOpacity>
-            {expandedSections.includes(section) &&
-              section === 'Profile Setup' && (
-                <View
+    <SafeAreaViewContainer>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            isDarkMode && styles.darkContainer,
+          ]}>
+          {sections.map(section => (
+            <View key={section} style={styles.sectionContainer}>
+              <TouchableOpacity
+                onPress={() => toggleSection(section)}
+                style={[styles.section, isDarkMode && styles.darkSection]}>
+                <Text
                   style={[
-                    styles.detailsContainer,
-                    isDarkMode && styles.darkdetailsContainer,
+                    styles.sectionText,
+                    isDarkMode && styles.darkSectionText,
                   ]}>
-                  <Text style={styles.selectedFileText}>
-                    {governmentIdInfo.selectedFile}
-                  </Text>
-                  <Text style={styles.label}>First Legal Name</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode && styles.darkInput]}
-                    placeholder="First legal name"
-                    placeholderTextColor="#999"
-                    value={profileDetails.first_legal_name}
-                    onChangeText={text =>
-                      setProfileDetails({
-                        ...profileDetails,
-                        first_legal_name: text,
-                      })
-                    }
-                  />
-                  <Text style={styles.label}>Last Legal Name</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode && styles.darkInput]}
-                    placeholder="Last legal name"
-                    placeholderTextColor="#999"
-                    value={profileDetails.last_legal_name}
-                    onChangeText={text =>
-                      setProfileDetails({
-                        ...profileDetails,
-                        last_legal_name: text,
-                      })
-                    }
-                  />
-                  <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode && styles.darkInput]}
-                    placeholder="Email address"
-                    placeholderTextColor="#999"
-                    value={profileDetails.email}
-                    onChangeText={text =>
-                      setProfileDetails({...profileDetails, email: text})
-                    }
-                  />
-                  <Text style={styles.label}>Phone Number</Text>
-                  <View style={styles.phoneContainer}>
+                  {section}
+                </Text>
+                <FontAwesomeIcon
+                  name={
+                    expandedSections.includes(section)
+                      ? 'chevron-down'
+                      : 'chevron-up'
+                  }
+                  size={wp('6%')}
+                  style={[styles.chevron, isDarkMode && styles.darkChevron]}
+                />
+              </TouchableOpacity>
+              {expandedSections.includes(section) &&
+                section === 'Profile Setup' && (
+                  <View
+                    style={[
+                      styles.detailsContainer,
+                      isDarkMode && styles.darkdetailsContainer,
+                    ]}>
+                    <Text style={styles.selectedFileText}>
+                      {governmentIdInfo.selectedFile}
+                    </Text>
+                    <Text style={styles.label}>First Legal Name</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode && styles.darkInput]}
+                      placeholder="First legal name"
+                      placeholderTextColor="#999"
+                      value={profileDetails.first_legal_name}
+                      onChangeText={text =>
+                        setProfileDetails({
+                          ...profileDetails,
+                          first_legal_name: text,
+                        })
+                      }
+                    />
+                    <Text style={styles.label}>Last Legal Name</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode && styles.darkInput]}
+                      placeholder="Last legal name"
+                      placeholderTextColor="#999"
+                      value={profileDetails.last_legal_name}
+                      onChangeText={text =>
+                        setProfileDetails({
+                          ...profileDetails,
+                          last_legal_name: text,
+                        })
+                      }
+                    />
+                    <Text style={styles.label}>Email</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode && styles.darkInput]}
+                      placeholder="Email address"
+                      placeholderTextColor="#999"
+                      value={profileDetails.email}
+                      onChangeText={text =>
+                        setProfileDetails({...profileDetails, email: text})
+                      }
+                    />
+                    <Text style={styles.label}>Phone Number</Text>
+                    <View style={styles.phoneContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.countryCodeButton,
+                          isDarkMode && styles.darkCountryCodeButton,
+                        ]}
+                        onPress={handleCountryCodePress}>
+                        <Text
+                          style={[
+                            styles.countryCodeButtonText,
+                            isDarkMode && styles.darkCountryCodeButtonText,
+                          ]}>
+                          {countryCode}
+                        </Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          styles.phoneInput,
+                          isDarkMode && styles.darkInput,
+                        ]}
+                        placeholder="555 555-1234"
+                        placeholderTextColor="#999"
+                        keyboardType="phone-pad"
+                        value={phoneNumber}
+                        onChangeText={text => setPhoneNumber(text)}
+                      />
+                    </View>
+                    <Text style={styles.label}>Home Address</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode && styles.darkInput]}
+                      placeholder="Home address"
+                      placeholderTextColor="#999"
+                      value={profileDetails.home_address}
+                      onChangeText={text =>
+                        setProfileDetails({
+                          ...profileDetails,
+                          home_address: text,
+                        })
+                      }
+                    />
+
                     <TouchableOpacity
+                      onPress={onProfileSave}
+                      style={styles.saveButton}>
+                      <Text>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              {expandedSections.includes(section) &&
+                section === 'App setting' && (
+                  <View
+                    style={[
+                      styles.detailsContainer,
+                      isDarkMode && styles.darkdetailsContainer,
+                    ]}>
+                    <TouchableOpacity
+                      onPress={handlePrivacyPolicy}
                       style={[
-                        styles.countryCodeButton,
-                        isDarkMode && styles.darkCountryCodeButton,
-                      ]}
-                      onPress={handleCountryCodePress}>
+                        styles.section3,
+                        isDarkMode && styles.darkSection,
+                      ]}>
                       <Text
                         style={[
-                          styles.countryCodeButtonText,
-                          isDarkMode && styles.darkCountryCodeButtonText,
+                          styles.sectionText,
+                          isDarkMode && styles.darkSectionText,
                         ]}>
-                        {countryCode}
+                        Privacy policy
                       </Text>
                     </TouchableOpacity>
-                    <TextInput
+                    <TouchableOpacity
+                      onPress={handleProfile}
                       style={[
-                        styles.input,
-                        styles.phoneInput,
-                        isDarkMode && styles.darkInput,
-                      ]}
-                      placeholder="555 555-1234"
-                      placeholderTextColor="#999"
-                      keyboardType="phone-pad"
-                      value={phoneNumber}
-                      onChangeText={text => setPhoneNumber(text)}
-                    />
+                        styles.section3,
+                        isDarkMode && styles.darkSection,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.sectionText,
+                          isDarkMode && styles.darkSectionText,
+                        ]}>
+                        Help center
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.label}>Home Address</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode && styles.darkInput]}
-                    placeholder="Home address"
-                    placeholderTextColor="#999"
-                    value={profileDetails.home_address}
-                    onChangeText={text =>
-                      setProfileDetails({...profileDetails, home_address: text})
-                    }
-                  />
+                )}
 
-                  <TouchableOpacity
-                    onPress={onProfileSave}
-                    style={styles.saveButton}>
-                    <Text>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            {expandedSections.includes(section) &&
-              section === 'App setting' && (
-                <View
-                  style={[
-                    styles.detailsContainer,
-                    isDarkMode && styles.darkdetailsContainer,
-                  ]}>
-                  <TouchableOpacity
-                    onPress={handlePrivacyPolicy}
-                    style={[styles.section3, isDarkMode && styles.darkSection]}>
-                    <Text
-                      style={[
-                        styles.sectionText,
-                        isDarkMode && styles.darkSectionText,
-                      ]}>
-                      Privacy policy
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleProfile}
-                    style={[styles.section3, isDarkMode && styles.darkSection]}>
-                    <Text
-                      style={[
-                        styles.sectionText,
-                        isDarkMode && styles.darkSectionText,
-                      ]}>
-                      Help center
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-            {expandedSections.includes(section) &&
-              section === 'Language setting' && (
-                <View
-                  style={[
-                    styles.detailsContainer,
-                    isDarkMode && styles.darkdetailsContainer,
-                  ]}>
-                  <View>
-                    <Text
-                      style={[
-                        styles.sectionText,
-                        isDarkMode && styles.darkSectionText,
-                      ]}>
-                      English
-                    </Text>
-                    <Switch
-                      style={styles.switch}
-                      trackColor={{false: '#767577', true: '#12CCB7'}}
-                      thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
-                      ios_backgroundColor="#3e3e3e"
-                      disabled
-                      value={isEnglishEnabled}
-                    />
+              {expandedSections.includes(section) &&
+                section === 'Language setting' && (
+                  <View
+                    style={[
+                      styles.detailsContainer,
+                      isDarkMode && styles.darkdetailsContainer,
+                    ]}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Text
+                        style={[
+                          styles.sectionText,
+                          isDarkMode && styles.darkSectionText,
+                          {flexDirection: 'row', gap: 4, alignItems: 'center'},
+                        ]}>
+                        English
+                      </Text>
+                      <Switch
+                        style={{marginLeft: 'auto'}}
+                        trackColor={{false: '#767577', true: '#12CCB7'}}
+                        thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
+                        ios_backgroundColor="#3e3e3e"
+                        disabled
+                        value={isEnglishEnabled}
+                      />
+                    </View>
                   </View>
-                </View>
-              )}
-          </View>
-        ))}
-        <TouchableOpacity
-          onPress={handleService}
-          style={[styles.section2, isDarkMode && styles.darkSection]}>
-          <Text
-            style={[styles.sectionText, isDarkMode && styles.darkSectionText]}>
-            Saved providers
-          </Text>
-          <FontAwesomeIcon
-            name={'chevron-right'}
-            size={wp('6%')}
-            style={[styles.chevron, isDarkMode && styles.darkChevron]}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleReview}
-          style={[styles.section2, isDarkMode && styles.darkSection]}>
-          <Text
-            style={[styles.sectionText, isDarkMode && styles.darkSectionText]}>
-            Review and Ratings
-          </Text>
-          <FontAwesomeIcon
-            name={'chevron-right'}
-            size={wp('6%')}
-            style={[styles.chevron, isDarkMode && styles.darkChevron]}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={[styles.section2, isDarkMode && styles.darkSection]}>
-          <Text style={[styles.sectionText1]}>Log out</Text>
-        </TouchableOpacity>
+                )}
+            </View>
+          ))}
+          <TouchableOpacity
+            onPress={handleService}
+            style={[styles.section2, isDarkMode && styles.darkSection]}>
+            <Text
+              style={[
+                styles.sectionText,
+                isDarkMode && styles.darkSectionText,
+              ]}>
+              Saved providers
+            </Text>
+            <FontAwesomeIcon
+              name={'chevron-right'}
+              size={wp('6%')}
+              style={[styles.chevron, isDarkMode && styles.darkChevron]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleReview}
+            style={[styles.section2, isDarkMode && styles.darkSection]}>
+            <Text
+              style={[
+                styles.sectionText,
+                isDarkMode && styles.darkSectionText,
+              ]}>
+              Review and Ratings
+            </Text>
+            <FontAwesomeIcon
+              name={'chevron-right'}
+              size={wp('6%')}
+              style={[styles.chevron, isDarkMode && styles.darkChevron]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={[styles.section2, isDarkMode && styles.darkSection]}>
+            <Text style={[styles.sectionText1]}>Log out</Text>
+          </TouchableOpacity>
 
-        <Modal
-          transparent={true}
-          visible={isLogoutPopupVisible}
-          animationType="fade">
-          <View style={styles.popupContainer}>
-            <View style={styles.popup}>
-              <Icon
-                name={'information-outline'}
-                size={wp('12%')}
-                style={[styles.error]}
-              />
-              <Text style={styles.popupTitle}>Log out</Text>
-              <Text style={styles.popupMessage}>Sure you want to exit?</Text>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => setLogoutPopupVisible(false)}>
-                  <Text style={styles.buttonText}>No</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={handleConfirmLogout}>
-                  <Text style={styles.buttonText}>Yes</Text>
-                </TouchableOpacity>
+          <Modal
+            transparent={true}
+            visible={isLogoutPopupVisible}
+            animationType="fade">
+            <View style={styles.popupContainer}>
+              <View style={styles.popup}>
+                <Icon
+                  name={'information-outline'}
+                  size={wp('12%')}
+                  style={[styles.error]}
+                />
+                <Text style={styles.popupTitle}>Log out</Text>
+                <Text style={styles.popupMessage}>Sure you want to exit?</Text>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setLogoutPopupVisible(false)}>
+                    <Text style={styles.buttonText}>No</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleConfirmLogout}>
+                    <Text style={styles.buttonText}>Yes</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
-        <CountryPicker
-          show={isPickerVisible}
-          pickerButtonOnPress={handleSelectCountry}
-          lang="en"
-          style={{
-            modal: {
-              height: 400,
-              backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
-            },
-            countryButtonStyles: {
-              backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
-              borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
-            },
-            textInput: {
-              color: colorScheme === 'dark' ? '#010A0C' : '#000',
-            },
-          }}
-        />
-        <CustomModal {...showSuccessModal} />
-        <CustomErrorModal
-          {...showErrorModal}
-          closeModal={() =>
-            setShowErrorModal({...showErrorModal, isModalOpen: false})
-          }
-        />
-      </ScrollView>
-    </TouchableWithoutFeedback>
+          </Modal>
+          <CountryPicker
+            show={isPickerVisible}
+            pickerButtonOnPress={handleSelectCountry}
+            lang="en"
+            style={{
+              modal: {
+                height: 400,
+                backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
+              },
+              countryButtonStyles: {
+                backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
+                borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
+              },
+              textInput: {
+                color: colorScheme === 'dark' ? '#010A0C' : '#000',
+              },
+            }}
+          />
+          <CustomModal {...showSuccessModal} />
+          <CustomErrorModal
+            {...showErrorModal}
+            closeModal={() =>
+              setShowErrorModal({...showErrorModal, isModalOpen: false})
+            }
+          />
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -557,7 +576,6 @@ const styles = StyleSheet.create({
     paddingVertical: hp('2.5%'),
   },
   darkdetailsContainer: {
-    marginTop: 0,
     backgroundColor: '#021114',
     borderRadius: wp('5%'),
     paddingHorizontal: wp('5%'),

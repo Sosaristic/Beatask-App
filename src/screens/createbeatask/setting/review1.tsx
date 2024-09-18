@@ -8,19 +8,19 @@ import {
   TouchableOpacity,
   useColorScheme,
 } from 'react-native';
-import {Icon} from 'react-native-elements';
-import {useNavigation} from '@react-navigation/native';
+
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import useFetch from '../../../hooks/useFetch';
 import {useUserStore} from '../../../store/useUserStore';
-import {Loader} from '../../../components';
+import {GetRating, Loader} from '../../../components';
 import Empty from '../../../components/Empty';
 import {ListReviewsType} from '../../../interfaces/apiResponses';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../../App';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type ListReviewRes = {
   message: string;
@@ -46,8 +46,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
     },
   );
 
-  console.log(user?.id);
-
   const handlechat = () => {
     navigation.navigate('Chat' as never);
   };
@@ -57,78 +55,81 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
   if (data === null || data.data.length === 0) return <Empty />;
 
   return (
-    <>
-      {data.data.map(item => {
-        return (
-          <View
-            key={item.id}
-            style={[
-              styles.card,
-              isDarkMode ? styles.darkCard : styles.lightCard,
-            ]}>
-            <View style={styles.header}>
-              <Image
-                source={
-                  item.user.profile_image
-                    ? {uri: item.user.profile_image}
-                    : require('../../../assets/images/profile-svgrepo-com.svg')
-                }
-                style={styles.profileImage}
-              />
-              <View style={styles.headerText}>
-                <Text
-                  style={[
-                    styles.name,
-                    isDarkMode ? styles.darkText : styles.lightText,
-                  ]}>
-                  {item.user.name}
-                </Text>
-                <View style={styles.ratingContainer}>
-                  <Icon
-                    name="star"
-                    type="font-awesome"
-                    color="#00f2ea"
-                    size={15}
-                  />
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <>
+        {data.data.map(item => {
+          return (
+            <View
+              key={item.id}
+              style={[
+                styles.card,
+                isDarkMode ? styles.darkCard : styles.lightCard,
+              ]}>
+              <View style={styles.header}>
+                <Image
+                  source={
+                    item.user.profile_image
+                      ? {uri: item.user.profile_image}
+                      : require('../../../assets/images/profile-svgrepo-com.svg')
+                  }
+                  style={styles.profileImage}
+                />
+                <View style={styles.headerText}>
                   <Text
                     style={[
-                      styles.rating,
+                      styles.name,
                       isDarkMode ? styles.darkText : styles.lightText,
                     ]}>
-                    {item.rating_stars}
+                    {item.user.name}
                   </Text>
+                  <View style={styles.ratingContainer}>
+                    <GetRating rating={1} />
+                    <Text
+                      style={[
+                        styles.rating,
+                        isDarkMode ? styles.darkText : styles.lightText,
+                      ]}>
+                      {item.rating_stars}
+                    </Text>
+                  </View>
                 </View>
               </View>
+              <Text
+                style={[
+                  styles.review,
+                  isDarkMode ? styles.darkText : styles.lightText,
+                ]}>
+                {item.review_message}
+              </Text>
+              <Text
+                style={[
+                  styles.date,
+                  isDarkMode ? styles.darkText : styles.lightText,
+                ]}>
+                {item.created_at
+                  ? new Date(item.created_at).toDateString()
+                  : ''}
+              </Text>
+              <TouchableOpacity
+                style={styles.respondButton}
+                onPress={() =>
+                  navigation.navigate('Chat', {
+                    chatId: '',
+                    providerId: user?.email || '',
+                    providerName: user?.name || '',
+                    providerAvatar: user?.profile_image || '',
+                    customerId: item.user.email || '',
+                    customerName: item.user.name || '',
+                    customerAvatar: item.user.profile_image || '',
+                  })
+                }>
+                <Text style={styles.respondText}>RESPOND</Text>
+              </TouchableOpacity>
             </View>
-            <Text
-              style={[
-                styles.review,
-                isDarkMode ? styles.darkText : styles.lightText,
-              ]}>
-              {item.review_message}
-            </Text>
-            <Text
-              style={[
-                styles.date,
-                isDarkMode ? styles.darkText : styles.lightText,
-              ]}>
-              {item.created_at ? new Date(item.created_at).toDateString() : ''}
-            </Text>
-            <TouchableOpacity
-              style={styles.respondButton}
-              onPress={() =>
-                navigation.navigate('Chat', {
-                  chatId: '',
-                  providerId: item.user.email,
-                  providerName: item.user.name,
-                })
-              }>
-              <Text style={styles.respondText}>RESPOND</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
-    </>
+          );
+        })}
+      </>
+    </SafeAreaViewContainer>
   );
 };
 

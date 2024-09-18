@@ -9,10 +9,12 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   useColorScheme,
+  Image,
+  Platform,
 } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {GoogleSigninButton} from '@react-native-community/google-signin';
+import {Checkbox} from 'react-native-paper';
 
 import {
   widthPercentageToDP as wp,
@@ -23,7 +25,10 @@ import {makeApiRequest} from '../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../components';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
-import {GoogleSignin, statusCodes} from '@react-native-community/google-signin';
+
+import auth from '@react-native-firebase/auth';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import {customTheme} from '../../custom_theme/customTheme';
 
 export type LoginSuccessResponse = {
   data: User;
@@ -171,30 +176,25 @@ const Login: React.FC<Props> = ({navigation}) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      setGoogleUser(userInfo);
-    } catch (error) {
-      console.log(error);
-
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        // play services not available or outdated
-      } else {
-        // some other error happened
-      }
-    }
-  };
-
   const closeModal = () => {
     setShowPopup(false);
     setShowInvalidCredentialsModal(false);
   };
+
+  async function onGoogleButtonPress() {
+    // Check if your device supports Google Play
+    await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+    // Get the users ID token
+    const {data} = await GoogleSignin.signIn();
+
+    // Create a Google credential with the token
+    const googleCredential = auth.GoogleAuthProvider.credential(
+      data?.idToken as string,
+    );
+
+    // Sign-in the user with the credential
+    return auth().signInWithCredential(googleCredential);
+  }
 
   const InvalidCredentialsModal: React.FC = () => (
     <Modal
@@ -268,6 +268,7 @@ const Login: React.FC<Props> = ({navigation}) => {
         ]}
         placeholder="Email address"
         placeholderTextColor="#888"
+        autoCapitalize="none"
         onChangeText={text => {
           setEmail(text);
           setEmailError('');
@@ -310,11 +311,13 @@ const Login: React.FC<Props> = ({navigation}) => {
         <Text style={styles.errorText}>{passwordError}</Text>
       ) : null}
 
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={rememberMe}
-          onValueChange={setRememberMe}
-          tintColors={{true: '#12CCB7', false: '#12CCB7'}}
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Checkbox.Item
+          label=""
+          mode="android"
+          style={{paddingLeft: 0, margin: 0}}
+          status={rememberMe ? 'checked' : 'unchecked'}
+          onPress={() => setRememberMe(!rememberMe)}
         />
         <Text
           style={[
@@ -329,7 +332,7 @@ const Login: React.FC<Props> = ({navigation}) => {
         <Text style={styles.nextButtonText}>NEXT</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('forgotPassword')}>
         <Text style={styles.forgotPassword}>FORGOT PASSWORD?</Text>
       </TouchableOpacity>
 
@@ -356,16 +359,27 @@ const Login: React.FC<Props> = ({navigation}) => {
       </View>
 
       <View style={styles.socialButtons}>
-        <GoogleSigninButton
-          style={styles.googleButton}
-          size={GoogleSigninButton.Size.Icon}
-          color={GoogleSigninButton.Color.Dark}
-          onPress={handleGoogleLogin}
-        />
         <TouchableOpacity
           style={styles.facebookButton}
           onPress={() => console.log('Facebook login')}>
           <Icon name="facebook" size={wp('8%')} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={
+            () =>
+              onGoogleButtonPress()
+                .then((res: any) => console.log(res))
+                .catch((err: any) => console.log(err))
+
+            // GoogleSignin.revokeAccess()
+            //   .then(() => GoogleSignin.signOut())
+            //   .then(() => console.log('User signed out!'))
+          }>
+          <Image
+            source={require('../../assets/images/google.png')}
+            style={{width: 40, height: 40}}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -419,7 +433,9 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2%'), // Responsive margin bottom
+    backgroundColor: 'red',
+    gap: 2,
+    // Responsive margin bottom
   },
   checkboxLabel: {
     fontSize: wp('4%'), // Responsive font size
@@ -538,6 +554,14 @@ const styles = StyleSheet.create({
     fontSize: wp('4.5%'), // Responsive font size
     marginBottom: hp('1%'), // Responsive margin bottom
     color: 'red',
+  },
+  iosCheckBox: {
+    width: wp('3%'), // Responsive width
+    height: hp('3%'), // Responsive height
+  },
+  androidCheckBox: {
+    width: wp('4%'), // Responsive width
+    height: hp('4%'), // Responsive height
   },
 });
 

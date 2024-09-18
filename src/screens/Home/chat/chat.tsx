@@ -1,4 +1,5 @@
 import React, {useEffect, useState, useId, useRef} from 'react';
+import {v4 as uuidv4} from 'uuid';
 
 import {
   View,
@@ -37,7 +38,7 @@ import {useNavigation} from '@react-navigation/native';
 import {Message} from './masglist';
 import {RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../../../../App';
-
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 type Props = {
   route: RouteProp<RootStackParamList, 'Chat'>;
 };
@@ -49,14 +50,22 @@ const ChatScreen: React.FC<Props> = ({route}) => {
   const colorScheme = useColorScheme();
   const {user} = useUserStore(state => state);
   const navigation = useNavigation();
-  const {chatId, providerId, providerName} = route.params || {};
-  const customerId = user?.email;
+  const {
+    chatId,
+    providerId,
+    providerName,
+    customerId,
+    customerName,
+    providerAvatar,
+    customerAvatar,
+  } = route.params || {};
+
   const id = useId();
   const chatRef = useRef<FlatList<IMessage> | null>(null);
 
   useEffect(() => {
     navigation.setOptions({
-      title: providerName,
+      title: user?.name === providerName ? customerName : providerName,
     });
   }, []);
 
@@ -70,15 +79,11 @@ const ChatScreen: React.FC<Props> = ({route}) => {
       customerId as string,
     );
 
-    const conversationId = chatId ? chatId : generatedId;
-
-    console.log(conversationId, 'conversation id');
-
     (async () => {})();
 
     const messagesRef = firestore()
       .collection('conversations')
-      .doc(conversationId as string)
+      .doc(generatedId as string)
       .collection('messages');
 
     // Set up a real-time listener with ordering by 'timestamp'
@@ -89,18 +94,19 @@ const ChatScreen: React.FC<Props> = ({route}) => {
           // Extract messages from snapshot
           const newMessages = snapshot.docs.map(doc => {
             const data = doc.data();
+            console.log('doc id', doc.id);
 
             return {
-              _id: doc.id,
+              _id: uuidv4(),
               text: data.message, // Ensure the field matches your Firestore schema
               createdAt: new Date(), // Convert timestamp to Date objects
               user: {
-                _id: data.sentBy === customerId ? 1 : 2, // Adjust user ID logic if needed
+                _id: data.sentBy === user?.email ? 1 : 2, // Adjust user ID logic if needed
                 name: '', // Customize names based on user IDs
                 avatar:
                   data.sentBy === providerId
-                    ? 'https://avatar.iran.liara.run/public/44'
-                    : 'https://avatar.iran.liara.run/public/27', // Customize avatar URLs
+                    ? data.providerAvatar
+                    : data.customerAvatar, // Customize avatar URLs
               },
             } as IMessage;
           });
@@ -132,27 +138,27 @@ const ChatScreen: React.FC<Props> = ({route}) => {
 
   // Handle sending new messages
   const onSend = async (messagesArray: IMessage[]) => {
-    console.log('onSend');
-
     const payload: Message = {
       lastMessageTimestamp: messagesArray[0].createdAt,
       lastMessageContent: messagesArray[0].text,
-      customerId: user?.email as string,
-      usersIds: [providerId, user?.email as string],
+      customerId: customerId as string,
+      usersIds: [providerId, customerId],
       providerId: providerId as string,
-      providerAvatar: 'https://avatar.iran.liara.run/public/44',
-      customerAvatar: 'https://avatar.iran.liara.run/public/44',
+      providerAvatar:
+        providerAvatar || 'https://avatar.iran.liara.run/public/44',
+      customerAvatar:
+        customerAvatar || 'https://avatar.iran.liara.run/public/44',
       sentBy: user?.email as string,
       providerName: providerName as string,
-      customerName: `${user?.last_legal_name} ${user?.first_legal_name}`,
+      customerName: customerName as string,
       is_provider: user?.is_service_provider,
-      id,
+      id: uuidv4(),
     };
     console.log('sending payload', payload);
     await sendMessage(payload);
     const formattedMessages = messagesArray.map(message => ({
       ...message,
-      _id: Math.round(Math.random() * 1000000),
+      _id: uuidv4(),
       createdAt: new Date(),
       user: {
         _id: 1,
@@ -171,63 +177,65 @@ const ChatScreen: React.FC<Props> = ({route}) => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#fff'},
-      ]}>
-      {showTopPopup && (
-        <View style={styles.topPopup}>
-          <Text style={styles.popupTitle}>
-            <Icons
-              name="info"
-              size={20}
-              color="#EEB0B0"
-              style={styles.infoIcon}
-            />{' '}
-            BEATASK REMINDER
-          </Text>
-          <Text style={styles.popupText}>
-            Do not share personal information or make payments outside the
-            BEATASK app. All transactions and communications must be conducted
-            within the app to ensure your safety. BEATASK will not be
-            responsible for any losses or issues arising from off-app dealings.
-            Our official team will never contact you through unofficial
-            channels. Please be cautious!
-          </Text>
-          <TouchableOpacity
-            onPress={closeTopPopup}
-            style={styles.popupCloseButton}>
-            <Icons name="x" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      )}
-      <GiftedChat
-        messageContainerRef={chatRef}
-        messages={conversations.slice().reverse()}
-        onSend={messages => onSend(messages)}
-        user={{
-          _id: 1,
-          name: user?.email,
-          avatar: 'https://avatar.iran.liara.run/public/27',
-        }}
-        alwaysShowSend
-        scrollToBottom
-        scrollToBottomStyle={{marginBottom: 10}}
-        scrollToBottomComponent={() => (
-          <Icons name="arrow-down-circle" size={24} color="#1E90FF" />
+    <SafeAreaViewContainer edges={['right', 'left', 'bottom']}>
+      <View
+        style={[
+          styles.container,
+          {backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#fff'},
+        ]}>
+        {showTopPopup && (
+          <View style={styles.topPopup}>
+            <Text style={styles.popupTitle}>
+              <Icons
+                name="info"
+                size={20}
+                color="#EEB0B0"
+                style={styles.infoIcon}
+              />{' '}
+              BEATASK REMINDER
+            </Text>
+            <Text style={styles.popupText}>
+              Do not share personal information or make payments outside the
+              BEATASK app. All transactions and communications must be conducted
+              within the app to ensure your safety. BEATASK will not be
+              responsible for any losses or issues arising from off-app
+              dealings. Our official team will never contact you through
+              unofficial channels. Please be cautious!
+            </Text>
+            <TouchableOpacity
+              onPress={closeTopPopup}
+              style={styles.popupCloseButton}>
+              <Icons name="x" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
         )}
-        renderInputToolbar={renderInputToolbar}
-        renderSend={renderSend}
-        renderComposer={renderComposer}
-        textInputProps={{
-          style: styles.textInput,
-          placeholderTextColor: colorScheme === 'dark' ? '#aaa' : '#888',
-        }}
-        renderBubble={renderBubble}
-        inverted={true}
-      />
-    </View>
+        <GiftedChat
+          messageContainerRef={chatRef}
+          messages={conversations.slice().reverse()}
+          onSend={messages => onSend(messages)}
+          user={{
+            _id: 1,
+            name: user?.email,
+            avatar: 'https://avatar.iran.liara.run/public/27',
+          }}
+          alwaysShowSend
+          scrollToBottom
+          scrollToBottomStyle={{marginBottom: 10}}
+          scrollToBottomComponent={() => (
+            <Icons name="arrow-down-circle" size={24} color="#1E90FF" />
+          )}
+          renderInputToolbar={renderInputToolbar}
+          renderSend={renderSend}
+          renderComposer={renderComposer}
+          textInputProps={{
+            style: styles.textInput,
+            placeholderTextColor: colorScheme === 'dark' ? '#aaa' : '#888',
+          }}
+          renderBubble={renderBubble}
+          inverted={true}
+        />
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 

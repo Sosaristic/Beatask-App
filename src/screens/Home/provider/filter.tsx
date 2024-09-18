@@ -10,8 +10,7 @@ import {
 import {Calendar} from 'react-native-calendars'; // Correct imports for Calendar and types
 import Slider from '@react-native-community/slider';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {RouteProp, useNavigation} from '@react-navigation/native';
-import {Button} from 'react-native-elements';
+import {RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../../../../App';
 import {StackNavigationProp} from '@react-navigation/stack';
 
@@ -157,11 +156,9 @@ const App: React.FC<FilterProps> = ({route, navigation}) => {
           {distance[0]}km - {distance[1]}km
         </Text>
       </View> */}
-      <Button
-        title="Save"
-        buttonStyle={styles.saveButton}
-        onPress={handleSave}
-      />
+      <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+        <Text>Save</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

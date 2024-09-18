@@ -159,12 +159,8 @@ const SettingsScreen: React.FC = () => {
 
             {expandedSections.includes(section) &&
               section === 'Language setting' && (
-                <View
-                  style={[
-                    styles.detailsContainer,
-                    isDarkMode && styles.darkdetailsContainer,
-                  ]}>
-                  <View>
+                <View style={[isDarkMode && styles.darkdetailsContainer]}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
                     <Text
                       style={[
                         styles.sectionText,
@@ -173,7 +169,7 @@ const SettingsScreen: React.FC = () => {
                       English
                     </Text>
                     <Switch
-                      style={styles.switch}
+                      style={{marginLeft: 'auto'}}
                       trackColor={{false: '#767577', true: '#12CCB7'}}
                       thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
                       ios_backgroundColor="#3e3e3e"

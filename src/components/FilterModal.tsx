@@ -1,5 +1,6 @@
 import {
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,9 +11,13 @@ import {
 import React, {useState} from 'react';
 import {Calendar} from 'react-native-calendars';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {Button} from 'react-native-elements';
 import Slider from '@react-native-community/slider';
 import {FilterPayload} from '../screens/Home/provider/Homeimp';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import {Text as RText} from 'react-native-paper';
 
 type Props = {
   open: boolean;
@@ -27,7 +32,7 @@ const FilterModal = ({
   category_name,
   handleFilterChange,
 }: Props) => {
-  const [price, setPrice] = useState<[number, number]>([22, 56]);
+  const [price, setPrice] = useState<[number, number]>([0, 5000]);
   const [rating, setRating] = useState<number>(5);
 
   const [distance, setDistance] = useState<[number, number]>([10, 25]);
@@ -64,13 +69,28 @@ const FilterModal = ({
   return (
     <Modal
       visible={open}
+      transparent
       animationType="slide"
       onDismiss={onClose}
       onRequestClose={onClose}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <TouchableOpacity onPress={handleClearAll}>
-          <Text style={styles.clearAll}>Clear all</Text>
-        </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {marginTop: Platform.OS === 'ios' ? 22 : 0},
+        ]}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+          <TouchableOpacity onPress={onClose}>
+            <RText>Close</RText>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleClearAll}>
+            <Text style={styles.clearAll}>Clear all</Text>
+          </TouchableOpacity>
+        </View>
         {/* <TouchableOpacity style={styles.subCategoryContainer} onPress={handleSub}>
         <Text style={styles.subCategory}>Sub-category</Text>
         <FontAwesome
@@ -99,8 +119,8 @@ const FilterModal = ({
           <Slider
             value={price[0]}
             onValueChange={(value: number) => onPriceChange([value, price[1]])}
-            minimumValue={16}
-            maximumValue={56}
+            minimumValue={0}
+            maximumValue={5000}
             step={1}
             thumbTintColor={colorScheme === 'dark' ? '#fff' : '#12CCB7'}
             minimumTrackTintColor="#12CCB7"
@@ -157,19 +177,15 @@ const FilterModal = ({
           {distance[0]}km - {distance[1]}km
         </Text>
       </View> */}
-        <Button
-          title="Save"
-          buttonStyle={styles.saveButton}
-          onPress={handleSave}
-        />
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+          <Text>Save</Text>
+        </TouchableOpacity>
       </ScrollView>
     </Modal>
   );
 };
 
 export default FilterModal;
-
-const styles = StyleSheet.create({});
 
 const lightStyles = StyleSheet.create({
   container: {
@@ -230,9 +246,11 @@ const lightStyles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#12CCB7',
-    borderRadius: 40,
-    marginHorizontal: 95,
-    paddingVertical: 20,
+    paddingVertical: hp('2%'),
+    borderRadius: wp('10%'),
+    alignItems: 'center',
+    marginTop: hp('4%'),
+    marginHorizontal: wp('30%'),
   },
 });
 
@@ -295,8 +313,10 @@ const darkStyles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#12CCB7',
-    borderRadius: 40,
-    marginHorizontal: 95,
-    paddingVertical: 20,
+    paddingVertical: hp('2%'),
+    borderRadius: wp('10%'),
+    alignItems: 'center',
+    marginTop: hp('4%'),
+    marginHorizontal: wp('30%'),
   },
 });

@@ -33,7 +33,6 @@ export const makeApiRequest = async <T>(
       data,
       ...config,
     });
-    console.log('res', response);
 
     if (Object.hasOwn(response.data as object, 'error')) {
       return {error: response.data as ApiError};
@@ -41,7 +40,6 @@ export const makeApiRequest = async <T>(
 
     return {data: response.data as T};
   } catch (error) {
-    console.log('err', error);
     let apiError: ApiError | undefined;
 
     if (error instanceof Error) {

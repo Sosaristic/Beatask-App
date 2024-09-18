@@ -20,13 +20,14 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import useFetch from '../../../hooks/useFetch';
 import {singleProviderResponse} from '../../../interfaces/apiResponses';
 import Empty from '../../../components/Empty';
-import {AirbnbRating} from 'react-native-elements';
+
 import {ScrollView} from 'react-native';
 import {makeApiRequest} from '../../../utils/helpers';
 import {useUserStore} from '../../../store/useUserStore';
-import {CustomErrorModal, CustomModal} from '../../../components';
+import {CustomErrorModal, CustomModal, GetRating} from '../../../components';
 import {Modal} from 'react-native';
 import {StackNavigationProp} from '@react-navigation/stack';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'singleservice'>;
@@ -135,8 +136,20 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
     chatId: string = '',
     providerId: string,
     providerName: string,
+    providerAvatar: string,
+    customerId: string,
+    customerName: string,
+    customerAvatar: string,
   ) => {
-    navigation.navigate('Chat', {chatId, providerId, providerName});
+    navigation.navigate('Chat', {
+      chatId,
+      providerId,
+      providerName,
+      providerAvatar,
+      customerId,
+      customerName,
+      customerAvatar,
+    });
   };
   const handlepayment = async () => {
     setBookVisible(false);
@@ -158,8 +171,22 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
         category_id: data.category_id,
         dates_and_times: [new Date()],
         description: '',
+        user_id: user?.id,
       },
     );
+
+    if (error) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Unable to Book Service',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
 
     if (BookingResponse) {
       setShowSuccessModal({
@@ -189,269 +216,275 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
   };
 
   return (
-    <View style={{flex: 1}}>
-      <ScrollView
-        style={{flex: 1}}
-        contentContainerStyle={{
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={false}>
-        <Image source={{uri: data.service_image}} style={styles.image} />
-        <View style={{padding: 10}}>
-          <Text
-            style={{
-              fontSize: wp('6%'),
-              color: customTheme.primaryColor,
-              textTransform: 'capitalize',
-            }}>
-            {data.service_name}
-          </Text>
-          <Text
-            style={{
-              fontSize: wp('4%'),
-              color: colorScheme === 'dark' ? 'white' : 'black',
-              textTransform: 'capitalize',
-            }}>
-            {providerResponse.data.name}
-          </Text>
-          <View
-            style={{
-              gap: 10,
-              flexDirection: 'row',
-              marginTop: 10,
-            }}>
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <View style={{flex: 1}}>
+        <ScrollView
+          style={{flex: 1}}
+          contentContainerStyle={{
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}>
+          <Image source={{uri: data.service_image}} style={styles.image} />
+
+          <View style={{padding: 10}}>
+            <Text
+              style={{
+                fontSize: wp('6%'),
+                color: customTheme.primaryColor,
+                textTransform: 'capitalize',
+              }}>
+              {data.service_name}
+            </Text>
             <Text
               style={{
                 fontSize: wp('4%'),
                 color: colorScheme === 'dark' ? 'white' : 'black',
                 textTransform: 'capitalize',
               }}>
-              {data.category_name ?? ''}
+              {providerResponse.data.name}
             </Text>
+            <View
+              style={{
+                gap: 10,
+                flexDirection: 'row',
+                marginTop: 10,
+                paddingLeft: -4,
+                justifyContent: 'flex-start',
+              }}>
+              {data.category_name && (
+                <Text
+                  style={{
+                    color: colorScheme === 'dark' ? 'white' : 'black',
+                    textTransform: 'capitalize',
+                    fontSize: wp('4%'),
+                  }}>
+                  {data.category_name}
+                </Text>
+              )}
 
+              {data.sub_category_name && (
+                <Text
+                  style={{
+                    fontSize: wp('4%'),
+                    color: colorScheme === 'dark' ? 'white' : 'black',
+                  }}>
+                  ( {data.sub_category_name} )
+                </Text>
+              )}
+            </View>
+            <Text
+              style={{
+                fontSize: wp('6%'),
+                color: colorScheme === 'dark' ? 'white' : 'black',
+                marginTop: 30,
+              }}>
+              Description
+            </Text>
             <Text
               style={{
                 fontSize: wp('4%'),
                 color: colorScheme === 'dark' ? 'white' : 'black',
               }}>
-              ( {data.sub_category_name})
+              {data.service_description}
             </Text>
-          </View>
-          <Text
-            style={{
-              fontSize: wp('6%'),
-              color: colorScheme === 'dark' ? 'white' : 'black',
-              marginTop: 30,
-            }}>
-            Description
-          </Text>
-          <Text
-            style={{
-              fontSize: wp('4%'),
-              color: colorScheme === 'dark' ? 'white' : 'black',
-            }}>
-            {data.service_description}
-          </Text>
-          <View style={styles.priceContainer}>
-            <View
-              style={[
-                styles.ratingContainer,
-                {justifyContent: 'space-between', marginVertical: 10},
-              ]}>
-              <Text
-                style={{
-                  color: customTheme.primaryColor,
-                  fontWeight: 'bold',
-                  fontSize: wp('8%'),
-                  paddingHorizontal: 8,
-                }}>
-                ${data.real_price}
-              </Text>
-              <TouchableOpacity
-                onPress={handleProviderSave}
+            <View style={styles.priceContainer}>
+              <View
                 style={[
-                  styles.availableButton,
-                  {
-                    backgroundColor: '#12CCB7',
-                    borderColor: customTheme.primaryColor,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  },
+                  styles.ratingContainer,
+                  {justifyContent: 'space-between', marginVertical: 10},
                 ]}>
-                <Icon name="plus" size={20} color="#fff" />
                 <Text
+                  style={{
+                    color: customTheme.primaryColor,
+                    fontWeight: 'bold',
+                    fontSize: wp('8%'),
+                    paddingHorizontal: 8,
+                  }}>
+                  ${data.real_price}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleProviderSave}
                   style={[
-                    styles.availableButtonText,
+                    styles.availableButton,
                     {
-                      color: 'white',
-                      borderWidth: 0,
+                      backgroundColor: '#12CCB7',
+                      borderColor: customTheme.primaryColor,
+                      flexDirection: 'row',
+                      alignItems: 'center',
                     },
                   ]}>
-                  Save Provider
+                  <Icon name="plus" size={20} color="#fff" />
+                  <Text
+                    style={[
+                      styles.availableButtonText,
+                      {
+                        color: 'white',
+                        borderWidth: 0,
+                      },
+                    ]}>
+                    Save Provider
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.availableButton,
+                    {
+                      borderColor: colorScheme === 'dark' ? 'white' : 'black',
+                      color: colorScheme === 'dark' ? 'white' : 'black',
+                    },
+                  ]}>
+                  Available
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity>
-              <Text
-                style={[
-                  styles.availableButton,
-                  {
-                    borderColor: colorScheme === 'dark' ? 'white' : 'black',
-                    color: colorScheme === 'dark' ? 'white' : 'black',
-                  },
-                ]}>
-                Available
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.rating}>
-            <Text style={styles.reviewTitle}>Rating & review</Text>
-            <View style={styles.reviews}>
-              {Array.isArray(providerResponse?.reviews) &&
-                providerResponse?.reviews.map((review, index, arr) => (
-                  <View key={index}>
-                    <View
-                      style={[
-                        styles.reviewContainer,
-                        index === arr.length - 1 && styles.lastReviewContainer,
-                      ]}>
-                      <Image
-                        source={{
-                          uri:
-                            review.user.profile_image ??
-                            'https://avatar.iran.liara.run/public/45',
-                        }}
-                        style={styles.userImage}
-                      />
-                      <View style={styles.reviewTextContainer}>
-                        <Text
-                          style={
-                            styles.userName
-                          }>{`${review.user.last_legal_name} ${review.user.first_legal_name}`}</Text>
-                        <Text style={styles.reviewText}>
-                          {review.review_message}
-                        </Text>
-                        <View style={styles.reviewLikes}>
-                          <Text style={styles.reviewDate}>
-                            {new Date(review.created_at).toLocaleDateString()}
+            <View style={styles.rating}>
+              <Text style={styles.reviewTitle}>Rating & review</Text>
+              <View style={styles.reviews}>
+                {Array.isArray(providerResponse?.reviews) &&
+                  providerResponse?.reviews.map((review, index, arr) => (
+                    <View key={index}>
+                      <View
+                        style={[
+                          styles.reviewContainer,
+                          index === arr.length - 1 &&
+                            styles.lastReviewContainer,
+                        ]}>
+                        <Image
+                          source={{
+                            uri:
+                              review.user.profile_image ??
+                              'https://avatar.iran.liara.run/public/45',
+                          }}
+                          style={styles.userImage}
+                        />
+                        <View style={styles.reviewTextContainer}>
+                          <Text
+                            style={
+                              styles.userName
+                            }>{`${review.user.last_legal_name} ${review.user.first_legal_name}`}</Text>
+                          <Text style={styles.reviewText}>
+                            {review.review_message}
                           </Text>
+                          <GetRating rating={review.rating_stars as number} />
+                          <View style={styles.reviewLikes}>
+                            <Text style={styles.reviewDate}>
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                      <AirbnbRating
-                        count={review.rating_stars as number}
-                        defaultRating={5}
-                        size={15}
-                        isDisabled
-                        showRating={false}
-                      />
+                      {index !== arr.length - 1 && (
+                        <View style={styles.divider} />
+                      )}
                     </View>
-                    {index !== arr.length - 1 && (
-                      <View style={styles.divider} />
-                    )}
-                  </View>
-                ))}
+                  ))}
 
-              {!Array.isArray(providerResponse?.reviews) && (
-                <>
-                  <View>
-                    <View style={[styles.reviewContainer]}>
-                      <Image
-                        source={{
-                          uri:
-                            providerResponse?.reviews.user.profile_image ??
-                            'https://avatar.iran.liara.run/public/45',
-                        }}
-                        style={styles.userImage}
-                      />
-                      <View style={styles.reviewTextContainer}>
-                        <Text
-                          style={
-                            styles.userName
-                          }>{`${providerResponse?.reviews.user.last_legal_name} ${providerResponse?.reviews.user.first_legal_name}`}</Text>
-                        <Text style={styles.reviewText}>
-                          {providerResponse?.reviews.review_message}
-                        </Text>
-                        <View style={styles.reviewLikes}>
-                          <Text style={styles.reviewDate}>
-                            {new Date(
-                              providerResponse?.reviews.created_at as string,
-                            ).toLocaleDateString()}
+                {!Array.isArray(providerResponse?.reviews) && (
+                  <>
+                    <View>
+                      <View style={[styles.reviewContainer]}>
+                        <Image
+                          source={{
+                            uri:
+                              providerResponse?.reviews.user.profile_image ??
+                              'https://avatar.iran.liara.run/public/45',
+                          }}
+                          style={styles.userImage}
+                        />
+                        <View style={styles.reviewTextContainer}>
+                          <Text
+                            style={
+                              styles.userName
+                            }>{`${providerResponse?.reviews.user.last_legal_name} ${providerResponse?.reviews.user.first_legal_name}`}</Text>
+                          <Text style={styles.reviewText}>
+                            {providerResponse?.reviews.review_message}
                           </Text>
+                          <View style={styles.reviewLikes}>
+                            <Text style={styles.reviewDate}>
+                              {new Date(
+                                providerResponse?.reviews.created_at as string,
+                              ).toLocaleDateString()}
+                            </Text>
+                          </View>
+                          <GetRating
+                            rating={
+                              providerResponse?.reviews.rating_stars as number
+                            }
+                          />
                         </View>
                       </View>
-                      <AirbnbRating
-                        count={providerResponse?.reviews.rating_stars as number}
-                        defaultRating={5}
-                        size={15}
-                        isDisabled
-                        showRating={false}
-                      />
                     </View>
-                  </View>
-                </>
-              )}
+                  </>
+                )}
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
-      {providerResponse !== null && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={() =>
-              handlemasg(
-                '',
-                providerResponse?.data.email as string,
-                `${providerResponse?.data.last_legal_name} ${providerResponse?.data.first_legal_name}`,
-              )
-            }>
-            <Text style={styles.buttonText1}>MESSAGE</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.bookNowButton}
-            onPress={() => setBookVisible(!BookVisible)}>
-            <Text style={styles.buttonText}>BOOK NOW</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        </ScrollView>
+        {providerResponse !== null && (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() =>
+                handlemasg(
+                  '',
+                  providerResponse?.data.email as string,
+                  providerResponse.data.name as string,
+                  providerResponse.data.profile_image as string,
+                  user?.email as string,
+                  user?.name as string,
+                  user?.profile_image as string,
+                )
+              }>
+              <Text style={styles.buttonText1}>MESSAGE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bookNowButton}
+              onPress={() => setBookVisible(!BookVisible)}>
+              <Text style={styles.buttonText}>BOOK NOW</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      <Modal visible={BookVisible} transparent={true} animationType="fade">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeading}>
-              <Text style={styles.modalHeadingText}>Booking system</Text>
-              <TouchableOpacity onPress={() => setBookVisible(false)}>
-                <Icon name="close" size={24} color="#010A0C" />
+        <Modal visible={BookVisible} transparent={true} animationType="fade">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeading}>
+                <Text style={styles.modalHeadingText}>Booking system</Text>
+                <TouchableOpacity onPress={() => setBookVisible(false)}>
+                  <Icon name="close" size={24} color="#010A0C" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                onPress={handlepayment}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Instant booking </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlecalenderpayment}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Recurring booking</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlecalenderpayment}
+                style={styles.modalOption}>
+                <Text style={styles.modalOptionText}>Calendar booking</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={handlepayment}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Instant booking </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handlecalenderpayment}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Recurring booking</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handlecalenderpayment}
-              style={styles.modalOption}>
-              <Text style={styles.modalOptionText}>Calendar booking</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <CustomModal {...showSuccessModal} />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </View>
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -489,7 +522,7 @@ const styles = StyleSheet.create({
     borderWidth: wp('0.5%'),
 
     padding: wp('2%'),
-    borderRadius: wp('8%'),
+    borderRadius: 20,
     paddingHorizontal: wp('5%'),
     // marginLeft: wp('10%'),
   },

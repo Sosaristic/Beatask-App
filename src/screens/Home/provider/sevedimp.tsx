@@ -27,6 +27,7 @@ import {RootStackParamList} from '../../../../App';
 import Empty from '../../../components/Empty';
 import {ActivityIndicator} from 'react-native';
 import {customTheme} from '../../../custom_theme/customTheme';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 interface Item {
   id: string;
@@ -68,7 +69,10 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         <Text style={[styles.name, isDarkMode && styles.textDark]}>
           {`${item.provider_information.first_legal_name} ${item.provider_information.last_legal_name}`}
         </Text>
-        <Text style={[styles.description, isDarkMode && styles.textDark]}>
+        <Text
+          numberOfLines={3}
+          ellipsizeMode="tail"
+          style={[styles.description, isDarkMode && styles.textDark]}>
           {item.provider_information.description}
         </Text>
         <View style={styles.ratingContainer}>
@@ -119,16 +123,18 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   }
 
   return (
-    <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <FlatList
-        data={providersData?.data || []}
-        renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        numColumns={1} // Set to 1 to display one item per row
-        key={'1'} // Unique key to force re-render when changing numColumns
-        contentContainerStyle={styles.list}
-      />
-    </View>
+    <SafeAreaViewContainer edges={['left', 'right', 'bottom']}>
+      <View style={[styles.container, isDarkMode && styles.containerDark]}>
+        <FlatList
+          data={providersData?.data || []}
+          renderItem={renderItem}
+          keyExtractor={item => item.id.toString()}
+          numColumns={1} // Set to 1 to display one item per row
+          key={'1'} // Unique key to force re-render when changing numColumns
+          contentContainerStyle={styles.list}
+        />
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 

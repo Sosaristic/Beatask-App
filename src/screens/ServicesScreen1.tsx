@@ -13,6 +13,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import SafeAreaViewContainer from '../components/SafeAreaViewContainer';
 
 const App = () => {
   const navigation = useNavigation();
@@ -23,29 +24,31 @@ const App = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/images/pic2.jpg')}
-      style={styles.background}>
-      <View style={styles.container}>
-        <Image
-          source={require('../assets/images/mainlogo.png')}
-          style={styles.logo}
-        />
-        <Text style={styles.text}>Booking made easy in three steps.</Text>
-        <View style={styles.pagination}>
-          <View style={[styles.dash]} />
-          <View style={[styles.dash, styles.activeDash]} />
-          <View style={styles.dash} />
-        </View>
-        <TouchableOpacity onPress={handleNext}>
-          <Icon
-            name="arrow-right-circle-outline"
-            size={wp('15%')}
-            color="#00d3a9"
+    <SafeAreaViewContainer>
+      <ImageBackground
+        source={require('../assets/images/pic2.jpg')}
+        style={styles.background}>
+        <View style={styles.container}>
+          <Image
+            source={require('../assets/images/mainlogo.png')}
+            style={styles.logo}
           />
-        </TouchableOpacity>
-      </View>
-    </ImageBackground>
+          <Text style={styles.text}>Booking made easy in three steps.</Text>
+          <View style={styles.pagination}>
+            <View style={[styles.dash]} />
+            <View style={[styles.dash, styles.activeDash]} />
+            <View style={styles.dash} />
+          </View>
+          <TouchableOpacity onPress={handleNext}>
+            <Icon
+              name="arrow-right-circle-outline"
+              size={wp('15%')}
+              color="#00d3a9"
+            />
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    </SafeAreaViewContainer>
   );
 };
 

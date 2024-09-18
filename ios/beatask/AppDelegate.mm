@@ -2,6 +2,7 @@
 #import <Firebase.h>
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
+#import <GoogleSignIn/GoogleSignIn.h>
 
 @implementation AppDelegate
 
@@ -10,7 +11,8 @@
   [FIRApp configure];
   
   // React Native Bridge Setup
-  NSURL *jsCodeLocation = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index" fallbackResource:nil];
+  NSURL *jsCodeLocation = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
+
 
   RCTRootView *rootView = [[RCTRootView alloc] initWithBundleURL:jsCodeLocation
                                                       moduleName:@"beatask"
@@ -24,6 +26,11 @@
   [self.window makeKeyAndVisible];
 
   return YES;
+}
+
+// Method to handle URL opening for Google login
+- (BOOL)application:(UIApplication *)application openURL:(nonnull NSURL *)url options:(nonnull NSDictionary<NSString *,id> *)options {
+  return [GIDSignIn.sharedInstance handleURL:url];  // Handle Google Sign-In URL
 }
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge {

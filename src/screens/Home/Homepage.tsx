@@ -32,7 +32,7 @@ import {
   WomenenServiceType,
 } from '../../interfaces/apiResponses';
 import {makeApiRequest} from '../../utils/helpers';
-import {ActivityIndicator} from 'react-native-paper';
+import {ActivityIndicator, Text as PText} from 'react-native-paper';
 import {chunkArray} from '../../utils/helperFunc';
 import {TextCount} from './chat/masglist';
 import {RootStackParamList} from '../../../App';
@@ -41,7 +41,9 @@ import useFetch from '../../hooks/useFetch';
 import Empty from '../../components/Empty';
 import {useDebouncedCallback} from 'use-debounce';
 import notifee from '@notifee/react-native';
-import {Button} from 'react-native';
+
+import {customTheme} from '../../custom_theme/customTheme';
+import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
 
 const greetingTime = new Date().getHours();
 
@@ -123,6 +125,8 @@ const HomeScreen = ({navigation}: Props) => {
   const [featuredLoading, setFeaturedLoading] = useState(false);
   const [mostBookedLoading, setMostBookedLoading] = useState(false);
   const [halfPriceLoading, setHalfPriceLoading] = useState(false);
+
+  console.log(user?.id);
 
   useEffect(() => {
     (async () => {
@@ -222,8 +226,6 @@ const HomeScreen = ({navigation}: Props) => {
   };
 
   const debounceRequest = useDebouncedCallback(async searchText => {
-    console.log('searchText', searchText);
-
     const {data: searchData, error} = await makeApiRequest<SearchResultRes>(
       '/search-service',
       'POST',
@@ -253,13 +255,6 @@ const HomeScreen = ({navigation}: Props) => {
 
   const styles = getStyles(isDarkMode);
 
-  const [likedProviders, setLikedProviders] = useState<{
-    [key: string]: boolean;
-  }>({
-    benjaminWilson: false,
-    finaBenjamin: false,
-  });
-
   const handleprofile = () => {
     navigation.navigate('Profile' as never);
   };
@@ -275,9 +270,7 @@ const HomeScreen = ({navigation}: Props) => {
   const handleFABPress = () => {
     navigation.navigate('Request' as never);
   };
-  const handleCategory = () => {
-    navigation.navigate('Homeimp' as never);
-  };
+
   const handleprovider = (id: number) => {
     navigation.navigate('Service', {id: id});
   };
@@ -292,7 +285,7 @@ const HomeScreen = ({navigation}: Props) => {
       service_name: payload.service_name,
       service_image: payload.service_image,
       provider_name: '',
-      sub_category_name: payload.category.sub_category,
+      sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
     navigation.navigate('singleservice', {data: payloadData});
@@ -332,6 +325,7 @@ const HomeScreen = ({navigation}: Props) => {
   };
 
   const handleWomenFeatured = (payload: WomenenServiceType) => {
+    console.log('women', payload.category);
     const payloadData: SingleServicePayload = {
       category_name: payload.category.category,
       real_price: payload.real_price.toString(),
@@ -394,97 +388,103 @@ const HomeScreen = ({navigation}: Props) => {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Image
-            source={{
-              uri:
-                user?.profile_image ?? 'https://avatar.iran.liara.run/public/3',
-            }}
-            style={styles.profileImage}
-          />
-
-          <Text style={styles.greeting}>
-            {getGreeting()} {user?.first_legal_name}
-          </Text>
-        </View>
-        <View style={styles.searchContainer}>
-          <Icon
-            name="magnify"
-            size={wp('6%')}
-            color={isDarkMode ? '#CCC' : '#51514C'}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={[styles.searchBar, {color: isDarkMode ? '#FFF' : '#000'}]}
-            placeholder="Search services"
-            placeholderTextColor={isDarkMode ? '#CCC' : '#666'}
-            onPress={openSearchModal}
-            // value={searchText}
-            // onChangeText={filterOptions} // Call filterOptions on text change
-            // onFocus={openSearchModal}
-          />
-        </View>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showModal}
-          onRequestClose={closeSearchModal}>
-          <TouchableWithoutFeedback onPress={closeSearchModal}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-          <View
-            style={[
-              styles.modalContent,
-              {backgroundColor: isDarkMode ? '#333' : '#FFF', top: hp('20%')},
-            ]}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={closeSearchModal}>
-                <Icon
-                  name="arrow-left"
-                  size={24}
-                  color={isDarkMode ? '#FFF' : '#000'}
-                />
-              </TouchableOpacity>
-              <TextInput
-                style={[
-                  styles.modalSearchInput,
-                  {color: isDarkMode ? '#FFF' : '#000'},
-                ]}
-                placeholder="Search services"
-                placeholderTextColor={isDarkMode ? '#CCC' : '#666'}
-                value={searchText}
-                onChangeText={filterOptions} // Call filterOptions on text change
-              />
+    <SafeAreaViewContainer>
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollContainer}>
+          <View style={styles.header}>
+            <Image
+              source={{
+                uri:
+                  user?.profile_image ??
+                  'https://avatar.iran.liara.run/public/3',
+              }}
+              style={styles.profileImage}
+            />
+            <View style={{marginLeft: 8}}>
+              <PText variant="bodySmall">{getGreeting()}</PText>
+              <PText
+                variant="titleMedium"
+                style={{textTransform: 'capitalize'}}>
+                {user?.first_legal_name}
+              </PText>
             </View>
-            <View style={styles.optionsContainer}>
-              <View style={styles.optionsHeader}>
-                <Text
+          </View>
+          <View style={styles.searchContainer}>
+            <Icon
+              name="magnify"
+              size={wp('6%')}
+              color={isDarkMode ? '#CCC' : '#51514C'}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={[
+                styles.searchBar,
+                {color: isDarkMode ? '#FFF' : '#000', height: 40},
+              ]}
+              placeholder="Search services"
+              placeholderTextColor={isDarkMode ? '#CCC' : '#666'}
+              onPress={openSearchModal}
+            />
+          </View>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={showModal}
+            onRequestClose={closeSearchModal}>
+            <TouchableWithoutFeedback onPress={closeSearchModal}>
+              <View style={styles.modalOverlay} />
+            </TouchableWithoutFeedback>
+            <View
+              style={[
+                styles.modalContent,
+                {backgroundColor: isDarkMode ? '#333' : '#FFF', top: hp('20%')},
+              ]}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={closeSearchModal}>
+                  <Icon
+                    name="arrow-left"
+                    size={24}
+                    color={isDarkMode ? '#FFF' : '#000'}
+                  />
+                </TouchableOpacity>
+                <TextInput
                   style={[
-                    styles.recentText,
+                    styles.modalSearchInput,
                     {color: isDarkMode ? '#FFF' : '#000'},
-                  ]}>
-                  Results
-                </Text>
-                {/* <TouchableOpacity onPress={handleClearAll}>
+                  ]}
+                  placeholder="Search services"
+                  placeholderTextColor={isDarkMode ? '#CCC' : '#666'}
+                  value={searchText}
+                  onChangeText={filterOptions} // Call filterOptions on text change
+                />
+              </View>
+              <View style={styles.optionsContainer}>
+                <View style={styles.optionsHeader}>
+                  <Text
+                    style={[
+                      styles.recentText,
+                      {color: isDarkMode ? '#FFF' : '#000'},
+                    ]}>
+                    Results
+                  </Text>
+                  {/* <TouchableOpacity onPress={handleClearAll}>
                   <Text style={styles.clearAllText}>CLEAR ALL</Text>
                 </TouchableOpacity> */}
-              </View>
-              {searchedResults.length > 0 &&
-                searchedResults.map((option, index) => (
-                  <TouchableOpacity
-                    key={Math.random()}
-                    onPress={() => handleSearchResult(option)}>
-                    <View style={styles.optionItem}>
-                      <Text
-                        style={[
-                          styles.optionText,
-                          {color: isDarkMode ? '#FFF' : '#000'},
-                        ]}>
-                        {option.service_name}
-                      </Text>
-                      {/* <TouchableOpacity
+                </View>
+                {searchedResults.length > 0 &&
+                  searchedResults.map((option, index) => (
+                    <TouchableOpacity
+                      key={Math.random()}
+                      onPress={() => handleSearchResult(option)}>
+                      <View style={styles.optionItem}>
+                        <Text
+                          style={[
+                            styles.optionText,
+                            {color: isDarkMode ? '#FFF' : '#000'},
+                          ]}>
+                          {option.service_name}
+                        </Text>
+                        {/* <TouchableOpacity
                         onPress={() => handleOptionRemove(index)}>
                         <Icon
                           name="close"
@@ -492,38 +492,96 @@ const HomeScreen = ({navigation}: Props) => {
                           color={isDarkMode ? '#FFF' : '#000'}
                         />
                       </TouchableOpacity> */}
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+              </View>
             </View>
-          </View>
-        </Modal>
-        <Swiper style={styles.swiper} showsButtons={false} autoplay={true}>
-          <View style={styles.slide}>
-            <Text style={styles.slideText}>Slide 1</Text>
-          </View>
-          <View style={styles.slide}>
-            <Text style={styles.slideText}>Slide 2</Text>
-          </View>
-          <View style={styles.slide}>
-            <Text style={styles.slideText}>Slide 3</Text>
-          </View>
-        </Swiper>
-        <View style={styles.categoryContainer}>
-          <Text style={styles.categoryHeader1}>Beatask service categories</Text>
-          <View style={styles.categories}>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'home improvement',
-                  })
-                }>
-                <View style={styles.backgroundImage}>
+          </Modal>
+          <Swiper style={styles.swiper} showsButtons={false} autoplay={true}>
+            <View style={styles.slide}>
+              <Text style={styles.slideText}>Slide 1</Text>
+            </View>
+            <View style={styles.slide}>
+              <Text style={styles.slideText}>Slide 2</Text>
+            </View>
+            <View style={styles.slide}>
+              <Text style={styles.slideText}>Slide 3</Text>
+            </View>
+          </Swiper>
+
+          <TouchableOpacity
+            style={{
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'flex-end',
+              gap: 4,
+              paddingRight: 20,
+              paddingVertical: 10,
+            }}
+            onPress={() => navigation.navigate('requests')}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                borderBottomColor: customTheme.primaryColor,
+                borderBottomWidth: 1,
+              }}>
+              <Text
+                style={{
+                  color: customTheme.primaryColor,
+                }}>
+                Completion Requests
+              </Text>
+              <Icons
+                name="chevron-right"
+                size={20}
+                color={customTheme.primaryColor}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.categoryContainer}>
+            <Text style={styles.categoryHeader1}>
+              Beatask service categories
+            </Text>
+            <View style={styles.categories}>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'home improvement',
+                    })
+                  }>
+                  <View style={styles.backgroundImage}>
+                    <Image
+                      source={{
+                        uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Home1%20(1).webp',
+                      }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                      }}
+                    />
+                    <Text style={styles.categoryText}>Home Improvement</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'business',
+                    })
+                  }>
                   <Image
                     source={{
-                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Home1%20(1).webp',
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/BUSINESS.webp',
                     }}
                     style={{
                       width: '100%',
@@ -531,358 +589,344 @@ const HomeScreen = ({navigation}: Props) => {
                       position: 'absolute',
                     }}
                   />
-                  <Text style={styles.categoryText}>Home Improvement</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'business',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/BUSINESS.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Business</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'it and graphic design',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554471/It_1_cvjo9d.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>IT and Graphic Design</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'wellness',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/WELLNESS.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Wellness</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'pets',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/PETS.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Pets</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'home events',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554623/Events_qtvps0.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Events</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'troubleshooting and repair',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Troubleshooting.webp?updatedAt=1725551207520',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>
-                  Troubleshooting and Repair
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'lessons',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554746/Lessons_uqbknv.webp',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Lessons</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'personal',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Personal.webp?updatedAt=1725550542186',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Personal</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.categoryWrapper}>
-              <TouchableOpacity
-                style={styles.category}
-                onPress={() =>
-                  navigation.navigate('Homeimp', {
-                    category_name: 'legal',
-                  })
-                }>
-                <Image
-                  source={{
-                    uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Legal.webp?updatedAt=1725550306084',
-                  }}
-                  style={{width: '100%', height: '100%', position: 'absolute'}}
-                />
-                <Text style={styles.categoryText}>Legal</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        <Text style={styles.featuredHeader}>Featured service providers</Text>
-
-        {featuredLoading ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <ActivityIndicator size={24} />
-          </View>
-        ) : featuredProviders === null || featuredProviders.length === 0 ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <Empty />
-          </View>
-        ) : (
-          <Swiper
-            showsButtons={false}
-            autoplay={true}
-            autoplayTimeout={12}
-            showsPagination={false}
-            horizontal
-            style={styles.providerSwiper}
-            loop={true}>
-            {chunkArray(featuredProviders, 2).map((item, index) => (
-              <View
-                key={Math.random()}
-                style={{
-                  flexDirection: 'row',
-                  gap: 8,
-                  width: width,
-                  flex: 1,
-                  paddingHorizontal: 8,
-                }}>
-                {item.map(provider => (
-                  <TouchableOpacity
-                    key={Math.random()}
-                    style={styles.providerCard}
-                    onPress={() => handleprovider(provider.id)}>
-                    <View style={styles.providerImageWrapper}>
-                      <Image
-                        source={{
-                          uri: provider.profile_image
-                            ? provider.profile_image
-                            : 'https://via.placeholder.com/150',
-                        }}
-                        style={styles.fullImage}
-                      />
-                    </View>
-                    <Text style={styles.providerName} ellipsizeMode="tail">
-                      {provider.name}
-                    </Text>
-
-                    <Text
-                      style={styles.providerDescription}
-                      numberOfLines={2}
-                      ellipsizeMode="tail">
-                      {provider.description}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                  <Text style={styles.categoryText}>Business</Text>
+                </TouchableOpacity>
               </View>
-            ))}
-          </Swiper>
-        )}
-
-        <Text style={styles.featuredHeader}>Most booked services</Text>
-
-        {mostBookedLoading ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <ActivityIndicator size={24} />
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'it and graphic design',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554471/It_1_cvjo9d.webp',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>IT and Graphic Design</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'wellness',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/WELLNESS.webp',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Wellness</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'pets',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/PETS.webp',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Pets</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'home events',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554623/Events_qtvps0.webp',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Events</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'troubleshooting and repair',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Troubleshooting.webp?updatedAt=1725551207520',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>
+                    Troubleshooting and Repair
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'lessons',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://res.cloudinary.com/dv2rpts6d/image/upload/v1725554746/Lessons_uqbknv.webp',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Lessons</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'personal',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Personal.webp?updatedAt=1725550542186',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Personal</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.categoryWrapper}>
+                <TouchableOpacity
+                  style={styles.category}
+                  onPress={() =>
+                    navigation.navigate('Homeimp', {
+                      category_name: 'legal',
+                    })
+                  }>
+                  <Image
+                    source={{
+                      uri: 'https://ik.imagekit.io/onj3o7rvm/beatask/Legal.webp?updatedAt=1725550306084',
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                    }}
+                  />
+                  <Text style={styles.categoryText}>Legal</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        ) : mostBookedServices === null || mostBookedServices?.length === 0 ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <Empty />
-          </View>
-        ) : (
-          <Swiper
-            showsButtons={false}
-            autoplay={true}
-            autoplayTimeout={12}
-            showsPagination={false}
-            horizontal
-            style={styles.providerSwiper}
-            loop={true}>
-            {chunkArray(mostBookedServices, 2).map((item, index) => (
-              <View
-                key={Math.random()}
-                style={{
-                  flexDirection: 'row',
-                  gap: 8,
-                  width: width,
-                  flex: 1,
-                  paddingHorizontal: 8,
-                }}>
-                {item.map(service => (
-                  <TouchableOpacity
-                    key={Math.random()}
-                    style={{width: width * 0.6}}
-                    onPress={() => handleMostBooked(service)}>
-                    <View style={styles.providerImageWrapper1}>
-                      <Image
-                        source={{
-                          uri: service.service.service_image
-                            ? service.service.service_image
-                            : 'https://via.placeholder.com/150',
-                        }}
-                        style={styles.fullImage1}
-                      />
+          <Text style={styles.featuredHeader}>Featured service providers</Text>
+
+          {featuredLoading ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <ActivityIndicator size={24} />
+            </View>
+          ) : featuredProviders === null || featuredProviders.length === 0 ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <Empty />
+            </View>
+          ) : (
+            <Swiper
+              showsButtons={false}
+              autoplay={true}
+              autoplayTimeout={12}
+              showsPagination={false}
+              horizontal
+              style={styles.providerSwiper}
+              loop={true}>
+              {chunkArray(featuredProviders, 2).map((item, index) => (
+                <View
+                  key={Math.random()}
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    width: width,
+                    flex: 1,
+                    paddingHorizontal: 8,
+                  }}>
+                  {item.map(provider => (
+                    <TouchableOpacity
+                      key={Math.random()}
+                      style={styles.providerCard}
+                      onPress={() => handleprovider(provider.id)}>
+                      <View style={styles.providerImageWrapper}>
+                        <Image
+                          source={{
+                            uri: provider.profile_image
+                              ? provider.profile_image
+                              : 'https://via.placeholder.com/150',
+                          }}
+                          style={styles.fullImage}
+                        />
+                      </View>
+                      <Text style={styles.providerName} ellipsizeMode="tail">
+                        {provider.name}
+                      </Text>
+
                       <Text
-                        style={{
-                          position: 'absolute',
-                          top: 2,
-                          right: 2,
-                          backgroundColor: '#B8F4BA',
-                          padding: 4,
-                          borderRadius: 4,
-                          color: '#1ADA22',
-                        }}>
-                        {likedProviders.benjaminWilson ? '-12%' : '-12%'}
+                        style={styles.providerDescription}
+                        numberOfLines={2}
+                        ellipsizeMode="tail">
+                        {provider.description}
                       </Text>
-                    </View>
-                    <Text style={styles.providerName1}>
-                      {service.service.service_name}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </Swiper>
+          )}
+
+          <Text style={styles.featuredHeader}>Most booked services</Text>
+
+          {mostBookedLoading ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <ActivityIndicator size={24} />
+            </View>
+          ) : mostBookedServices === null ||
+            mostBookedServices?.length === 0 ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <Empty />
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingHorizontal: 8, gap: 10}}>
+              {mostBookedServices.map(service => (
+                <TouchableOpacity
+                  key={Math.random()}
+                  style={{width: width * 0.4}}
+                  onPress={() => handleMostBooked(service)}>
+                  <View style={styles.providerImageWrapper1}>
+                    <Image
+                      source={{
+                        uri: service.service.service_image
+                          ? service.service.service_image
+                          : 'https://via.placeholder.com/150',
+                      }}
+                      style={styles.fullImage1}
+                    />
+                  </View>
+                  <Text style={styles.providerName1}>
+                    {service.service.service_name}
+                  </Text>
+                  <Text style={styles.providerDescription1}>
+                    {GetRating({rating: service.service.review_rating})}
+                    <Text style={styles.chooseText}> </Text>
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      width: '100%',
+                    }}>
+                    <Text style={styles.chooseText}>
+                      ${service.service.discounted_price}
                     </Text>
-                    <Text style={styles.providerDescription1}>
-                      {GetRating({rating: service.service.review_rating})}
-                      <Text style={styles.chooseText}> </Text>
+                    <Text style={styles.providerDescription2}>
+                      ${service.service.real_price}
                     </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        width: '100%',
-                      }}>
-                      <Text style={styles.chooseText}>
-                        ${service.service.discounted_price}
-                      </Text>
-                      <Text style={styles.providerDescription2}>
-                        ${service.service.real_price}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </Swiper>
-        )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
 
-        <Text style={styles.categoryHeader}>Featured services for women</Text>
+          <Text style={styles.categoryHeader}>Featured services for women</Text>
 
-        {womenServiceLoading ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <ActivityIndicator size={24} />
-          </View>
-        ) : womenServiceerror ? (
-          <View>
-            <Text>Error in fetching Women services</Text>
-          </View>
-        ) : womenServices?.data.length === 0 ? (
-          <View>
-            <Empty />
-          </View>
-        ) : (
-          <>{womanDataComponent()}</>
-        )}
+          {womenServiceLoading ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <ActivityIndicator size={24} />
+            </View>
+          ) : womenServiceerror ? (
+            <View>
+              <Text>Error in fetching Women services</Text>
+            </View>
+          ) : womenServices?.data.length === 0 ? (
+            <View>
+              <Empty />
+            </View>
+          ) : (
+            <>{womanDataComponent()}</>
+          )}
 
-        {/* <View style={styles.categoryContainer}>
+          {/* <View style={styles.categoryContainer}>
           <View style={styles.categories}>
             <View style={styles.categoryWrapper}>
               <TouchableOpacity
@@ -953,130 +997,131 @@ const HomeScreen = ({navigation}: Props) => {
           </View>
         </View> */}
 
-        <Text style={styles.categoryHeader}>Half price deals</Text>
+          <Text style={styles.categoryHeader}>Half price deals</Text>
 
-        {halfPriceLoading ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}>
-            <ActivityIndicator size={24} />
-          </View>
-        ) : halfPriceServices === null || halfPriceServices.length === 0 ? (
-          <View
-            style={{
-              minHeight: 300,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Empty />
-          </View>
-        ) : (
-          <Swiper
-            showsButtons={false}
-            autoplay={true}
-            autoplayTimeout={12}
-            showsPagination={false}
-            horizontal
-            style={styles.providerSwiper}
-            loop={true}>
-            {chunkArray(halfPriceServices, 2).map((item, index) => (
-              <View
-                key={Math.random()}
-                style={{
-                  flexDirection: 'row',
-                  gap: 8,
-                  width: width,
-                  flex: 1,
-                  paddingHorizontal: 8,
-                }}>
-                {item.map(service => (
-                  <TouchableOpacity
-                    key={Math.random()}
-                    style={{width: '48%'}}
-                    onPress={() => handleHalfPrice(service)}>
-                    <View style={styles.providerImageWrapper1}>
-                      <Image
-                        source={{
-                          uri: service.service_image
-                            ? service.service_image
-                            : 'https://via.placeholder.com/150',
-                        }}
-                        style={styles.fullImage1}
-                      />
-                    </View>
-                    <Text style={styles.providerName1}>
-                      {service.service_name}
-                    </Text>
-                    <Text style={styles.providerDescription1}>
-                      <GetRating rating={service.review_rating} />
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        width: '100%',
-                      }}>
-                      <Text style={styles.chooseText}>
-                        ${service.discounted_price}
+          {halfPriceLoading ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}>
+              <ActivityIndicator size={24} />
+            </View>
+          ) : halfPriceServices === null || halfPriceServices.length === 0 ? (
+            <View
+              style={{
+                minHeight: 300,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Empty />
+            </View>
+          ) : (
+            <Swiper
+              showsButtons={false}
+              autoplay={true}
+              autoplayTimeout={12}
+              showsPagination={false}
+              horizontal
+              style={styles.providerSwiper}
+              loop={true}>
+              {chunkArray(halfPriceServices, 2).map((item, index) => (
+                <View
+                  key={Math.random()}
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    width: width,
+                    flex: 1,
+                    paddingHorizontal: 8,
+                  }}>
+                  {item.map(service => (
+                    <TouchableOpacity
+                      key={Math.random()}
+                      style={{width: '48%'}}
+                      onPress={() => handleHalfPrice(service)}>
+                      <View style={styles.providerImageWrapper1}>
+                        <Image
+                          source={{
+                            uri: service.service_image
+                              ? service.service_image
+                              : 'https://via.placeholder.com/150',
+                          }}
+                          style={styles.fullImage1}
+                        />
+                      </View>
+                      <Text style={styles.providerName1}>
+                        {service.service_name}
                       </Text>
-                      <Text style={styles.providerDescription2}>
-                        ${service.real_price}
+                      <Text style={styles.providerDescription1}>
+                        <GetRating rating={service.review_rating} />
                       </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </Swiper>
-        )}
-      </ScrollView>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          width: '100%',
+                        }}>
+                        <Text style={styles.chooseText}>
+                          ${service.discounted_price}
+                        </Text>
+                        <Text style={styles.providerDescription2}>
+                          ${service.real_price}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </Swiper>
+          )}
+        </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={handleFABPress}>
-        <Icon name="briefcase-variant-outline" size={26} color="#fff" />
-      </TouchableOpacity>
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
-          <Icon
-            name="home-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text style={styles.footerText}>HOME</Text>
+        <TouchableOpacity style={styles.fab} onPress={handleFABPress}>
+          <Icon name="briefcase-variant-outline" size={26} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
-          <Icon
-            name="calendar-check-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text style={styles.footerText}>BOOKED</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
-          <View style={{position: 'absolute', top: 0, right: -4}}>
-            <TextCount />
-          </View>
-          <Icon
-            name="chat-processing-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text style={styles.footerText}>MESSAGE</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
-          <Icons
-            name="user"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text style={styles.footerText}>PROFILE</Text>
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
+            <Icon
+              name="home-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text style={styles.footerText}>HOME</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
+            <Icon
+              name="calendar-check-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text style={styles.footerText}>BOOKED</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
+            <View style={{position: 'absolute', top: 0, right: -4}}>
+              <TextCount />
+            </View>
+            <Icon
+              name="chat-processing-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text style={styles.footerText}>MESSAGE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
+            <Icons
+              name="user"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text style={styles.footerText}>PROFILE</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaViewContainer>
   );
 };
 

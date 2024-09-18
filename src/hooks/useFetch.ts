@@ -5,6 +5,7 @@ interface FetchState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
+  fetchData: () => void;
 }
 
 function useFetch<T>(
@@ -16,26 +17,27 @@ function useFetch<T>(
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    const {data, error} = await makeApiRequest<T>(url, method, payload);
+
+    if (error) {
+      setError(error.msg);
+      setLoading(false);
+    }
+
+    if (data) {
+      setData(data);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      const {data, error} = await makeApiRequest<T>(url, method, payload);
-
-      if (error) {
-        setError(error.msg);
-        setLoading(false);
-      }
-
-      if (data) {
-        setData(data);
-        setLoading(false);
-      }
-    };
     fetchData();
   }, [url]);
 
-  return {data, loading, error};
+  return {data, loading, error, fetchData};
 }
 
 export default useFetch;

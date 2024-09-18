@@ -35,6 +35,8 @@ export type User = {
   created_at: Date;
   updated_at: Date;
   profile_photo_url: string;
+  is_subscribed_to_one_month_premium: number;
+  is_subscribed_to_two_months_subscription: number;
 } | null;
 
 type UserType = {
@@ -42,11 +44,13 @@ type UserType = {
   unReadMessages: number;
   isAuthenticated: boolean;
   device_token: string;
+  showWarning: boolean;
   actions: {
     login: (user: User) => void;
     logout: () => void;
     setUnreadMessages: (value: number) => void;
     setDeviceToken: (value: string) => void;
+    setShowWarning: (value: boolean) => void;
   };
 };
 
@@ -55,6 +59,7 @@ const initialValues = {
   isAuthenticated: false,
   unReadMessages: 0,
   device_token: '',
+  showWarning: true,
 };
 
 export const useUserStore = create<UserType>(set => ({
@@ -71,6 +76,9 @@ export const useUserStore = create<UserType>(set => ({
     },
     setDeviceToken: (value: string) => {
       set({device_token: value});
+    },
+    setShowWarning: (value: boolean) => {
+      set({showWarning: value});
     },
   },
 }));

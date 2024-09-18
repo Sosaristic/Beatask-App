@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   View,
@@ -11,12 +11,8 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import {Rating, AirbnbRating} from 'react-native-ratings';
-import {
-  useNavigation,
-  useFocusEffect,
-  RouteProp,
-} from '@react-navigation/native';
+
+import {useFocusEffect, RouteProp} from '@react-navigation/native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -30,10 +26,12 @@ import {
   singleProviderResponse,
 } from '../../../interfaces/apiResponses';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {CustomErrorModal, CustomModal} from '../../../components';
+import {CustomErrorModal, CustomModal, GetRating} from '../../../components';
 import {makeApiRequest} from '../../../utils/helpers';
 import {useUserStore} from '../../../store/useUserStore';
 import {customTheme} from '../../../custom_theme/customTheme';
+import {Text as PaperText} from 'react-native-paper';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 //array of services rendered different data
 
@@ -88,20 +86,20 @@ const HomeScreen = ({route, navigation}: Props) => {
     chatId: string = '',
     providerId: string,
     providerName: string,
+    providerAvatar: string,
+    customerId: string,
+    customerName: string,
+    customerAvatar: string,
   ) => {
-    navigation.navigate('Chat', {chatId, providerId, providerName});
-  };
-  // const handlepayment = () => {
-  //   navigation.navigate('payment' as never);
-  // };
-  // const handlecalenderpayment = () => {
-  //   navigation.navigate('calenderbook', {
-  //     category: data?.service.category as string,
-  //     sub_category: data?.service.sub_category as string,
-  //   });
-  // };
-  const handleSortChange = (value: string) => {
-    // Add sorting logic here
+    navigation.navigate('Chat', {
+      chatId,
+      providerId,
+      providerName,
+      providerAvatar,
+      customerId,
+      customerName,
+      customerAvatar,
+    });
   };
 
   const toggleLike = (reviewKey: string) => {
@@ -126,8 +124,6 @@ const HomeScreen = ({route, navigation}: Props) => {
       </View>
     );
   }
-
-  console.log('single pro', data);
 
   const handleProviderSave = async () => {
     setShowSuccessModal({
@@ -181,7 +177,7 @@ const HomeScreen = ({route, navigation}: Props) => {
       category_id: payload.category_id,
       service_name: payload.service_name,
       service_id: payload.id,
-      provider_id: payload.provider_id,
+      provider_id: payload.provider_id as string,
       real_price: payload.real_price,
       service_description: payload.service_description,
       service_image: payload.service_image,
@@ -192,261 +188,262 @@ const HomeScreen = ({route, navigation}: Props) => {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Image source={{uri: data?.data?.profile_image}} style={styles.image} />
-        <View style={styles.content}>
-          <Text style={styles.title}>{data?.data.name ?? ''}</Text>
-          <Text style={styles.description}>{data?.data?.description}</Text>
-          <View style={styles.priceContainer}>
-            <View style={styles.ratingContainer}>
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Image
+            source={{uri: data?.data?.profile_image}}
+            style={styles.image}
+          />
+          <View style={styles.content}>
+            <Text style={styles.title}>{data?.data.name ?? ''}</Text>
+            <Text style={styles.description}>{data?.data?.description}</Text>
+            <View style={styles.priceContainer}>
+              <View style={styles.ratingContainer}>
+                <TouchableOpacity
+                  onPress={handleProviderSave}
+                  style={[
+                    styles.availableButton,
+                    {
+                      backgroundColor: '#12CCB7',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      borderColor: 'transparent',
+                    },
+                  ]}>
+                  <Icon name="plus" size={20} color="#fff" />
+                  <Text style={[styles.availableButtonText, {color: '#fff'}]}>
+                    Save Provider
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.availableButton}>
+                <Text style={styles.availableButtonText}>Available</Text>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 20,
+                gap: 6,
+              }}>
               <TouchableOpacity
-                onPress={handleProviderSave}
                 style={[
-                  styles.availableButton,
-                  {
-                    backgroundColor: '#12CCB7',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderColor: 'transparent',
-                  },
-                ]}>
-                <Icon name="plus" size={20} color="#fff" />
-                <Text style={[styles.availableButtonText, {color: '#fff'}]}>
-                  Save Provider
+                  styles.tabButton,
+                  {borderBottomColor: tab === 1 ? '#12CCB7' : 'transparent'},
+                ]}
+                onPress={() => setTab(1)}>
+                <Text
+                  style={[styles.tab, {color: tab === 1 ? '#12CCB7' : 'grey'}]}>
+                  Info
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.tabButton,
+                  {borderBottomColor: tab === 2 ? '#12CCB7' : 'transparent'},
+                ]}
+                onPress={() => setTab(2)}>
+                <Text
+                  style={[styles.tab, {color: tab === 2 ? '#12CCB7' : 'grey'}]}>
+                  Reviews and Rating
                 </Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.availableButton}>
-              <Text style={styles.availableButtonText}>Available</Text>
-            </TouchableOpacity>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginBottom: 20,
-              gap: 6,
-            }}>
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                {borderBottomColor: tab === 1 ? '#12CCB7' : 'transparent'},
-              ]}
-              onPress={() => setTab(1)}>
-              <Text
-                style={[styles.tab, {color: tab === 1 ? '#12CCB7' : 'grey'}]}>
-                Info
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                {borderBottomColor: tab === 2 ? '#12CCB7' : 'transparent'},
-              ]}
-              onPress={() => setTab(2)}>
-              <Text
-                style={[styles.tab, {color: tab === 2 ? '#12CCB7' : 'grey'}]}>
-                Reviews and Rating
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          {tab === 1 && (
-            <>
-              <Text
-                style={{
-                  fontWeight: 'bold',
-                  marginVertical: 10,
-                  fontSize: wp('5%'),
-                }}>
-                Services Rendered
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  paddingLeft: 10,
-                  paddingRight: 10,
-                  height: 160,
-                  flex: 1,
-                  flexDirection: 'row',
-                  gap: 15,
-                  marginBottom: 20,
-                }}>
-                {Array.isArray(data?.service) ? (
-                  data.service?.map((service, index) => (
-                    <View style={styles.categoryWrapper} key={index}>
+            {tab === 1 && (
+              <>
+                <PaperText
+                  variant="titleMedium"
+                  style={{
+                    marginVertical: 10,
+                  }}>
+                  Services Rendered
+                </PaperText>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingLeft: 10,
+                    paddingRight: 10,
+                    height: 160,
+                    flex: 1,
+                    flexDirection: 'row',
+                    gap: 15,
+                    marginBottom: 20,
+                  }}>
+                  {Array.isArray(data?.service) ? (
+                    data?.service?.map((service, index) => (
+                      <View style={styles.categoryWrapper} key={index}>
+                        <TouchableOpacity
+                          style={styles.category}
+                          onPress={() => handleSingleService(service)}>
+                          <Image
+                            source={{uri: service.service_image ?? ''}}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                            }}
+                          />
+                          <Text style={styles.categoryText}>
+                            {service.service_name}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  ) : data?.service !== null ? (
+                    <View style={styles.categoryWrapper}>
                       <TouchableOpacity
                         style={styles.category}
-                        onPress={() => handleSingleService(service)}>
+                        onPress={() =>
+                          handleSingleService(data?.service as any)
+                        }>
                         <Image
-                          source={{uri: service.service_image ?? ''}}
+                          source={{uri: data?.service.service_image ?? ''}}
                           style={{
                             width: '100%',
                             height: '100%',
                           }}
                         />
                         <Text style={styles.categoryText}>
-                          {service.service_name}
+                          {data?.service.service_name}
                         </Text>
                       </TouchableOpacity>
                     </View>
-                  ))
-                ) : data?.service !== null ? (
-                  <View style={styles.categoryWrapper}>
-                    <TouchableOpacity
-                      style={styles.category}
-                      onPress={() => handleSingleService(data?.service as any)}>
-                      <Image
-                        source={{uri: data?.service.service_image ?? ''}}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                        }}
-                      />
-                      <Text style={styles.categoryText}>
-                        {data?.service.service_name}
+                  ) : (
+                    <View>
+                      <Text style={{fontSize: 18}}>
+                        No Services yet by this provider
                       </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View>
-                    <Text style={{fontSize: 18}}>
-                      No Services yet by this provider
-                    </Text>
-                  </View>
-                )}
-              </ScrollView>
-            </>
-          )}
-
-          {tab === 2 && (
-            <>
-              <View style={styles.rating}>
-                <Text style={styles.reviewTitle}>Rating & review</Text>
-                <View style={styles.reviews}>
-                  {Array.isArray(data?.reviews) &&
-                    data?.reviews.map((review, index) => (
-                      <View key={index}>
-                        <View
-                          style={[
-                            styles.reviewContainer,
-                            index === reviews.length - 1 &&
-                              styles.lastReviewContainer,
-                          ]}>
-                          <Image
-                            source={{
-                              uri:
-                                review.user.profile_image ??
-                                'https://avatar.iran.liara.run/public/45',
-                            }}
-                            style={styles.userImage}
-                          />
-                          <View style={styles.reviewTextContainer}>
-                            <Text
-                              style={
-                                styles.userName
-                              }>{`${review.user.last_legal_name} ${review.user.first_legal_name}`}</Text>
-                            <Text style={styles.reviewText}>
-                              {review.review_message}
-                            </Text>
-                            <View style={styles.reviewLikes}>
-                              <Text style={styles.reviewDate}>
-                                {new Date(
-                                  review.created_at,
-                                ).toLocaleDateString()}
-                              </Text>
-                            </View>
-                          </View>
-                          <AirbnbRating
-                            count={review.rating_stars as number}
-                            defaultRating={5}
-                            size={15}
-                            isDisabled
-                            showRating={false}
-                          />
-                        </View>
-                        {index !== reviews.length - 1 && (
-                          <View style={styles.divider} />
-                        )}
-                      </View>
-                    ))}
-
-                  {!Array.isArray(data?.reviews) && (
-                    <>
-                      <View>
-                        <View style={[styles.reviewContainer]}>
-                          <Image
-                            source={{
-                              uri:
-                                data?.reviews.user.profile_image ??
-                                'https://avatar.iran.liara.run/public/45',
-                            }}
-                            style={styles.userImage}
-                          />
-                          <View style={styles.reviewTextContainer}>
-                            <Text
-                              style={
-                                styles.userName
-                              }>{`${data?.reviews.user.last_legal_name} ${data?.reviews.user.first_legal_name}`}</Text>
-                            <Text style={styles.reviewText}>
-                              {data?.reviews.review_message}
-                            </Text>
-                            <View style={styles.reviewLikes}>
-                              <TouchableOpacity>
-                                <Icon
-                                  name={'cards-heart'}
-                                  size={24}
-                                  color={'red'}
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.reviewLikesText}>
-                                {data?.reviews.rating_stars}
-                              </Text>
-                              <Text style={styles.reviewDate}>
-                                {new Date(
-                                  data?.reviews.created_at as string,
-                                ).toLocaleDateString()}
-                              </Text>
-                            </View>
-                          </View>
-                          <AirbnbRating
-                            count={data?.reviews.rating_stars as number}
-                            defaultRating={5}
-                            size={15}
-                            isDisabled
-                            showRating={false}
-                          />
-                        </View>
-                      </View>
-                    </>
+                    </View>
                   )}
+                </ScrollView>
+              </>
+            )}
+
+            {tab === 2 && (
+              <>
+                <View style={styles.rating}>
+                  <Text style={styles.reviewTitle}>Rating & review</Text>
+                  <View style={styles.reviews}>
+                    {Array.isArray(data?.reviews) &&
+                      data?.reviews.map((review, index) => (
+                        <View key={index}>
+                          <View
+                            style={[
+                              styles.reviewContainer,
+                              index === reviews.length - 1 &&
+                                styles.lastReviewContainer,
+                            ]}>
+                            <Image
+                              source={{
+                                uri:
+                                  review.user.profile_image ??
+                                  'https://avatar.iran.liara.run/public/45',
+                              }}
+                              style={styles.userImage}
+                            />
+                            <View style={styles.reviewTextContainer}>
+                              <Text
+                                style={
+                                  styles.userName
+                                }>{`${review.user.last_legal_name} ${review.user.first_legal_name}`}</Text>
+                              <Text style={styles.reviewText}>
+                                {review.review_message}
+                              </Text>
+                              <GetRating
+                                rating={review.rating_stars as number}
+                              />
+                              <View style={styles.reviewLikes}>
+                                <Text style={styles.reviewDate}>
+                                  {new Date(
+                                    review.created_at,
+                                  ).toLocaleDateString()}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          {index !== reviews.length - 1 && (
+                            <View style={styles.divider} />
+                          )}
+                        </View>
+                      ))}
+
+                    {!Array.isArray(data?.reviews) && (
+                      <>
+                        <View>
+                          <View style={[styles.reviewContainer]}>
+                            <Image
+                              source={{
+                                uri:
+                                  data?.reviews.user.profile_image ??
+                                  'https://avatar.iran.liara.run/public/45',
+                              }}
+                              style={styles.userImage}
+                            />
+                            <View style={styles.reviewTextContainer}>
+                              <Text
+                                style={
+                                  styles.userName
+                                }>{`${data?.reviews.user.last_legal_name} ${data?.reviews.user.first_legal_name}`}</Text>
+                              <Text style={styles.reviewText}>
+                                {data?.reviews.review_message}
+                              </Text>
+                              <View style={styles.reviewLikes}>
+                                <TouchableOpacity>
+                                  <Icon
+                                    name={'cards-heart'}
+                                    size={24}
+                                    color={'red'}
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.reviewLikesText}>
+                                  {data?.reviews.rating_stars}
+                                </Text>
+                                <GetRating
+                                  rating={data?.reviews.rating_stars as number}
+                                />
+                                <Text style={styles.reviewDate}>
+                                  {new Date(
+                                    data?.reviews.created_at as string,
+                                  ).toLocaleDateString()}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </>
+                    )}
+                  </View>
                 </View>
-              </View>
-            </>
-          )}
-        </View>
-      </ScrollView>
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.messageButton}
-          onPress={() =>
-            handlemasg(
-              '',
-              data?.data.email as string,
-              `${data?.data.last_legal_name} ${data?.data.first_legal_name}`,
-            )
-          }>
-          <Text style={styles.buttonText1}>MESSAGE</Text>
-        </TouchableOpacity>
-        {/* <TouchableOpacity
+              </>
+            )}
+          </View>
+        </ScrollView>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() =>
+              handlemasg(
+                '',
+                data?.data.email as string,
+                data?.data.name as string,
+                data?.data.profile_image as string,
+                user?.email as string,
+                user?.name as string,
+                user?.profile_image as string,
+              )
+            }>
+            <Text style={styles.buttonText1}>MESSAGE</Text>
+          </TouchableOpacity>
+          {/* <TouchableOpacity
           style={styles.bookNowButton}
           onPress={() => setBookVisible(!BookVisible)}>
           <Text style={styles.buttonText}>BOOK NOW</Text>
         </TouchableOpacity> */}
-      </View>
-      {/* <Modal visible={BookVisible} transparent={true} animationType="fade">
+        </View>
+        {/* <Modal visible={BookVisible} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeading}>
@@ -474,14 +471,15 @@ const HomeScreen = ({route, navigation}: Props) => {
         </View>
       </Modal> */}
 
-      <CustomModal {...showSuccessModal} />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </View>
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
+      </View>
+    </SafeAreaViewContainer>
   );
 };
 

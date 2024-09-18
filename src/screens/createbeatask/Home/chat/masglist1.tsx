@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState, useRef, act} from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import {Text as PaperText} from 'react-native-paper';
-import {Avatar} from 'react-native-elements';
+import {Dialog, Text as PaperText} from 'react-native-paper';
+import {Avatar} from 'react-native-paper';
 import Icons from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -21,21 +21,19 @@ import {useUserStore} from '../../../../store/useUserStore';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../../../App';
 import {formatDate} from '../../../../utils/helperFunc';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import SafeAreaViewContainer from '../../../../components/SafeAreaViewContainer';
 
 type Prop = {
   navigation: StackNavigationProp<RootStackParamList, 'masglist1'>;
 };
 
 const ChatScreen: React.FC<Prop> = ({navigation}) => {
-  const {user, actions} = useUserStore(state => state);
+  const {user, showWarning, actions} = useUserStore(state => state);
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDarkMode: boolean = colorScheme === 'dark';
-  const [showTopPopup, setShowTopPopup] = useState(true);
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
-  const topPopupRef = useRef(null); // Ref for the top popup
-  const [totalUnread, setTotalUnread] = useState<number | null>(null);
-
-  console.log('provider', totalUnread);
 
   useEffect(() => {
     navigation.setOptions({
@@ -43,15 +41,18 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
         <View
           style={{
             alignItems: 'center',
-            backgroundColor: 'black',
-            paddingVertical: 4,
+
+            backgroundColor: isDarkMode ? '#000' : '#fff',
+            paddingTop: insets.top,
           }}>
-          <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-            <PaperText
-              variant="titleLarge"
-              style={{color: 'white', alignItems: 'center', gap: 4}}>
-              Messages
-            </PaperText>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingTop: 10,
+            }}>
+            <PaperText variant="titleLarge">Messages</PaperText>
             <TextCount />
           </View>
         </View>
@@ -97,13 +98,7 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
             : b.lastMessageTimestamp;
         return timeB - timeA;
       });
-      let count = 0;
-      sortedMessages.forEach(message => {
-        count += message.providerCount ?? 0;
-      });
 
-      setTotalUnread(count);
-      actions.setUnreadMessages(count);
       setMessages(sortedMessages);
     });
 
@@ -115,14 +110,20 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
     chatId: string,
     providerId: string,
     providerName: string,
+    providerAvatar: string,
+    customerId: string,
+    customerName: string,
+    customerAvatar: string,
   ) => {
-    navigation.navigate('Chat', {chatId, providerId, providerName});
-  };
-
-  const closeTopPopup = () => {
-    if (topPopupRef.current) {
-      setShowTopPopup(false);
-    }
+    navigation.navigate('Chat', {
+      chatId,
+      providerId,
+      providerName,
+      providerAvatar,
+      customerId,
+      customerName,
+      customerAvatar,
+    });
   };
 
   const handleMessage = () => {
@@ -144,253 +145,236 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
     navigation.navigate('Bid' as never);
   };
   return (
-    <View
-      style={[
-        styles.container,
-        isDarkMode ? styles.darkContainer : styles.lightContainer,
-      ]}>
-      {/* Chat Content */}
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <View style={styles.innerContainer}>
-          <View style={styles.innerContainer}>
-            {messages?.length === 0 && (
-              <View>
-                <Text style={{textAlign: 'center', padding: 10}}>
-                  All Conversations will be shown here
-                </Text>
-              </View>
-            )}
-
-            {messages.map((message, index) => {
-              console.log('test message time', message.lastMessageTimestamp);
-              const date = new Date(message.lastMessageTimestamp);
-
-              return (
-                <TouchableOpacity
-                  onPress={() =>
-                    handlePress(
-                      message.id,
-                      message.customerId,
-                      message.customerName,
-                    )
-                  }
-                  style={styles.touchable}
-                  key={index}>
-                  <View
-                    style={[styles.card, isDarkMode ? styles.darkCard : null]}>
-                    <View style={styles.messageContainer}>
-                      <Avatar
-                        rounded
-                        size="medium"
-                        // source={require('../../../assets/images/category/user.png')} // Local image path
-                        source={
-                          message.customerAvatar
-                            ? {uri: message.customerAvatar}
-                            : require('../../../../assets/images/category/user.png')
-                        }
-                        containerStyle={styles.avatar}
-                      />
-                      <View style={styles.textContainer}>
-                        <Text
-                          style={[
-                            styles.name,
-                            isDarkMode ? styles.darkText : null,
-                          ]}>
-                          {message.customerName}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.message,
-                            isDarkMode ? styles.darkText : null,
-                          ]}>
-                          {message.lastMessageContent}
-                        </Text>
-                      </View>
-                      <View style={{gap: 6}}>
-                        {(message.providerCount as number) > 0 && (
-                          <Text style={styles.count}>
-                            {message.providerCount}
-                          </Text>
-                        )}
-
-                        <Text
-                          style={[
-                            styles.time,
-                            isDarkMode ? styles.darkText : null,
-                          ]}>
-                          {formatDate(date)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* <TouchableOpacity
-            onPress={() => handlePress('test_1Test_2', 'dummy', 'dummy')}
-            style={styles.touchable}>
-            <View style={[styles.card, isDarkMode ? styles.darkCard : null]}>
-              <View style={styles.messageContainer}>
-                <Avatar
-                  rounded
-                  size="medium"
-                  source={require('../../../../assets/images/category/user.png')}
-                  containerStyle={styles.avatar}
-                />
-                <View style={styles.textContainer}>
-                  <Text
-                    style={[styles.name, isDarkMode ? styles.darkText : null]}>
-                    Maryland Winkles
-                  </Text>
-                  <Text
-                    style={[
-                      styles.message,
-                      isDarkMode ? styles.darkText : null,
-                    ]}>
-                    Hi Beatask
-                  </Text>
-                </View>
-                <Text
-                  style={[styles.time, isDarkMode ? styles.darkText : null]}>
-                  10:30 AM
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity> */}
-        </View>
-      </ScrollView>
-
-      {/* Top Popup */}
-      {showTopPopup && (
-        <View
-          ref={topPopupRef}
-          style={[styles.topPopup, isDarkMode ? styles.darkTopPopup : null]}>
-          <Icons
-            name="info"
-            size={52}
-            color={isDarkMode ? '#EEB0B0' : '#ff0000'}
-            style={styles.infoIcon}
-          />
-          <Text
-            style={[
-              styles.popupTitle,
-              isDarkMode ? styles.darkPopupTitle : styles.lightPopupTitle,
-            ]}>
-            Warning: Stay Safe and Secure with BEATASK
-          </Text>
-          <Text
-            style={[
-              styles.popupText,
-              isDarkMode ? styles.darkPopupText : styles.lightPopupText,
-            ]}>
-            Before proceeding with the chat, please be aware of the following
-            guidelines to ensure your safety and protect your interests:{' '}
-            {'\n\n'}
-            1. No External Transactions: All transactions and payments should be
-            made within the BEATASK app. BEATASK will not be responsible for any
-            issues arising from payments or deals made outside the app. {'\n\n'}
-            2. Protect Your Information: Do not share personal information such
-            as phone numbers, email addresses, or social media profiles with
-            service providers. {'\n\n'}
-            3. Report Suspicious Behavior: If a service provider asks you to
-            conduct transactions or share personal information outside the
-            BEATASK app, please report them immediately. {'\n\n'}
-            By following these guidelines, you help us maintain a safe and
-            trustworthy community. Close this message by clicking the ‘X’ at the
-            top right corner.
-          </Text>
-          <TouchableOpacity
-            onPress={closeTopPopup}
-            style={styles.popupCloseButton}>
-            <Icons
-              name="x"
-              size={24}
-              color={isDarkMode ? '#ffffff' : '#000000'}
-            />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Footer */}
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
       <View
         style={[
-          styles.footer,
-          isDarkMode ? styles.darkFooter : styles.lightFooter,
+          styles.container,
+          isDarkMode ? styles.darkContainer : styles.lightContainer,
         ]}>
-        <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
-          <Icon
-            name="home-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkFooterText : styles.lightFooterText,
-            ]}>
-            HOME
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleBooked}>
-          <Icon
-            name="calendar-check-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkFooterText : styles.lightFooterText,
-            ]}>
-            BOOKED
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleMessage}>
-          <Icon
-            name="chat-processing-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <View style={{position: 'absolute', top: 0, right: -4}}>
-            <TextCount />
+        {/* Chat Content */}
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.innerContainer}>
+            <View style={styles.innerContainer}>
+              {messages?.length === 0 && (
+                <View>
+                  <Text style={{textAlign: 'center', padding: 10}}>
+                    All Conversations will be shown here
+                  </Text>
+                </View>
+              )}
+
+              {messages.map(message => {
+                console.log('test message time', message.lastMessageTimestamp);
+                const date = new Date(message.lastMessageTimestamp);
+
+                return (
+                  <TouchableOpacity
+                    onPress={() =>
+                      handlePress(
+                        message.id,
+                        message.providerId,
+                        message.providerName,
+                        message.providerAvatar,
+                        message.customerId,
+                        message.customerName,
+                        message.customerAvatar,
+                      )
+                    }
+                    style={styles.touchable}
+                    key={message.id}>
+                    <View
+                      style={[
+                        styles.card,
+                        isDarkMode ? styles.darkCard : null,
+                      ]}>
+                      <View style={styles.messageContainer}>
+                        <Avatar.Image
+                          size={24}
+                          source={
+                            message.customerAvatar
+                              ? {uri: message.customerAvatar}
+                              : {uri: 'https://avatar.iran.liara.run/public/44'}
+                          }
+                        />
+                        <View style={styles.textContainer}>
+                          <Text
+                            style={[
+                              styles.name,
+                              isDarkMode ? styles.darkText : null,
+                            ]}>
+                            {message.customerName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.message,
+                              isDarkMode ? styles.darkText : null,
+                            ]}>
+                            {message.lastMessageContent}
+                          </Text>
+                        </View>
+                        <View style={{gap: 6}}>
+                          {(message.providerCount as number) > 0 && (
+                            <Text style={styles.count}>
+                              {message.providerCount}
+                            </Text>
+                          )}
+
+                          <Text
+                            style={[
+                              styles.time,
+                              isDarkMode ? styles.darkText : null,
+                            ]}>
+                            {formatDate(date)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkFooterText : styles.lightFooterText,
-            ]}>
-            MESSAGE
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
-          <Icon
-            name="briefcase-variant-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            BID
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleProfile}>
-          <Icons
-            name="user"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkFooterText : styles.lightFooterText,
-            ]}>
-            PROFILE
-          </Text>
-        </TouchableOpacity>
+        </ScrollView>
+
+        {/* Top Popup */}
+
+        <Dialog
+          visible={showWarning}
+          onDismiss={() => actions.setShowWarning(false)}>
+          <Dialog.Content>
+            <View>
+              <View style={{alignItems: 'center'}}>
+                <Icons
+                  name="info"
+                  size={52}
+                  color={isDarkMode ? '#EEB0B0' : '#ff0000'}
+                  style={styles.infoIcon}
+                />
+                <Text
+                  style={[
+                    styles.popupTitle,
+                    isDarkMode ? styles.darkPopupTitle : styles.lightPopupTitle,
+                  ]}>
+                  Warning: Stay Safe and Secure with BEATASK
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.popupText,
+                  isDarkMode ? styles.darkPopupText : styles.lightPopupText,
+                ]}>
+                Before proceeding with the chat, please be aware of the
+                following guidelines to ensure your safety and protect your
+                interests: {'\n\n'}
+                1. No External Transactions: All transactions and payments
+                should be made within the BEATASK app. BEATASK will not be
+                responsible for any issues arising from payments or deals made
+                outside the app. {'\n\n'}
+                2. Protect Your Information: Do not share personal information
+                such as phone numbers, email addresses, or social media profiles
+                with service providers. {'\n\n'}
+                3. Report Suspicious Behavior: If a service provider asks you to
+                conduct transactions or share personal information outside the
+                BEATASK app, please report them immediately. {'\n\n'}
+                By following these guidelines, you help us maintain a safe and
+                trustworthy community. Close this message by clicking the ‘X’ at
+                the top right corner.
+              </Text>
+              <TouchableOpacity
+                onPress={() => actions.setShowWarning(false)}
+                style={styles.popupCloseButton}>
+                <Icons
+                  name="x"
+                  size={24}
+                  color={isDarkMode ? '#ffffff' : '#000000'}
+                />
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog>
+
+        {/* Footer */}
+        <View
+          style={[
+            styles.footer,
+            isDarkMode ? styles.darkFooter : styles.lightFooter,
+          ]}>
+          <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
+            <Icon
+              name="home-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkFooterText : styles.lightFooterText,
+              ]}>
+              HOME
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleBooked}>
+            <Icon
+              name="calendar-check-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkFooterText : styles.lightFooterText,
+              ]}>
+              BOOKED
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleMessage}>
+            <Icon
+              name="chat-processing-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <View style={{position: 'absolute', top: 0, right: -4}}>
+              <TextCount />
+            </View>
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkFooterText : styles.lightFooterText,
+              ]}>
+              MESSAGE
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
+            <Icon
+              name="briefcase-variant-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              BID
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleProfile}>
+            <Icons
+              name="user"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkFooterText : styles.lightFooterText,
+              ]}>
+              PROFILE
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -460,6 +444,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
+    textTransform: 'capitalize',
     fontWeight: 'bold',
     color: '#000000',
   },

@@ -25,6 +25,11 @@ target 'beatask' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+
+
+
+
+  
   target 'beataskTests' do
     inherit! :complete
     # Pods for testing

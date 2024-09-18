@@ -15,7 +15,7 @@ import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
-import {RouteProp, useNavigation} from '@react-navigation/native';
+import {RouteProp} from '@react-navigation/native';
 import {CustomErrorModal, CustomModal, Loader} from '../../../components';
 import {makeApiRequest} from '../../../utils/helpers';
 import {RootStackParamList} from '../../../../App';
@@ -134,7 +134,7 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
         isModalOpen: true,
       });
     }
-    if (data) {
+    if (BookingResponse) {
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,
@@ -301,15 +301,11 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
         <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
           <View>
             <Text style={styles.total}>Booking fee:</Text>
-            <Text style={styles.total}>Service:</Text>
-            <Text style={styles.total}>Total:</Text>
           </View>
           <View style={{alignItems: 'flex-end'}}>
             <Text style={styles.total}>
               ${bookingPrice?.beatask_service_fee}
             </Text>
-            <Text style={styles.total}>${bookingPrice?.service_price}</Text>
-            <Text style={styles.total}>${bookingPrice?.total_price}</Text>
           </View>
         </View>
       </Card>

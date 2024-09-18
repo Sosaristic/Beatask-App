@@ -34,6 +34,8 @@ export interface FeaturedProvider {
   created_at: Date;
   updated_at: Date;
   profile_photo_url: string;
+  is_subscribed_to_one_month_premium: number;
+  is_subscribed_to_two_months_subscription: number;
 }
 
 export type ServiceType = {
@@ -160,11 +162,14 @@ interface Provider {
   two_factor: boolean | null;
   google_id: string | null;
   facebook_id: string | null;
+  device_token?: string;
   is_service_provider: number;
   description: string;
   created_at: string;
   updated_at: string;
   profile_photo_url: string;
+  is_subscribed_to_one_month_premium: number;
+  is_subscribed_to_two_months_subscription: number;
 }
 
 export interface BookedServiceType {
@@ -260,6 +265,7 @@ export interface Filter {
 export interface SearchedResults {
   id: number;
   category_id: string;
+  sub_category: string;
   service_name: string;
   provider_id: string;
   years_of_experience: string;
@@ -451,4 +457,31 @@ export type PendingTask = {
   service: ServiceType;
   category: Category;
   user: Provider;
+};
+
+export type ServiceCompletion = {
+  id: number;
+  provider_id: string | number;
+  user_id: string | number;
+  booking_id: string | number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  provider: Provider;
+  user: Provider;
+  booked_service: {
+    id: number;
+    provider_id: number;
+    user_id: number;
+    service_id: number;
+    category_id: number;
+    dates_and_times: string[];
+    description: string;
+    is_paid: number;
+    is_confirm: number;
+    is_completed: number;
+    created_at: string;
+    updated_at: string;
+    service: ServiceType;
+  };
 };

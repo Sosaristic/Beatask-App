@@ -2,6 +2,7 @@ import {useEffect} from 'react';
 import {useUserStore} from '../store/useUserStore';
 import firestore from '@react-native-firebase/firestore';
 import {Message} from '../screens/Home/chat/masglist';
+import {v4 as uuidv4} from 'uuid';
 
 const useChats = () => {
   const {user, actions} = useUserStore(state => state);
@@ -18,7 +19,7 @@ const useChats = () => {
         const newMessages = snapshot.docs.map(doc => {
           const data = doc?.data();
           return {
-            id: doc.id,
+            id: data.id,
             lastMessageContent: data.lastMessageContent,
             lastMessageTimestamp: data.lastMessageTimestamp.toDate(),
             providerId: data.providerId,

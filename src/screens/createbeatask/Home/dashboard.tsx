@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,19 @@ import {
   TouchableOpacity,
   useColorScheme,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Pressable,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {useNavigation} from '@react-navigation/native';
+
 import {useUserStore} from '../../../store/useUserStore';
 import {TextCount} from '../../Home/chat/masglist';
 import useFetch from '../../../hooks/useFetch';
@@ -24,6 +29,13 @@ import Empty from '../../../components/Empty';
 import {convertStringToArray} from '../../../utils/helperFunc';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../../App';
+import {customTheme} from '../../../custom_theme/customTheme';
+import {Modal} from 'react-native';
+import {makeApiRequest} from '../../../utils/helpers';
+import {TextInput} from 'react-native';
+import {CustomErrorModal, CustomModal} from '../../../components';
+import {Dialog, Text as FText, Portal} from 'react-native-paper';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type CardProps = {
   children: React.ReactNode;
@@ -60,9 +72,33 @@ type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'dashboard'>;
 };
 
+type RequestCompleteType = {
+  user_id: number | string;
+  booking_id: number | string;
+  provider_id: number;
+  notes: string;
+};
+
 const HomeScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const requestCompleteData = useRef<RequestCompleteType | null>(null);
+  const [instructions, setInstructions] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState({
+    errorTitle: '',
+    errorMessage: '',
+    isModalOpen: false,
+  });
+
+  const [showSuccessModal, setShowSuccessModal] = useState({
+    successTitle: 'Success',
+    successMessage: 'Service Complete request Successful',
+    loadingMessage: 'Requesting..',
+    requestLoading: false,
+    showModal: false,
+  });
 
   const {user} = useUserStore(state => state);
   const {data, loading, error} = useFetch<UpcomingRes>(
@@ -80,7 +116,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   } = useFetch<PendingTaskRes>('/pending-tasks', 'POST', {
     provider_id: user?.id,
   });
-
+  console.log('upcoming daata', data?.data[0]);
   const handleprofile = () => {
     navigation.navigate('ProfileSetup' as never);
   };
@@ -100,419 +136,402 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     navigation.navigate('Bid' as never);
   };
 
+  const handleServiceCompleteReq = async () => {
+    setModalVisible(false);
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+    });
+    const {data, error} = await makeApiRequest(
+      '/request-to-complete-service',
+      'POST',
+      requestCompleteData?.current as RequestCompleteType,
+    );
+    if (error) {
+      console.log(error);
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Error',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
+    if (data) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
+        showModal: true,
+      });
+
+      setTimeout(() => {
+        setShowSuccessModal({
+          ...showSuccessModal,
+          showModal: false,
+        });
+        setInstructions('');
+      }, 1000);
+    }
+  };
+
   return (
-    <View
-      style={[
-        styles.container,
-        isDarkMode ? styles.darkContainer : styles.lightContainer,
-      ]}>
-      <View style={styles.header}>
-        <Image
-          source={{uri: user?.profile_image}}
-          style={styles.profileImage}
-        />
+    <SafeAreaViewContainer>
+      <View
+        style={[
+          styles.container,
+          isDarkMode ? styles.darkContainer : styles.lightContainer,
+        ]}>
+        <View style={styles.header}>
+          <Image
+            source={{uri: user?.profile_image}}
+            style={styles.profileImage}
+          />
+          <View style={{marginLeft: 10}}>
+            <FText variant="bodySmall">{getGreeting()}</FText>
+            <FText variant="titleMedium">{user?.first_legal_name}</FText>
+          </View>
+          <TouchableOpacity style={styles.settingsIcon} onPress={handlesetting}>
+            <Ionicons
+              name="settings-outline"
+              size={wp('6%')}
+              color={isDarkMode ? 'white' : 'black'}
+            />
+          </TouchableOpacity>
+        </View>
+
         <Text
           style={[
-            styles.greeting,
+            styles.sectionTitle,
             isDarkMode ? styles.darkText : styles.lightText,
           ]}>
-          {getGreeting()} {user?.first_legal_name}
+          Upcoming bookings
         </Text>
-        <TouchableOpacity style={styles.settingsIcon} onPress={handlesetting}>
-          <Ionicons
-            name="settings-outline"
-            size={wp('6%')}
-            color={isDarkMode ? 'white' : 'black'}
-          />
-        </TouchableOpacity>
-      </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 10}}>
+          {loading ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingLeft: 10,
 
-      <Text
-        style={[
-          styles.sectionTitle,
-          isDarkMode ? styles.darkText : styles.lightText,
-        ]}>
-        Upcoming bookings
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: 10}}>
-        {loading ? (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingLeft: 10,
-
-              width: wp('100%'),
-            }}>
-            <ActivityIndicator size="large" color="#12CCB7" />
-          </View>
-        ) : error || data?.data.length === 0 ? (
-          <>
-            <Empty height={hp('20%')} />
-          </>
-        ) : (
-          <>
-            {data?.data.map(item => {
-              const dates = convertStringToArray(item.dates_and_times);
-              return (
-                <Card
-                  key={item.id}
-                  style={[
-                    styles.bookingCard,
-                    isDarkMode ? styles.darkCard : styles.lightCard,
-                  ]}>
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardTitle,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {item.category.category}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate('Chat', {
-                          chatId: '',
-                          providerId: item.user.email,
-                          providerName: item.user.name,
-                        })
-                      }>
-                      <Icon
-                        name="chat-processing-outline"
-                        size={wp('5%')}
-                        color={isDarkMode ? 'white' : 'black'}
-                        style={styles.chatIcon}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <Text
+                width: wp('100%'),
+              }}>
+              <ActivityIndicator size="large" color="#12CCB7" />
+            </View>
+          ) : error || data?.data.length === 0 ? (
+            <>
+              <Empty height={hp('20%')} />
+            </>
+          ) : (
+            <>
+              {data?.data.map(item => {
+                const dates = convertStringToArray(item.dates_and_times);
+                return (
+                  <Card
+                    key={item.id}
                     style={[
-                      styles.cardSubtitle,
-                      isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
+                      styles.bookingCard,
+                      isDarkMode ? styles.darkCard : styles.lightCard,
                     ]}>
-                    {item.service.service_name}
-                  </Text>
-                  <View style={styles.bookingCardContent}>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        {item.category.category}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 20,
+                        }}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            navigation.navigate('Chat', {
+                              chatId: '',
+                              providerId: user?.email || '',
+                              providerName: user?.name || '',
+                              providerAvatar: user?.profile_image || '',
+                              customerId: item.user.email || '',
+                              customerName: item.user.name || '',
+                              customerAvatar: item.user.profile_image || '',
+                            })
+                          }>
+                          <Icon
+                            name="chat-processing-outline"
+                            size={wp('5%')}
+                            color={isDarkMode ? 'white' : 'black'}
+                            style={styles.chatIcon}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{
+                            paddingHorizontal: 10,
+                          }}
+                          onPress={() => {
+                            setModalVisible(true);
+                            requestCompleteData.current = {
+                              provider_id: user?.id as number,
+                              booking_id: item.id,
+                              user_id: item.user.id,
+                              notes: instructions,
+                            };
+                          }}>
+                          <FontAwesome
+                            name="ellipsis-v"
+                            size={wp('5%')}
+                            color={isDarkMode ? 'white' : 'black'}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                     <Text
                       style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
+                        styles.cardSubtitle,
+                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
                       ]}>
-                      Date & Time:{' '}
+                      {item.service.service_name}
+                    </Text>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        Date & Time:{' '}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                          {flex: 1},
+                        ]}>
+                        {dates.map((date, index) => (
+                          <Text key={index} style={{flex: 1}}>
+                            {date},{' '}
+                          </Text>
+                        ))}
+                      </Text>
+                    </View>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        Customer Name:{' '}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                          {textTransform: 'capitalize'},
+                        ]}>
+                        {item.user.name}
+                      </Text>
+                    </View>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        Specific info:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        {' '}
+                        {item.description}
+                      </Text>
+                    </View>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        Location:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        {item.user.home_address ?? ''}
+                      </Text>
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                      <Text
+                        style={[
+                          styles.totalCostLabel,
+                          isDarkMode
+                            ? styles.darkSubtitle
+                            : styles.lightSubtitle,
+                        ]}>
+                        Total cost
+                      </Text>
+                      <Text
+                        style={[
+                          styles.totalCost,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        ${item.total_price_before_fee}
+                      </Text>
+                    </View>
+                    <View style={styles.cardFooter}>
+                      <Text
+                        style={[
+                          styles.totalCostLabel,
+                          isDarkMode
+                            ? styles.darkSubtitle
+                            : styles.lightSubtitle,
+                        ]}>
+                        Service Fee:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.totalCost,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        ${item.service_fee} (12%)
+                      </Text>
+                    </View>
+                    <View style={styles.cardFooter}>
+                      <Text
+                        style={[
+                          styles.totalCostLabel,
+                          isDarkMode
+                            ? styles.darkSubtitle
+                            : styles.lightSubtitle,
+                        ]}>
+                        Final You Receive:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.totalCost,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        ${item.final_total_price}
+                      </Text>
+                    </View>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+        </ScrollView>
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            isDarkMode ? styles.darkText : styles.lightText,
+          ]}>
+          Pending tasks
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{padding: 10, gap: 8}}>
+          {pendingLoading ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingLeft: 10,
+
+                width: wp('100%'),
+              }}>
+              <ActivityIndicator size="large" color="#12CCB7" />
+            </View>
+          ) : pendingError || pendingData?.data.length == 0 ? (
+            <Empty height={hp('20%')} />
+          ) : (
+            <>
+              {pendingData?.data.map(item => {
+                const dates = convertStringToArray(item.dates_and_times);
+                return (
+                  <View
+                    key={item.id}
+                    style={[
+                      {width: wp('45%'), padding: wp('2%'), borderRadius: 10},
+                      isDarkMode ? styles.darkCard : styles.lightCard,
+                    ]}>
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        {item.category.category}
+                      </Text>
+
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate('Chat', {
+                            chatId: '',
+                            providerId: user?.email || '',
+                            providerName: user?.name || '',
+                            providerAvatar: user?.profile_image || '',
+                            customerId: item.user.email,
+                            customerName: item.user.name,
+                            customerAvatar: item.user.profile_image || '',
+                          })
+                        }>
+                        <Icon
+                          name="chat-processing-outline"
+                          size={wp('5%')}
+                          color={isDarkMode ? 'white' : 'black'}
+                          style={styles.chatIcon}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.bookingCardContent}>
+                      <Text
+                        style={[
+                          styles.cardInfo,
+                          isDarkMode ? styles.darkText : styles.lightText,
+                          {textTransform: 'capitalize'},
+                        ]}>
+                        {item.user.name}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={[isDarkMode ? styles.darkText : styles.lightText]}>
+                      {dates[0]}
                     </Text>
                     <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {dates[0]} - {dates[dates.length - 1]}
-                    </Text>
-                  </View>
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      Customer Name:{' '}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {item.user.name}
-                    </Text>
-                  </View>
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      Specific info:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
+                      style={[isDarkMode ? styles.darkText : styles.lightText]}>
                       {' '}
-                      {item.description}
+                      -{' '}
+                    </Text>
+                    <Text
+                      style={[isDarkMode ? styles.darkText : styles.lightText]}>
+                      {dates[dates.length - 1]}
                     </Text>
                   </View>
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      Location:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {item.user.home_address ? item.user.home_address : ''}
-                    </Text>
-                  </View>
-                  <TouchableOpacity>
-                    <Text style={styles.mapLink}>View map location</Text>
-                  </TouchableOpacity>
-                  <View style={styles.cardFooter}>
-                    <Text
-                      style={[
-                        styles.totalCostLabel,
-                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
-                      ]}>
-                      Total cost
-                    </Text>
-                    <Text
-                      style={[
-                        styles.totalCost,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      ${item.total_price_before_fee}
-                    </Text>
-                  </View>
-                  <View style={styles.cardFooter}>
-                    <Text
-                      style={[
-                        styles.totalCostLabel,
-                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
-                      ]}>
-                      Service Fee:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.totalCost,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      ${item.service_fee} (12%)
-                    </Text>
-                  </View>
-                  <View style={styles.cardFooter}>
-                    <Text
-                      style={[
-                        styles.totalCostLabel,
-                        isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
-                      ]}>
-                      Final You Receive:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.totalCost,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      ${item.final_total_price}
-                    </Text>
-                  </View>
-                </Card>
-              );
-            })}
-          </>
-        )}
+                );
+              })}
+            </>
+          )}
 
-        {/* {[...Array(5)].map((_, index) => (
-          <Card
-            key={index}
-            style={[
-              styles.bookingCard,
-              isDarkMode ? styles.darkCard : styles.lightCard,
-            ]}>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardTitle,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Home improvement
-              </Text>
-              <TouchableOpacity onPress={handleChat}>
-                <Icon
-                  name="chat-processing-outline"
-                  size={wp('5%')}
-                  color={isDarkMode ? 'white' : 'black'}
-                  style={styles.chatIcon}
-                />
-              </TouchableOpacity>
-            </View>
-            <Text
-              style={[
-                styles.cardSubtitle,
-                isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
-              ]}>
-              Residential cleaning services
-            </Text>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Date & Time:{' '}
-              </Text>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Today 10:00 - 12:00 AM
-              </Text>
-            </View>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Specific info:
-              </Text>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                {' '}
-                Bring your toolbox
-              </Text>
-            </View>
-            <View style={styles.bookingCardContent}>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                Location:
-              </Text>
-              <Text
-                style={[
-                  styles.cardInfo,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                {' '}
-                267 New Avenue Park, New York
-              </Text>
-            </View>
-            <TouchableOpacity>
-              <Text style={styles.mapLink}>View map location</Text>
-            </TouchableOpacity>
-            <View style={styles.cardFooter}>
-              <Text
-                style={[
-                  styles.totalCostLabel,
-                  isDarkMode ? styles.darkSubtitle : styles.lightSubtitle,
-                ]}>
-                Total cost
-              </Text>
-              <Text
-                style={[
-                  styles.totalCost,
-                  isDarkMode ? styles.darkText : styles.lightText,
-                ]}>
-                $2,000
-              </Text>
-            </View>
-          </Card>
-        ))} */}
-      </ScrollView>
-
-      <Text
-        style={[
-          styles.sectionTitle,
-          isDarkMode ? styles.darkText : styles.lightText,
-        ]}>
-        Pending tasks
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{padding: 10, gap: 8}}>
-        {pendingLoading ? (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingLeft: 10,
-
-              width: wp('100%'),
-            }}>
-            <ActivityIndicator size="large" color="#12CCB7" />
-          </View>
-        ) : pendingError || pendingData?.data.length == 0 ? (
-          <Empty height={hp('20%')} />
-        ) : (
-          <>
-            {pendingData?.data.map(item => {
-              const dates = convertStringToArray(item.dates_and_times);
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    {width: wp('45%'), padding: wp('2%'), borderRadius: 10},
-                    isDarkMode ? styles.darkCard : styles.lightCard,
-                  ]}>
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardTitle,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {item.category.category}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate('Chat', {
-                          chatId: '',
-                          providerId: item.user.email,
-                          providerName: item.user.name,
-                        })
-                      }>
-                      <Icon
-                        name="chat-processing-outline"
-                        size={wp('5%')}
-                        color={isDarkMode ? 'white' : 'black'}
-                        style={styles.chatIcon}
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.bookingCardContent}>
-                    <Text
-                      style={[
-                        styles.cardInfo,
-                        isDarkMode ? styles.darkText : styles.lightText,
-                      ]}>
-                      {item.user.name}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
-                    {dates[0]}
-                  </Text>
-                  <Text
-                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
-                    {' '}
-                    -{' '}
-                  </Text>
-                  <Text
-                    style={[isDarkMode ? styles.darkText : styles.lightText]}>
-                    {dates[dates.length - 1]}
-                  </Text>
-                </View>
-              );
-            })}
-          </>
-        )}
-
-        {/* {[...Array(5)].map((_, index) => (
+          {/* {[...Array(5)].map((_, index) => (
           <Card
             key={index}
             style={[
@@ -557,88 +576,170 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             </Text>
           </Card>
         ))} */}
-      </ScrollView>
+        </ScrollView>
 
-      <View
-        style={[
-          styles.footer,
-          {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
-        ]}>
-        <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
-          <Icon
-            name="home-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            HOME
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
-          <Icon
-            name="calendar-check-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            BOOKED
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
-          <Icon
-            name="chat-processing-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <View style={{position: 'absolute', top: 0, right: -4}}>
-            <TextCount />
+        <View
+          style={[
+            styles.footer,
+            {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
+          ]}>
+          <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
+            <Icon
+              name="home-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              HOME
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
+            <Icon
+              name="calendar-check-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              BOOKED
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
+            <Icon
+              name="chat-processing-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <View style={{position: 'absolute', top: 0, right: -4}}>
+              <TextCount />
+            </View>
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              MESSAGE
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
+            <Icon
+              name="briefcase-variant-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              BID
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
+            <Icon
+              name="account-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                isDarkMode ? styles.darkText : styles.lightText,
+              ]}>
+              PROFILE
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Modal
+          visible={modalVisible}
+          transparent={true}
+          animationType="fade"
+          onDismiss={() => setModalVisible(false)}
+          onRequestClose={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  paddingHorizontal: 20,
+                  gap: 8,
+                  backgroundColor: isDarkMode
+                    ? customTheme.lightDarkColor
+                    : '#FFFFFF',
+                },
+              ]}>
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                hitSlop={{top: 10, bottom: 10, left: 20, right: 20}}
+                style={{
+                  flexDirection: 'row',
+                  alignSelf: 'flex-end',
+                  justifyContent: 'flex-end',
+                  padding: 10,
+                }}>
+                <FontAwesome
+                  name="close"
+                  size={28}
+                  color={isDarkMode ? '#FFF' : '#000'}
+                />
+              </Pressable>
+              <FText variant="titleMedium">Request Service Completion</FText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    borderColor: '#12ccb7',
+                    color: isDarkMode ? '#FFFFFF' : '#000000',
+                    backgroundColor: isDarkMode ? '#51514C' : '#FFFFFF',
+                    textAlignVertical: 'top', // Align text and placeholder to the top
+                    marginTop: hp('2%'), // Ensure no top margin
+                    paddingTop: hp('2%'), // Ensure no top padding
+                  },
+                ]}
+                value={instructions}
+                onChangeText={text => setInstructions(text)}
+                placeholder="Enter Note"
+                placeholderTextColor={isDarkMode ? '#CCCCCC' : '#707070'}
+                multiline
+                numberOfLines={2}
+              />
+              <TouchableOpacity
+                onPress={handleServiceCompleteReq}
+                disabled={!instructions}
+                style={{
+                  backgroundColor: instructions
+                    ? customTheme.primaryColor
+                    : 'gray',
+                  padding: 10,
+                  width: '100%',
+                  borderRadius: 10,
+                  paddingVertical: 12,
+                }}>
+                <Text style={{width: '100%', textAlign: 'center'}}>
+                  Proceed
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            MESSAGE
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
-          <Icon
-            name="briefcase-variant-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            BID
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleprofile}>
-          <Icon
-            name="account-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[
-              styles.footerText,
-              isDarkMode ? styles.darkText : styles.lightText,
-            ]}>
-            PROFILE
-          </Text>
-        </TouchableOpacity>
+        </Modal>
+
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
       </View>
-    </View>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -668,6 +769,18 @@ const styles = StyleSheet.create({
     fontSize: wp('4%'),
     marginLeft: wp('3%'),
     textTransform: 'capitalize',
+  },
+  input: {
+    width: '100%',
+    borderColor: '#12ccb7',
+    borderWidth: 1,
+    borderRadius: wp('2%'),
+    paddingBottom: hp('5%'),
+    paddingTop: hp('0%'),
+    marginTop: hp('0%'),
+    marginBottom: hp('1%'),
+    paddingVertical: hp('5%'),
+    paddingHorizontal: wp('4%'),
   },
   settingsIcon: {
     marginLeft: 'auto',
@@ -768,6 +881,17 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: wp('3%'),
     color: '#000', // Default light mode text color
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    padding: 20,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    alignItems: 'center',
   },
 });
 

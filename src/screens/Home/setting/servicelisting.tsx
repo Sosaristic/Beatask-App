@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
-import {Calendar} from 'react-native-calendars';
+
 import {useNavigation} from '@react-navigation/native';
 import * as DocumentPicker from 'react-native-document-picker';
 import Icon from 'react-native-vector-icons/Feather';
@@ -26,11 +26,13 @@ import {Formik, FormikProps} from 'formik';
 import {ServiceListingValidationSchema} from '../../../components/forms/serviceListing';
 import useFetch from '../../../hooks/useFetch';
 import {FetchedCategory} from '../../../interfaces/apiResponses';
-import {Checkbox} from 'react-native-paper';
+import {Checkbox, Text as RNPaperText} from 'react-native-paper';
 import {customTheme} from '../../../custom_theme/customTheme';
 import {CustomErrorModal, CustomModal} from '../../../components';
 import {makeApiRequest} from '../../../utils/helpers';
 import {useUserStore} from '../../../store/useUserStore';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 
 interface Availability {
   date: string;
@@ -324,6 +326,7 @@ const BookingScreen = () => {
           }}>
           <Checkbox.Item
             label={item.category}
+            mode="android"
             onPress={() =>
               handleOptionSelect(item.category, 'category', pickedService)
             }
@@ -348,6 +351,7 @@ const BookingScreen = () => {
         }}>
         <Checkbox.Item
           label={item}
+          mode="android"
           onPress={() => handleOptionSelect(item, 'sub_category')}
           status={selectedSubCategory === item ? 'checked' : 'unchecked'}
           labelStyle={{textTransform: 'capitalize'}}
@@ -357,227 +361,229 @@ const BookingScreen = () => {
     );
   };
 
-  console.log(formikRef.current?.values);
   return (
-    <ScrollView style={styles.container}>
-      <Formik
-        innerRef={formikRef}
-        initialValues={initialValues}
-        onSubmit={handleFormSubmit}
-        validationSchema={ServiceListingValidationSchema}>
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-        }) => {
-          return (
-            <View style={{gap: 12, marginBottom: 40}}>
-              <View>
-                <Text style={styles.label}>
-                  What is the name of your Service
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  onChangeText={handleChange('service_name')}
-                  onBlur={handleBlur('service_name')}
-                  value={values.service_name}
-                  placeholder="Enter Service Name"
-                />
-                {touched.service_name && errors.service_name && (
-                  <Text style={styles.errorText}>{errors.service_name}</Text>
-                )}
-              </View>
-
-              <View>
-                <Text style={styles.label}>
-                  Which of these services do you offer
-                </Text>
-                <TouchableOpacity onPress={() => openCategory('category')}>
+    <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
+      <ScrollView style={styles.container}>
+        <Formik
+          innerRef={formikRef}
+          initialValues={initialValues}
+          onSubmit={handleFormSubmit}
+          validationSchema={ServiceListingValidationSchema}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+          }) => {
+            return (
+              <View style={{gap: 12, marginBottom: 40}}>
+                <View>
+                  <Text style={styles.label}>
+                    What is the name of your Service
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={handleChange('category_name')}
-                    onBlur={handleBlur('category_name')}
-                    value={values.category_name}
-                    editable={false}
-                    placeholder="Choose Category"
+                    onChangeText={handleChange('service_name')}
+                    onBlur={handleBlur('service_name')}
+                    value={values.service_name}
+                    placeholder="Enter Service Name"
                   />
-                </TouchableOpacity>
-                {touched.category_name && errors.category_name && (
-                  <Text style={styles.errorText}>{errors.category_name}</Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.label}>
-                  Skills relevant to the service your offer
-                </Text>
-                <TouchableOpacity onPress={() => openCategory('sub_category')}>
+                  {touched.service_name && errors.service_name && (
+                    <Text style={styles.errorText}>{errors.service_name}</Text>
+                  )}
+                </View>
+
+                <View style={{width: '100%'}}>
+                  <Text style={styles.label}>
+                    Which of these services do you offer
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => openCategory('category')}
+                    style={[
+                      styles.input,
+                      {flexDirection: 'row', alignItems: 'center'},
+                    ]}>
+                    <RNPaperText style={[]}>{values.category_name}</RNPaperText>
+                  </TouchableOpacity>
+                  {touched.category_name && errors.category_name && (
+                    <Text style={styles.errorText}>{errors.category_name}</Text>
+                  )}
+                </View>
+                <View>
+                  <Text style={styles.label}>
+                    Skills relevant to the service your offer
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => openCategory('sub_category')}
+                    style={[
+                      styles.input,
+                      {flexDirection: 'row', alignItems: 'center'},
+                    ]}>
+                    <RNPaperText style={[]}>{values.sub_category}</RNPaperText>
+                  </TouchableOpacity>
+                  {touched.sub_category && errors.sub_category && (
+                    <Text style={styles.errorText}>{errors.sub_category}</Text>
+                  )}
+                </View>
+
+                <View>
+                  <Text style={styles.label}>Years of Experience</Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={handleChange('sub_category')}
-                    onBlur={handleBlur('sub_category')}
-                    value={values.sub_category}
-                    editable={false}
-                    placeholder="Choose Sub Category"
+                    onChangeText={handleChange('years_of_experience')}
+                    onBlur={handleBlur('years_of_experience')}
+                    value={values.years_of_experience}
+                    placeholder="Enter Years of Experience"
+                    keyboardType="numeric"
                   />
-                </TouchableOpacity>
-                {touched.sub_category && errors.sub_category && (
-                  <Text style={styles.errorText}>{errors.sub_category}</Text>
-                )}
-              </View>
+                  {touched.years_of_experience &&
+                    errors.years_of_experience && (
+                      <Text style={styles.errorText}>
+                        {errors.years_of_experience}
+                      </Text>
+                    )}
+                </View>
+                <View>
+                  <Text style={styles.label}>Set Pricing</Text>
+                  <TextInput
+                    style={styles.input}
+                    onChangeText={handleChange('real_price')}
+                    onBlur={handleBlur('real_price')}
+                    value={values.real_price}
+                    keyboardType="numeric"
+                    placeholder="e.g $20"
+                  />
+                  {touched.real_price && errors.real_price && (
+                    <Text style={styles.errorText}>{errors.real_price}</Text>
+                  )}
+                </View>
+                <View>
+                  <Text style={styles.label}>Set Discounted Price</Text>
+                  <TextInput
+                    style={styles.input}
+                    onChangeText={handleChange('discounted_price')}
+                    onBlur={handleBlur('discounted_price')}
+                    value={values.discounted_price}
+                    keyboardType="numeric"
+                    placeholder="e.g $20"
+                  />
+                  {touched.discounted_price && errors.discounted_price && (
+                    <Text style={styles.errorText}>
+                      {errors.discounted_price}
+                    </Text>
+                  )}
+                </View>
+                <View>
+                  <Text style={styles.label}>Upload Service image</Text>
+                  <TouchableOpacity
+                    onPress={() => handleFileUpload('service_image')}
+                    style={styles.uploadButton}>
+                    <Icon name="upload" size={30} color="#6e6e6e" />
+                    <Text style={styles.uploadButtonText}>
+                      <Text style={styles.chooseText}>Choose </Text>
+                      file to upload
+                    </Text>
+                    <Text>
+                      {imagePicked !== null ? imagePicked[0].name : ''}
+                    </Text>
+                  </TouchableOpacity>
+                  {touched.service_image && errors.service_image && (
+                    <Text style={styles.errorText}>{errors.service_image}</Text>
+                  )}
+                </View>
+                <View>
+                  <Text style={styles.label}>
+                    Upload Certification for this service
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleFileUpload('experience_document')}
+                    style={styles.uploadButton}>
+                    <Icon name="upload" size={30} color="#6e6e6e" />
+                    <Text style={styles.uploadButtonText}>
+                      <Text style={styles.chooseText}>Choose </Text>
+                      file to upload
+                    </Text>
+                    <Text>
+                      {certification !== null ? certification[0].name : ''}
+                    </Text>
+                  </TouchableOpacity>
+                  {touched.experience_document &&
+                    errors.experience_document && (
+                      <Text style={styles.errorText}>
+                        {errors.experience_document}
+                      </Text>
+                    )}
+                </View>
 
-              <View>
-                <Text style={styles.label}>Years of Experience</Text>
-                <TextInput
-                  style={styles.input}
-                  onChangeText={handleChange('years_of_experience')}
-                  onBlur={handleBlur('years_of_experience')}
-                  value={values.years_of_experience}
-                  placeholder="Enter Years of Experience"
-                  keyboardType="numeric"
-                />
-                {touched.years_of_experience && errors.years_of_experience && (
-                  <Text style={styles.errorText}>
-                    {errors.years_of_experience}
-                  </Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.label}>Set Pricing</Text>
-                <TextInput
-                  style={styles.input}
-                  onChangeText={handleChange('real_price')}
-                  onBlur={handleBlur('real_price')}
-                  value={values.real_price}
-                  keyboardType="numeric"
-                  placeholder="e.g $20"
-                />
-                {touched.real_price && errors.real_price && (
-                  <Text style={styles.errorText}>{errors.real_price}</Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.label}>Set Discounted Price</Text>
-                <TextInput
-                  style={styles.input}
-                  onChangeText={handleChange('discounted_price')}
-                  onBlur={handleBlur('discounted_price')}
-                  value={values.discounted_price}
-                  keyboardType="numeric"
-                  placeholder="e.g $20"
-                />
-                {touched.discounted_price && errors.discounted_price && (
-                  <Text style={styles.errorText}>
-                    {errors.discounted_price}
-                  </Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.label}>Upload Service image</Text>
+                <View>
+                  <Text style={styles.label}>Service Description</Text>
+                  <TextInput
+                    style={[
+                      {
+                        borderRadius: 5,
+                        height: hp('15%'),
+                        borderWidth: 1,
+                        borderStyle: 'dotted',
+                        color: isDarkMode ? '#FFFFFF' : '#000000',
+                        backgroundColor: isDarkMode ? '#51514C' : '#FFFFFF',
+                        textAlignVertical: 'top', // Align text and placeholder to the top
+                        // Ensure no top margin
+                        paddingVertical: 6, // Ensure no top padding
+                        paddingHorizontal: 8,
+                      },
+                    ]}
+                    value={values.service_description}
+                    onChangeText={handleChange('service_description')}
+                    onBlur={handleBlur('service_description')}
+                    placeholder="Enter Service Description"
+                    placeholderTextColor={isDarkMode ? '#CCCCCC' : '#707070'}
+                    multiline
+                    numberOfLines={4}
+                  />
+                  {touched.service_description &&
+                    errors.service_description && (
+                      <Text style={styles.errorText}>
+                        {errors.service_description}
+                      </Text>
+                    )}
+                </View>
                 <TouchableOpacity
-                  onPress={() => handleFileUpload('service_image')}
-                  style={styles.uploadButton}>
-                  <Icon name="upload" size={30} color="#6e6e6e" />
-                  <Text style={styles.uploadButtonText}>
-                    <Text style={styles.chooseText}>Choose </Text>
-                    file to upload
-                  </Text>
-                  <Text>{imagePicked !== null ? imagePicked[0].name : ''}</Text>
-                </TouchableOpacity>
-                {touched.service_image && errors.service_image && (
-                  <Text style={styles.errorText}>{errors.service_image}</Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.label}>
-                  Upload Certification for this service
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleFileUpload('experience_document')}
-                  style={styles.uploadButton}>
-                  <Icon name="upload" size={30} color="#6e6e6e" />
-                  <Text style={styles.uploadButtonText}>
-                    <Text style={styles.chooseText}>Choose </Text>
-                    file to upload
-                  </Text>
-                  <Text>
-                    {certification !== null ? certification[0].name : ''}
-                  </Text>
-                </TouchableOpacity>
-                {touched.experience_document && errors.experience_document && (
-                  <Text style={styles.errorText}>
-                    {errors.experience_document}
-                  </Text>
-                )}
-              </View>
-
-              <View>
-                <Text style={styles.label}>Service Description</Text>
-                <TextInput
-                  style={[
-                    {
-                      borderRadius: 5,
-                      borderWidth: 1,
-                      borderStyle: 'dotted',
-                      color: isDarkMode ? '#FFFFFF' : '#000000',
-                      backgroundColor: isDarkMode ? '#51514C' : '#FFFFFF',
-                      textAlignVertical: 'top', // Align text and placeholder to the top
-                      // Ensure no top margin
-                      paddingTop: hp('2%'), // Ensure no top padding
-                      paddingLeft: 8,
-                    },
-                  ]}
-                  value={values.service_description}
-                  onChangeText={handleChange('service_description')}
-                  onBlur={handleBlur('service_description')}
-                  placeholder="Enter Service Description"
-                  placeholderTextColor={isDarkMode ? '#CCCCCC' : '#707070'}
-                  multiline
-                  numberOfLines={4}
-                />
-                {touched.service_description && errors.service_description && (
-                  <Text style={styles.errorText}>
-                    {errors.service_description}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={() => handleSubmit()}
-                style={{
-                  marginTop: 20,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-
-                  width: '100%',
-                  padding: 10,
-                }}>
-                <Text
+                  onPress={() => handleSubmit()}
                   style={{
-                    backgroundColor: customTheme.primaryColor,
-                    textAlign: 'center',
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    fontSize: 18,
-                    alignSelf: 'center',
-                    marginHorizontal: 'auto',
+                    marginTop: 20,
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     borderRadius: 20,
+                    width: '100%',
+                    padding: 10,
                   }}>
-                  SAVE
-                </Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      </Formik>
+                  <Text
+                    style={{
+                      backgroundColor: customTheme.primaryColor,
+                      textAlign: 'center',
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      fontSize: 18,
+                      borderRadius: 20,
+                      alignSelf: 'center',
+                      marginHorizontal: 'auto',
+                    }}>
+                    SAVE
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        </Formik>
 
-      {/* <Text style={styles.label}>Service categories</Text>
+        {/* <Text style={styles.label}>Service categories</Text>
 
       <TouchableOpacity onPress={() => setOpenModal(true)}>
         <Text style={styles.input}>Select Service Category</Text>
       </TouchableOpacity> */}
-      {/* <Animated.View
+        {/* <Animated.View
           style={[styles.dropdownContent, {height: dropdownHeight}]}>
           <Text style={styles.headingtext}>Service Category</Text>
           <TouchableOpacity onPress={closeDropdown}></TouchableOpacity>
@@ -698,7 +704,7 @@ const BookingScreen = () => {
           </TouchableOpacity>
         </Animated.View> */}
 
-      {/* <Text style={styles.label}>Skills relevant to the service you offer</Text>
+        {/* <Text style={styles.label}>Skills relevant to the service you offer</Text>
       <TextInput
         style={styles.input}
         placeholder="Planning"
@@ -716,20 +722,20 @@ const BookingScreen = () => {
         onChangeText={setYearsOfExperience}
       />
       <Text style={styles.label}>Upload certification for this service</Text> */}
-      {/* <TouchableOpacity onPress={handleFileUpload} style={styles.uploadButton}>
+        {/* <TouchableOpacity onPress={handleFileUpload} style={styles.uploadButton}>
         <Icon name="upload" size={30} color="#6e6e6e" />
         <Text style={styles.uploadButtonText}>
           <Text style={styles.chooseText}>Choose </Text>
           file to upload
         </Text>
       </TouchableOpacity> */}
-      {/* {certification &&
+        {/* {certification &&
           certification.map((file, index) => (
             <Text key={index} style={styles.selectedFileText}>
               {file.name}
             </Text>
           ))} */}
-      {/* <Text style={styles.label}>Set availability</Text>
+        {/* <Text style={styles.label}>Set availability</Text>
         <View style={styles.calendarContainer}>
           <Calendar
             onDayPress={handleDayPress}
@@ -746,7 +752,7 @@ const BookingScreen = () => {
             }}
           />
         </View> */}
-      {/* {availability.map((slot, index) => (
+        {/* {availability.map((slot, index) => (
           <View key={index} style={styles.timeSlot}>
             <View style={styles.dateHeader}>
               <Text style={styles.dateText}>{slot.date}</Text>
@@ -770,61 +776,86 @@ const BookingScreen = () => {
           </View>
         ))} */}
 
-      <Modal
-        visible={openModal}
-        transparent
-        animationType="slide"
-        onDismiss={() => setOpenModal(false)}
-        onRequestClose={() => setOpenModal(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#1E90FF" />
-            ) : error ? (
-              <Text>Categories not found</Text>
-            ) : (
-              <>
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    marginBottom: 10,
-                    width: '100%',
-                    textAlign: 'left',
-                    fontSize: hp(2.5),
-                  }}>
-                  {categoryType === 'category'
-                    ? 'Categories'
-                    : 'Sub Categories'}
-                </Text>
-                {categoryType === 'category' && (
-                  <FlatList
-                    data={data?.data}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id.toString()}
-                  />
-                )}
-                {categoryType === 'sub_category' &&
-                  subCategoryList.length > 0 && (
+        <Modal
+          visible={openModal}
+          transparent
+          animationType="slide"
+          onDismiss={() => setOpenModal(false)}
+          onRequestClose={() => setOpenModal(false)}>
+          <View style={styles.modalContainer}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  backgroundColor: isDarkMode
+                    ? customTheme.lightDarkColor
+                    : 'white',
+                },
+              ]}>
+              {loading ? (
+                <ActivityIndicator size="large" color="#1E90FF" />
+              ) : error ? (
+                <Text>Categories not found</Text>
+              ) : (
+                <>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingHorizontal: 20,
+                    }}>
+                    <RNPaperText
+                      style={{
+                        fontWeight: 'bold',
+                        marginBottom: 10,
+                        width: '100%',
+                        textAlign: 'left',
+                        fontSize: hp(2.5),
+                      }}>
+                      {categoryType === 'category'
+                        ? 'Categories'
+                        : 'Sub Categories'}
+                    </RNPaperText>
+                    <TouchableOpacity>
+                      <AntDesign
+                        name="close"
+                        color={isDarkMode ? 'white' : 'black'}
+                        size={24}
+                        onPress={() => setOpenModal(false)}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {categoryType === 'category' && (
                     <FlatList
-                      data={subCategoryList}
-                      renderItem={subCategoryRender}
-                      keyExtractor={(item, index) => index.toString()}
+                      data={data?.data}
+                      renderItem={renderItem}
+                      keyExtractor={item => item.id.toString()}
                     />
                   )}
-              </>
-            )}
+                  {categoryType === 'sub_category' &&
+                    subCategoryList.length > 0 && (
+                      <FlatList
+                        data={subCategoryList}
+                        renderItem={subCategoryRender}
+                        keyExtractor={(item, index) => index.toString()}
+                      />
+                    )}
+                </>
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <CustomModal {...showSuccessModal} />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </ScrollView>
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
+      </ScrollView>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -845,6 +876,8 @@ const getStyles = (isDarkMode: boolean) =>
       color: isDarkMode ? '#FFFFFF' : '#000000',
       padding: 10,
       borderRadius: 5,
+      height: 50,
+      alignItems: 'center',
     },
     skillsContainer: {
       flexDirection: 'row',
@@ -991,7 +1024,6 @@ const getStyles = (isDarkMode: boolean) =>
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContent: {
-      backgroundColor: '#fff',
       padding: 20,
       borderTopLeftRadius: 40,
       borderTopRightRadius: 40,

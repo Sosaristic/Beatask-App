@@ -23,6 +23,7 @@ export const sendMessage = async ({
   usersIds,
   sentBy,
   providerAvatar,
+  customerAvatar,
   providerName,
   customerName,
   id,
@@ -39,7 +40,7 @@ export const sendMessage = async ({
     usersIds,
     sentBy,
     status: 'sent',
-
+    customerAvatar,
     providerName,
     customerName,
     providerAvatar,
@@ -75,6 +76,7 @@ export const sendMessage = async ({
             : conversationDoc.data()?.customerCount,
         sentBy,
         usersIds,
+        id,
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
     } else {
@@ -90,7 +92,10 @@ export const sendMessage = async ({
         customerCount: firestore.FieldValue.increment(1),
         customerName,
         providerName,
+        providerAvatar,
+        customerAvatar,
         sentBy,
+        id,
         usersIds,
         createdAt: firestore.FieldValue.serverTimestamp(),
       });

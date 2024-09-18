@@ -12,7 +12,8 @@ export const ServiceListingValidationSchema = Yup.object().shape({
   service_name: Yup.string().required('Service name is required'),
   years_of_experience: Yup.number()
     .required('Years of experience is required')
-    .min(5, 'Years of experience must be at least 5'),
+    .min(5, 'Years of experience must be at least 5')
+    .typeError('Years of experience must be a number'),
   service_image: imageSchema.required('Service image is required'),
   experience_document: imageSchema.required(
     'Service certification is required',

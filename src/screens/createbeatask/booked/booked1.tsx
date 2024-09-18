@@ -14,8 +14,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {useNavigation} from '@react-navigation/native';
-import {Card} from 'react-native-elements';
+
 import {TextCount} from '../../Home/chat/masglist';
 import useFetch from '../../../hooks/useFetch';
 import {CustomErrorModal, CustomModal, Loader} from '../../../components';
@@ -31,6 +30,7 @@ import {RootStackParamList} from '../../../../App';
 import {convertStringToArray} from '../../../utils/helperFunc';
 import {makeApiRequest} from '../../../utils/helpers';
 import {useUserStore} from '../../../store/useUserStore';
+import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 
 type UnsuccessfulRes = {
   message: string;
@@ -192,373 +192,404 @@ const App: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {backgroundColor: isDarkMode ? '#010A0C' : '#FFF'},
-      ]}>
-      <View style={styles.tabsContainer}>
-        {['Incoming', 'Complete', 'Cancelled'].map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.tabButton,
-              selectedTab === tab && styles.activeTabButton,
-            ]}
-            onPress={() => setSelectedTab(tab)}>
-            <Text
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
+      <View
+        style={[
+          styles.container,
+          {backgroundColor: isDarkMode ? '#010A0C' : '#FFF'},
+        ]}>
+        <View style={styles.tabsContainer}>
+          {['Incoming', 'Complete', 'Cancelled'].map(tab => (
+            <TouchableOpacity
+              key={tab}
               style={[
-                styles.tabButtonText,
-                {color: isDarkMode ? '#FFF' : '#000'},
-              ]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <ScrollView contentContainerStyle={styles.cardsContainer}>
-        {selectedTab === 'Incoming' && (
-          <>
-            {incomingLoading ? (
-              <Loader />
-            ) : incomingError ? (
-              <Text>An Error Occurred</Text>
-            ) : incoming === null || incoming.services.length === 0 ? (
-              <Empty />
-            ) : (
-              <>
-                {incoming.services.map((item, index) => {
-                  const convertedArray = convertStringToArray(
-                    item.dates_and_times,
-                  );
-                  return (
-                    <View key={item.id}>
-                      <View style={[styles.card]}>
-                        <Image
-                          source={{uri: item.service.service_image}}
-                          style={styles.cardImage}
-                        />
-                        <View style={styles.cardContent}>
-                          <Text
-                            style={[
-                              styles.cardTitle,
-                              {color: isDarkMode ? '#FFF' : '#000'},
-                            ]}>
-                            {item.user.name}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardStatus,
-                              {color: isDarkMode ? '#FFF' : '#000'},
-                            ]}>
-                            {item.service.service_name}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardSubtitle,
-                              {color: isDarkMode ? '#CCC' : '#666'},
-                            ]}>
-                            {item.service.service_description}
-                          </Text>
-                          <View style={styles.cardFooter}>
-                            <Text style={styles.cardCompleted}>
-                              {item.service.is_completed ? 'Completed' : ''}
+                styles.tabButton,
+                selectedTab === tab && styles.activeTabButton,
+              ]}
+              onPress={() => setSelectedTab(tab)}>
+              <Text
+                style={[
+                  styles.tabButtonText,
+                  {color: isDarkMode ? '#FFF' : '#000'},
+                ]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <ScrollView contentContainerStyle={styles.cardsContainer}>
+          {selectedTab === 'Incoming' && (
+            <>
+              {incomingLoading ? (
+                <Loader />
+              ) : incomingError ? (
+                <Text>An Error Occurred</Text>
+              ) : incoming === null || incoming.services.length === 0 ? (
+                <Empty />
+              ) : (
+                <View style={{gap: 30}}>
+                  {incoming.services.map((item, index) => {
+                    const convertedArray = convertStringToArray(
+                      item.dates_and_times,
+                    );
+                    return (
+                      <View key={item.id} style={{marginVertical: 20}}>
+                        <View style={[styles.card]}>
+                          <Image
+                            source={{uri: item.service.service_image}}
+                            style={styles.cardImage}
+                          />
+                          <View style={styles.cardContent}>
+                            <Text
+                              style={[
+                                styles.cardTitle,
+                                {color: isDarkMode ? '#FFF' : '#000'},
+                              ]}>
+                              {item.user.name}
                             </Text>
                             <Text
                               style={[
-                                styles.cardDate,
+                                styles.cardStatus,
                                 {color: isDarkMode ? '#FFF' : '#000'},
                               ]}>
-                              On {new Date(item.created_at).toDateString()}
+                              {item.service.service_name}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.cardSubtitle,
+                                {color: isDarkMode ? '#CCC' : '#666'},
+                              ]}>
+                              {item.service.service_description}
+                            </Text>
+                            <View style={styles.cardFooter}>
+                              <Text style={styles.cardCompleted}>
+                                {item.service.is_completed ? 'Completed' : ''}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.cardDate,
+                                  {color: isDarkMode ? '#FFF' : '#000'},
+                                ]}>
+                                On {new Date(item.created_at).toDateString()}
+                              </Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.chatButton}
+                            onPress={() =>
+                              navigation.navigate('Chat', {
+                                chatId: '',
+                                providerId: user?.email as string,
+                                providerName: user?.name as string,
+                                providerAvatar: user?.profile_image as string,
+                                customerId: item.user.email,
+                                customerName: item.user.name,
+                                customerAvatar: item.user.profile_image,
+                              })
+                            }>
+                            <Icon
+                              name="chat-processing-outline"
+                              size={wp('7%')}
+                              color={isDarkMode ? '#FFF' : '#000'}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                        <View style={[styles.hr]}>
+                          <View style={styles.bookingCardContent}>
+                            <Text
+                              style={[
+                                styles.cardInfo,
+                                isDarkMode ? styles.darkText : styles.lightText,
+                              ]}>
+                              Date & Time:{' '}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.cardInfo,
+                                isDarkMode ? styles.darkText : styles.lightText,
+                              ]}>
+                              {`${convertedArray[0]} \n to \n ${convertedArray[1]}`}
                             </Text>
                           </View>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.chatButton}
-                          onPress={() =>
-                            navigation.navigate('Chat', {
-                              chatId: '',
-                              providerId: item.user.email,
-                              providerName: item.user.name,
-                            })
-                          }>
-                          <Icon
-                            name="chat-processing-outline"
-                            size={wp('7%')}
-                            color={isDarkMode ? '#FFF' : '#000'}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                      <View style={[styles.hr]}>
-                        <View style={styles.bookingCardContent}>
-                          <Text
-                            style={[
-                              styles.cardInfo,
-                              isDarkMode ? styles.darkText : styles.lightText,
-                            ]}>
-                            Date & Time:{' '}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardInfo,
-                              isDarkMode ? styles.darkText : styles.lightText,
-                            ]}>
-                            {`${convertedArray[0]} \n to \n ${convertedArray[1]}`}
-                          </Text>
-                        </View>
-                        <View style={styles.bookingCardContent}>
-                          <Text
-                            style={[
-                              styles.cardInfo,
-                              isDarkMode ? styles.darkText : styles.lightText,
-                            ]}>
-                            Location:
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardInfo,
-                              isDarkMode ? styles.darkText : styles.lightText,
-                            ]}>
-                            {item.user.home_address}
-                          </Text>
-                        </View>
-                        <TouchableOpacity>
-                          <Text style={styles.mapLink}>View map location</Text>
-                        </TouchableOpacity>
-                        <View style={styles.bookingCardContent}>
-                          <TouchableOpacity
-                            style={styles.button1}
-                            onPress={() => handleReject(item.id)}>
-                            <Text style={styles.buttonText1}>REJECT</Text>
+                          <View style={styles.bookingCardContent}>
+                            <Text
+                              style={[
+                                styles.cardInfo,
+                                isDarkMode ? styles.darkText : styles.lightText,
+                              ]}>
+                              Location:
+                            </Text>
+                            <Text
+                              style={[
+                                styles.cardInfo,
+                                isDarkMode ? styles.darkText : styles.lightText,
+                              ]}>
+                              {item.user.home_address}
+                            </Text>
+                          </View>
+                          <TouchableOpacity>
+                            <Text style={styles.mapLink}>
+                              View map location
+                            </Text>
                           </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.button}
-                            onPress={() => handleConfirm(item.id)}>
-                            <Text style={styles.buttonText}>CONFIRM</Text>
-                          </TouchableOpacity>
+                          <View style={styles.bookingCardContent}>
+                            <TouchableOpacity
+                              style={styles.button1}
+                              onPress={() => handleReject(item.id)}>
+                              <Text style={styles.buttonText1}>REJECT</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.button}
+                              onPress={() => handleConfirm(item.id)}>
+                              <Text style={styles.buttonText}>CONFIRM</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </>
-            )}
-          </>
-        )}
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
 
-        {selectedTab === 'Complete' && (
-          <>
-            {completedLoading ? (
-              <Loader />
-            ) : completedError ? (
-              <Text>An Error Occurred</Text>
-            ) : completed === null || completed.data.length === 0 ? (
-              <Empty />
-            ) : (
-              <>
-                {completed.data.map(item => (
-                  <View style={styles.card} key={item.id}>
-                    <Image
-                      source={{uri: item.service.service_image}}
-                      style={styles.cardImage}
-                    />
-                    <View style={styles.cardContent}>
-                      <Text
-                        style={[
-                          styles.cardTitle,
-                          {color: isDarkMode ? '#FFF' : '#000'},
-                        ]}>
-                        {item.user.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.cardStatus,
-                          {color: isDarkMode ? '#FFF' : '#000'},
-                        ]}>
-                        {item.service.service_name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.cardSubtitle,
-                          {color: isDarkMode ? '#CCC' : '#666'},
-                        ]}>
-                        {item.service.sub_category}
-                      </Text>
-                      <View style={styles.cardFooter2}>
+          {selectedTab === 'Complete' && (
+            <>
+              {completedLoading ? (
+                <Loader />
+              ) : completedError ? (
+                <Text>An Error Occurred</Text>
+              ) : completed === null || completed.data.length === 0 ? (
+                <Empty />
+              ) : (
+                <View style={{gap: 10}}>
+                  {completed.data.map(item => (
+                    <View style={styles.card} key={item.id}>
+                      <Image
+                        source={{uri: item.service.service_image}}
+                        style={styles.cardImage}
+                      />
+                      <View style={styles.cardContent}>
                         <Text
                           style={[
-                            styles.cardDate,
+                            styles.cardTitle,
                             {color: isDarkMode ? '#FFF' : '#000'},
                           ]}>
-                          On {new Date(item.created_at).toDateString()}
+                          {item.user.name}
                         </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.chatButton}
-                      onPress={() =>
-                        navigation.navigate('Chat', {
-                          chatId: '',
-                          providerId: item.user.email,
-                          providerName: item.user.name,
-                        })
-                      }>
-                      <Icon
-                        name="chat-processing-outline"
-                        size={wp('7%')}
-                        color={isDarkMode ? '#FFF' : '#000'}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            )}
-          </>
-        )}
-
-        {selectedTab === 'Cancelled' && (
-          <>
-            {cancelledLoading ? (
-              <Loader />
-            ) : cancelledError ? (
-              <Text>An Error Occurred</Text>
-            ) : cancelled === null || cancelled.data.length === 0 ? (
-              <Empty />
-            ) : (
-              <>
-                {cancelled.data.map(item => (
-                  <View style={styles.card} key={item.id}>
-                    <Image
-                      source={{uri: item.service.service_image}}
-                      style={styles.cardImage}
-                    />
-                    <View style={styles.cardContent}>
-                      <Text
-                        style={[
-                          styles.cardTitle1,
-                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                        ]}>
-                        {item.user.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.cardStatus1,
-                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                        ]}>
-                        {item.service.service_name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.cardSubtitle1,
-                          {color: isDarkMode ? '#FF0000' : '#FF0000'},
-                        ]}>
-                        {item.description}
-                      </Text>
-                      <View style={styles.cardFooter}>
                         <Text
                           style={[
-                            styles.cardDate,
+                            styles.cardStatus,
+                            {color: isDarkMode ? '#FFF' : '#000'},
+                          ]}>
+                          {item.service.service_name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardSubtitle,
+                            {color: isDarkMode ? '#CCC' : '#666'},
+                          ]}>
+                          {item.service.sub_category}
+                        </Text>
+                        <View style={styles.cardFooter2}>
+                          <Text
+                            style={[
+                              styles.cardDate,
+                              {color: isDarkMode ? '#FFF' : '#000'},
+                            ]}>
+                            On {new Date(item.created_at).toDateString()}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={() =>
+                          navigation.navigate('Chat', {
+                            chatId: '',
+                            providerId: user?.email as string,
+                            providerName: user?.name as string,
+                            providerAvatar: user?.profile_image as string,
+                            customerId: item.user.email,
+                            customerName: item.user.name,
+                            customerAvatar: item.user.profile_image,
+                          })
+                        }>
+                        <Icon
+                          name="chat-processing-outline"
+                          size={wp('7%')}
+                          color={isDarkMode ? '#FFF' : '#000'}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+
+          {selectedTab === 'Cancelled' && (
+            <>
+              {cancelledLoading ? (
+                <Loader />
+              ) : cancelledError ? (
+                <Text>An Error Occurred</Text>
+              ) : cancelled === null || cancelled.data.length === 0 ? (
+                <Empty />
+              ) : (
+                <>
+                  {cancelled.data.map(item => (
+                    <View style={styles.card} key={item.id}>
+                      <Image
+                        source={{uri: item.service.service_image}}
+                        style={styles.cardImage}
+                      />
+                      <View style={styles.cardContent}>
+                        <Text
+                          style={[
+                            styles.cardTitle1,
                             {color: isDarkMode ? '#FF0000' : '#FF0000'},
                           ]}>
-                          On {new Date(item.created_at).toDateString()}
+                          {item.user.name}
                         </Text>
+                        <Text
+                          style={[
+                            styles.cardStatus1,
+                            {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                          ]}>
+                          {item.service.service_name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardSubtitle1,
+                            {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                          ]}>
+                          {item.description}
+                        </Text>
+                        <View style={styles.cardFooter}>
+                          <Text
+                            style={[
+                              styles.cardDate,
+                              {color: isDarkMode ? '#FF0000' : '#FF0000'},
+                            ]}>
+                            On {new Date(item.created_at).toDateString()}
+                          </Text>
+                        </View>
                       </View>
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={() =>
+                          navigation.navigate('Chat', {
+                            chatId: '',
+                            providerId: user?.email as string,
+                            providerName: user?.name as string,
+                            providerAvatar: user?.profile_image as string,
+                            customerId: item.user.email,
+                            customerName: item.user.name,
+                            customerAvatar: item.user.profile_image,
+                          })
+                        }>
+                        <Icon
+                          name="chat-processing-outline"
+                          size={wp('7%')}
+                          color={isDarkMode ? '#FFF' : '#000'}
+                        />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      style={styles.chatButton}
-                      onPress={() =>
-                        navigation.navigate('Chat', {
-                          chatId: '',
-                          providerId: item.user.email,
-                          providerName: item.user.name,
-                        })
-                      }>
-                      <Icon
-                        name="chat-processing-outline"
-                        size={wp('7%')}
-                        color={isDarkMode ? '#FFF' : '#000'}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            )}
-          </>
-        )}
-        <CustomModal {...showSuccessModal} />
-        <CustomErrorModal
-          {...showErrorModal}
-          closeModal={() =>
-            setShowErrorModal({...showErrorModal, isModalOpen: false})
-          }
-        />
-      </ScrollView>
-      <View style={[{marginTop: hp('2%')}]} />
-      <View
-        style={[
-          styles.footer,
-          {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
-        ]}>
-        <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
-          <Icon
-            name="home-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
+                  ))}
+                </>
+              )}
+            </>
+          )}
+          <CustomModal {...showSuccessModal} />
+          <CustomErrorModal
+            {...showErrorModal}
+            closeModal={() =>
+              setShowErrorModal({...showErrorModal, isModalOpen: false})
+            }
           />
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            HOME
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
-          <Icon
-            name="calendar-check-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            BOOKED
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
-          <Icon
-            name="chat-processing-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <View style={{position: 'absolute', top: 0, right: -4}}>
-            <TextCount />
-          </View>
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            MESSAGE
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
-          <Icon
-            name="briefcase-variant-outline"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            BID
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={handleProfile}>
-          <Icons
-            name="user"
-            size={wp('7%')}
-            color={isDarkMode ? '#FFF' : '#000'}
-          />
-          <Text
-            style={[styles.footerText, {color: isDarkMode ? '#FFF' : '#000'}]}>
-            PROFILE
-          </Text>
-        </TouchableOpacity>
+        </ScrollView>
+        <View style={[{marginTop: hp('2%')}]} />
+        <View
+          style={[
+            styles.footer,
+            {backgroundColor: isDarkMode ? '#021114' : '#FFF'},
+          ]}>
+          <TouchableOpacity style={styles.footerItem} onPress={handleHome}>
+            <Icon
+              name="home-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              HOME
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebooked}>
+            <Icon
+              name="calendar-check-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              BOOKED
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleChat}>
+            <Icon
+              name="chat-processing-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <View style={{position: 'absolute', top: 0, right: -4}}>
+              <TextCount />
+            </View>
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              MESSAGE
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handlebid}>
+            <Icon
+              name="briefcase-variant-outline"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              BID
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem} onPress={handleProfile}>
+            <Icons
+              name="user"
+              size={wp('7%')}
+              color={isDarkMode ? '#FFF' : '#000'}
+            />
+            <Text
+              style={[
+                styles.footerText,
+                {color: isDarkMode ? '#FFF' : '#000'},
+              ]}>
+              PROFILE
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaViewContainer>
   );
 };
 
