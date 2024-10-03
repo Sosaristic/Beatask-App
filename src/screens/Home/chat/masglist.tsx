@@ -24,6 +24,7 @@ import {RootStackParamList} from '../../../../App';
 import {formatDate} from '../../../utils/helperFunc';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import Empty from '../../../components/Empty';
 
 export type Message = {
   lastMessageContent: string;
@@ -44,13 +45,21 @@ export type Message = {
 
 export const TextCount = () => {
   const {unReadMessages} = useUserStore(state => state);
+  const colorScheme: ColorSchemeName = useColorScheme();
+  const isDarkMode: boolean = colorScheme === 'dark';
 
   if (unReadMessages === null) return null;
 
   if (unReadMessages === 0) {
     return null;
   }
-  return <PaperText>{unReadMessages}</PaperText>;
+  return (
+    <PaperText
+      variant="titleMedium"
+      style={[{color: isDarkMode ? '#fff' : '#000'}]}>
+      {unReadMessages}
+    </PaperText>
+  );
 };
 
 type Prop = {
@@ -82,7 +91,11 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
             }}>
             <PaperText
               variant="titleLarge"
-              style={{alignItems: 'center', gap: 4}}>
+              style={{
+                alignItems: 'center',
+                gap: 4,
+                color: isDarkMode ? '#fff' : '#000',
+              }}>
               Messages
             </PaperText>
             <TextCount />
@@ -186,9 +199,7 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
           <View style={styles.innerContainer}>
             {messages?.length === 0 && (
               <View>
-                <Text style={{textAlign: 'center', padding: 10}}>
-                  All Conversations will be shown here
-                </Text>
+                <Empty />
               </View>
             )}
             {messages.map((message, index) => {
@@ -550,6 +561,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#12ccb7',
     height: 20,
     width: 20,
+
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',

@@ -45,12 +45,14 @@ type UserType = {
   isAuthenticated: boolean;
   device_token: string;
   showWarning: boolean;
+  isSubscribed: boolean;
   actions: {
     login: (user: User) => void;
     logout: () => void;
     setUnreadMessages: (value: number) => void;
     setDeviceToken: (value: string) => void;
     setShowWarning: (value: boolean) => void;
+    setIsSubscribed: (value: boolean) => void;
   };
 };
 
@@ -60,13 +62,20 @@ const initialValues = {
   unReadMessages: 0,
   device_token: '',
   showWarning: true,
+  isSubscribed: false,
 };
 
 export const useUserStore = create<UserType>(set => ({
   ...initialValues,
   actions: {
     login: (user: User) => {
-      set({user, isAuthenticated: true});
+      set({
+        user,
+        isAuthenticated: true,
+        isSubscribed:
+          user?.is_subscribed_to_one_month_premium === 1 ||
+          user?.is_subscribed_to_two_months_subscription === 1,
+      });
     },
     logout: () => {
       set({user: initialValues.user, isAuthenticated: false});
@@ -79,6 +88,9 @@ export const useUserStore = create<UserType>(set => ({
     },
     setShowWarning: (value: boolean) => {
       set({showWarning: value});
+    },
+    setIsSubscribed: (value: boolean) => {
+      set({isSubscribed: value});
     },
   },
 }));

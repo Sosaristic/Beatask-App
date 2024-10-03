@@ -243,7 +243,10 @@ const App: React.FC<Props> = ({navigation}) => {
                             <Text
                               style={[
                                 styles.cardTitle,
-                                {color: isDarkMode ? '#FFF' : '#000'},
+                                {
+                                  color: isDarkMode ? '#FFF' : '#000',
+                                  textTransform: 'capitalize',
+                                },
                               ]}>
                               {item.user.name}
                             </Text>
@@ -308,7 +311,9 @@ const App: React.FC<Props> = ({navigation}) => {
                                 styles.cardInfo,
                                 isDarkMode ? styles.darkText : styles.lightText,
                               ]}>
-                              {`${convertedArray[0]} \n to \n ${convertedArray[1]}`}
+                              {`${new Date(
+                                convertedArray[0],
+                              ).toLocaleString()}`}
                             </Text>
                           </View>
                           <View style={styles.bookingCardContent}>
@@ -327,11 +332,7 @@ const App: React.FC<Props> = ({navigation}) => {
                               {item.user.home_address}
                             </Text>
                           </View>
-                          <TouchableOpacity>
-                            <Text style={styles.mapLink}>
-                              View map location
-                            </Text>
-                          </TouchableOpacity>
+
                           <View style={styles.bookingCardContent}>
                             <TouchableOpacity
                               style={styles.button1}

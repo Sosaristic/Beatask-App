@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
   Pressable,
-  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -34,8 +31,11 @@ import {Modal} from 'react-native';
 import {makeApiRequest} from '../../../utils/helpers';
 import {TextInput} from 'react-native';
 import {CustomErrorModal, CustomModal} from '../../../components';
-import {Dialog, Text as FText, Portal} from 'react-native-paper';
+import {Text as FText} from 'react-native-paper';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
+import {useFocusEffect} from '@react-navigation/native';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import useCustomQuery from '../../../hooks/useCustomQuery';
 
 type CardProps = {
   children: React.ReactNode;
@@ -76,15 +76,18 @@ type RequestCompleteType = {
   user_id: number | string;
   booking_id: number | string;
   provider_id: number;
-  notes: string;
 };
 
 const HomeScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const [modalVisible, setModalVisible] = useState(false);
+  const queryClient = useQueryClient();
 
   const requestCompleteData = useRef<RequestCompleteType | null>(null);
+  const [requestData, setRequestData] = useState<RequestCompleteType | null>(
+    null,
+  );
   const [instructions, setInstructions] = useState('');
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: '',
@@ -101,22 +104,48 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   });
 
   const {user} = useUserStore(state => state);
-  const {data, loading, error} = useFetch<UpcomingRes>(
-    '/upcoming-bookings',
+  const {
+    data,
+    loading,
+    error,
+    fetchData: fetchUpcoming,
+  } = useFetch<UpcomingRes>('/upcoming-bookings', 'POST', {
+    provider_id: user?.id,
+  });
+
+  const {
+    data: upcomingResData,
+    isLoading: upcomingResLoading,
+    error: upcomingResError,
+    refetch: upcomingRefetch,
+  } = useCustomQuery<UpcomingRes>(['upcoming'], '/upcoming-bookings', 'POST', {
+    provider_id: user?.id,
+  });
+
+  const {
+    data: pendingResData,
+    isLoading: pendingResLoading,
+    error: pendingResError,
+    refetch,
+    isFetching,
+  } = useCustomQuery<PendingTaskRes>(
+    ['pending-tasks'],
+    '/pending-tasks',
     'POST',
     {
-      provider_id: user?.id,
+      provider_id: 2,
     },
   );
 
-  const {
-    data: pendingData,
-    loading: pendingLoading,
-    error: pendingError,
-  } = useFetch<PendingTaskRes>('/pending-tasks', 'POST', {
-    provider_id: user?.id,
-  });
-  console.log('upcoming daata', data?.data[0]);
+  console.log('is fetching', isFetching);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      upcomingRefetch();
+    }, [refetch]),
+  );
+
   const handleprofile = () => {
     navigation.navigate('ProfileSetup' as never);
   };
@@ -137,6 +166,10 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   };
 
   const handleServiceCompleteReq = async () => {
+    console.log('requestData', requestData);
+    const payload = {...requestCompleteData.current, notes: instructions};
+    console.log('payload', payload);
+
     setModalVisible(false);
     setShowSuccessModal({
       ...showSuccessModal,
@@ -146,10 +179,9 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     const {data, error} = await makeApiRequest(
       '/request-to-complete-service',
       'POST',
-      requestCompleteData?.current as RequestCompleteType,
+      payload,
     );
     if (error) {
-      console.log(error);
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,
@@ -162,6 +194,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       });
     }
     if (data) {
+      queryClient.invalidateQueries({queryKey: ['upcoming']});
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,
@@ -192,7 +225,9 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           />
           <View style={{marginLeft: 10}}>
             <FText variant="bodySmall">{getGreeting()}</FText>
-            <FText variant="titleMedium">{user?.first_legal_name}</FText>
+            <FText variant="titleMedium" style={{textTransform: 'capitalize'}}>
+              {user?.first_legal_name + ' ' + user?.last_legal_name}
+            </FText>
           </View>
           <TouchableOpacity style={styles.settingsIcon} onPress={handlesetting}>
             <Ionicons
@@ -214,7 +249,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: 10}}>
-          {loading ? (
+          {upcomingResLoading ? (
             <View
               style={{
                 flex: 1,
@@ -226,13 +261,13 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
               }}>
               <ActivityIndicator size="large" color="#12CCB7" />
             </View>
-          ) : error || data?.data.length === 0 ? (
+          ) : upcomingResError || upcomingResData?.data.length === 0 ? (
             <>
               <Empty height={hp('20%')} />
             </>
           ) : (
             <>
-              {data?.data.map(item => {
+              {upcomingResData?.data.map(item => {
                 const dates = convertStringToArray(item.dates_and_times);
                 return (
                   <Card
@@ -280,11 +315,15 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                           }}
                           onPress={() => {
                             setModalVisible(true);
+                            setRequestData({
+                              provider_id: user?.id as number,
+                              booking_id: item.id,
+                              user_id: item.user.id,
+                            });
                             requestCompleteData.current = {
                               provider_id: user?.id as number,
                               booking_id: item.id,
                               user_id: item.user.id,
-                              notes: instructions,
                             };
                           }}>
                           <FontAwesome
@@ -318,7 +357,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                         ]}>
                         {dates.map((date, index) => (
                           <Text key={index} style={{flex: 1}}>
-                            {date},{' '}
+                            {`${new Date(date).toLocaleString()}`},{' '}
                           </Text>
                         ))}
                       </Text>
@@ -407,7 +446,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                           styles.totalCost,
                           isDarkMode ? styles.darkText : styles.lightText,
                         ]}>
-                        ${item.service_fee} (12%)
+                        ${item.service_fee.toFixed(2)} (12%)
                       </Text>
                     </View>
                     <View style={styles.cardFooter}>
@@ -446,7 +485,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{padding: 10, gap: 8}}>
-          {pendingLoading ? (
+          {pendingResLoading ? (
             <View
               style={{
                 flex: 1,
@@ -458,11 +497,11 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
               }}>
               <ActivityIndicator size="large" color="#12CCB7" />
             </View>
-          ) : pendingError || pendingData?.data.length == 0 ? (
+          ) : pendingResError || pendingResData?.data.length == 0 ? (
             <Empty height={hp('20%')} />
           ) : (
             <>
-              {pendingData?.data.map(item => {
+              {pendingResData?.data.map(item => {
                 const dates = convertStringToArray(item.dates_and_times);
                 return (
                   <View
@@ -514,7 +553,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
                     <Text
                       style={[isDarkMode ? styles.darkText : styles.lightText]}>
-                      {dates[0]}
+                      {`${new Date(dates[0]).toLocaleString()}`}
                     </Text>
                     <Text
                       style={[isDarkMode ? styles.darkText : styles.lightText]}>

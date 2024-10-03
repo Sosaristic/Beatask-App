@@ -258,7 +258,6 @@ const BookingScreen = () => {
 
   const handleFormSubmit = async (values: InitialValuesType) => {
     const payload = {...values, provider_id: user?.id, category_id: categoryId};
-    console.log('payload', payload);
 
     const formData = new FormData();
     for (const [key, value] of Object.entries(payload)) {

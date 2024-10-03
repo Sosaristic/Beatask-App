@@ -17,18 +17,24 @@ const validationSchema = Yup.object().shape({
     .required('Phone number is required')
     .matches(/^\d+$/, 'Phone number must contain only digits'),
 
-  password: Yup.string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .matches(
-      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-    ),
+  is_google_login: Yup.number().required(),
+  password: Yup.string().when('is_google_login', {
+    is: 0,
+    then: () =>
+      Yup.string()
+        .min(8, 'Password must be at least 8 characters')
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&,.\[\]^*])[A-Za-z\d@$!%?&,.\[\]^*]+/,
+          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        )
+        .required('Password is required'),
+  }),
 
   business_address: Yup.string()
     .required('Business address is required')
     .min(5, 'Business address must be at least 5 characters')
     .max(100, 'Business address must be at most 100 characters'),
+  image: Yup.string().required('Profile image is required'),
 
   description: Yup.string()
     .max(500, 'Description must be at most 500 characters')

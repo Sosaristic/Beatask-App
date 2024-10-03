@@ -1,5 +1,6 @@
-import {Image, StyleSheet, Text, View} from 'react-native';
+import {Image, StyleSheet, View} from 'react-native';
 import React from 'react';
+import {Text} from 'react-native-paper';
 
 const Empty = ({height = 300, width = 300}) => {
   return (

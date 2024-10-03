@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  Pressable,
 } from 'react-native';
 import {Button, Text, Card} from 'react-native-paper';
 import {Calendar} from 'react-native-calendars';
@@ -237,7 +238,7 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
                 horizontal
                 contentContainerStyle={styles.timeButtonsContainer}>
                 {userTimeSlots.map(time => (
-                  <Button
+                  <Pressable
                     key={time.time}
                     onPress={() => handleChoosenTime(time.time, date)}
                     style={[
@@ -246,8 +247,8 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
                         ? styles.selectedButton
                         : styles.unselectedButton,
                     ]}>
-                    {time.time}
-                  </Button>
+                    <Text>{time.time}</Text>
+                  </Pressable>
                 ))}
               </ScrollView>
             </View>
@@ -297,7 +298,6 @@ const CleaningServiceRequest: React.FC<Props> = ({route, navigation}) => {
         <Text style={styles.charCount}>{instructionsLength}/100</Text>
       </Card>
       <Card style={styles.card}>
-        <Text style={[styles.header, {textAlign: 'left'}]}>Total cost</Text>
         <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
           <View>
             <Text style={styles.total}>Booking fee:</Text>
@@ -394,6 +394,8 @@ const getStyles = (isDarkMode: boolean) =>
     },
     timeButton: {
       margin: wp('1%'),
+      padding: 8,
+      borderRadius: 16,
     },
     input: {
       borderColor: '#12ccb7',

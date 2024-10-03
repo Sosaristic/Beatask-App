@@ -38,7 +38,7 @@ type Props = {
 
 const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
-  const {user} = useUserStore(state => state);
+  const {user, actions} = useUserStore(state => state);
   const isDarkMode = colorScheme === 'dark';
   const {initPaymentSheet, presentPaymentSheet} = useStripe();
 
@@ -70,8 +70,9 @@ const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
         ? '/stripe-subscription-one-month-premium'
         : '/stripe-subscription-two-months';
     const {data, error} = await makeApiRequest<BidRes>(url, 'POST', {
-      provider_id: 2,
+      provider_id: user?.id,
     });
+    console.log(error);
 
     if (error) return;
 
@@ -98,6 +99,7 @@ const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
       if (error) {
         // setSheetLoading(false);
       } else {
+        actions.setIsSubscribed(true);
         navigation.replace('success', {redirectTo: 'dashboard'});
         // setSheetLoading(false);
       }

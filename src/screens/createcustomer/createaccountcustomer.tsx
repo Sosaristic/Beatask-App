@@ -7,23 +7,30 @@ import {
   ScrollView,
   TouchableOpacity,
   useColorScheme,
-  ToastAndroid,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
-import {useNavigation} from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import CheckBox from '@react-native-community/checkbox';
+import {RouteProp} from '@react-navigation/native';
+
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import axios from 'axios';
-import {CustomErrorModal, CustomModal} from '../../components';
+
+import {
+  CustomButton,
+  CustomErrorModal,
+  CustomInput,
+  CustomModal,
+} from '../../components';
 import {makeApiRequest} from '../../utils/helpers';
 import {formatPhoneNumber} from '../createbeatask/createaccountbeatask';
 import {StackNavigationProp, StackScreenProps} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
 import {useUserStore} from '../../store/useUserStore';
+import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
+import {Checkbox, Text as PaperText} from 'react-native-paper';
+import {Formik} from 'formik';
+import {customerSignUpSchema} from '../../components/forms/authSchema';
 
 // Define the interface for the country object
 interface Country {
@@ -33,31 +40,42 @@ interface Country {
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'CreateCustomer'>;
+  route: RouteProp<RootStackParamList, 'CreateCustomer'>;
 };
 
-const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
+const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
+  const {
+    params: {
+      email: emailFromRoute,
+      first_name,
+      google_token,
+      last_name,
+      password: passwordFromRoute,
+    },
+  } = route || {};
   const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
   const {device_token} = useUserStore(state => state);
 
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [countryCode, setCountryCode] = useState('+1');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
+
   const [termsChecked, setTermsChecked] = useState(false); // State for terms checkbox
   const [twoFAChecked, setTwoFAChecked] = useState(false); // State for 2FA checkbox
-  const [isPasswordVisible, setPasswordVisible] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [errors, setErrors] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-  });
+
+  const initialValues = {
+    first_legal_name: first_name || '',
+    last_legal_name: last_name || '',
+    terms_checked: false,
+    email: emailFromRoute || '',
+    home_address: '',
+    ...(!google_token && {password: passwordFromRoute || ''}),
+    phone_number: '',
+    is_service_provider: 0,
+    is_google_login: google_token ? 1 : 0,
+    google_token,
+  };
+
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: '',
     errorMessage: '',
@@ -81,113 +99,65 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
     setPickerVisible(true);
   };
 
-  const validateFields = () => {
-    let valid = true;
-    let errors = {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phoneNumber: '',
-      password: '',
+  const handleNextPress = async (values: typeof initialValues) => {
+    const payload = {
+      first_legal_name: values.first_legal_name,
+      last_legal_name: values.last_legal_name,
+      email: values.email,
+      phone_number: formatPhoneNumber(countryCode, values.phone_number),
+      home_address: values.home_address,
+      password: google_token ? '123456789' : values.password,
+      two_factor: twoFAChecked ? 1 : 0,
+      is_service_provider: 0,
+      device_token,
+      is_google_login: google_token ? 1 : 0,
+      google_token: google_token || '',
     };
 
-    if (firstName.trim() === '') {
-      errors.firstName = 'First name is required';
-      valid = false;
-    }
-    if (lastName.trim() === '') {
-      errors.lastName = 'Last name is required';
-      valid = false;
-    }
-    if (email.trim() === '') {
-      errors.email = 'Email is required';
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = 'Email is invalid';
-      valid = false;
-    }
-    if (phoneNumber.trim() === '') {
-      errors.phoneNumber = 'Phone number is required';
-      valid = false;
-    }
-    if (password.trim() === '') {
-      errors.password = 'Password is required';
-      valid = false;
-    } else if (password.length < 8) {
-      errors.password = 'Password must be at least 8 characters long';
-      valid = false;
-    }
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+    });
+    const {data, error} = await makeApiRequest('/register', 'POST', payload);
 
-    setErrors(errors);
-    return valid;
-  };
-
-  const handleNextPress = async () => {
-    if (validateFields()) {
-      const payload = {
-        first_legal_name: firstName,
-        last_legal_name: lastName,
-        email,
-        phone_number: formatPhoneNumber(countryCode, phoneNumber),
-        home_address: address,
-        password,
-        two_factor: twoFAChecked ? 1 : 0,
-        is_service_provider: 0,
-        device_token,
-      };
-      if (!termsChecked) {
-        ToastAndroid.showWithGravity(
-          'Terms and conditions must be accepted',
-          ToastAndroid.LONG,
-          ToastAndroid.CENTER,
-        );
-        return;
-      }
+    if (error) {
       setShowSuccessModal({
         ...showSuccessModal,
-        requestLoading: true,
+        requestLoading: false,
+        showModal: false,
+      });
+      setShowErrorModal({
+        errorTitle: 'Registration failed',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
+
+    if (data) {
+      setShowSuccessModal({
+        ...showSuccessModal,
+        requestLoading: false,
         showModal: true,
       });
-      const {data, error} = await makeApiRequest('/register', 'POST', payload);
 
-      if (error) {
+      setTimeout(() => {
         setShowSuccessModal({
           ...showSuccessModal,
-          requestLoading: false,
           showModal: false,
         });
-        setShowErrorModal({
-          errorTitle: 'Registration failed',
-          errorMessage: error.msg,
-          isModalOpen: true,
+        if (google_token) {
+          navigation.navigate('Login');
+          return;
+        }
+        navigation.navigate('otp', {
+          email: payload.email,
+          type: 'email-verify',
         });
-      }
-
-      if (data) {
-        setShowSuccessModal({
-          ...showSuccessModal,
-          requestLoading: false,
-          showModal: true,
-        });
-
-        setTimeout(() => {
-          setShowSuccessModal({
-            ...showSuccessModal,
-            showModal: false,
-          });
-          navigation.navigate('otp', {
-            email: payload.email,
-            type: 'email-verify',
-          });
-        }, 2000);
-      }
-      // sendDataToAPI();
-      // navigation.navigate('OTPCustomer' as never);
+      }, 2000);
     }
-  };
-
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!isPasswordVisible);
+    // sendDataToAPI();
+    // navigation.navigate('OTPCustomer' as never);
   };
 
   const containerStyle = [
@@ -196,157 +166,199 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
   ];
 
   return (
-    <ScrollView contentContainerStyle={containerStyle}>
-      <Text style={styles.label}>First legal name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="First legal name"
-        placeholderTextColor="#999"
-        value={firstName}
-        onChangeText={text => setFirstName(text)}
-      />
-      {errors.firstName ? (
-        <Text style={styles.errorText}>{errors.firstName}</Text>
-      ) : null}
+    <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
+      <ScrollView contentContainerStyle={containerStyle}>
+        {/* Terms of Use Checkbox */}
 
-      <Text style={styles.label}>Last legal name</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Last legal name"
-        placeholderTextColor="#999"
-        value={lastName}
-        onChangeText={text => setLastName(text)}
-      />
-      {errors.lastName ? (
-        <Text style={styles.errorText}>{errors.lastName}</Text>
-      ) : null}
+        <Formik
+          initialValues={initialValues}
+          onSubmit={values => handleNextPress(values)}
+          validationSchema={customerSignUpSchema}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+            setFieldValue,
+          }) => {
+            return (
+              <View style={{gap: 20, marginBottom: 20}}>
+                <CustomInput
+                  onChangeText={handleChange('first_legal_name')}
+                  onBlur={handleBlur('first_legal_name')}
+                  value={values.first_legal_name}
+                  placeholder="First legal name"
+                  label="First legal name"
+                  errorText={
+                    errors.first_legal_name && touched.first_legal_name
+                      ? errors.first_legal_name
+                      : ''
+                  }
+                />
 
-      <Text style={styles.label}>Email address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email address"
-        placeholderTextColor="#999"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={text => setEmail(text)}
-      />
-      {errors.email ? (
-        <Text style={styles.errorText}>{errors.email}</Text>
-      ) : null}
+                <CustomInput
+                  onChangeText={handleChange('last_legal_name')}
+                  onBlur={handleBlur('last_legal_name')}
+                  value={values.last_legal_name}
+                  placeholder="Last legal name"
+                  label="Last legal name"
+                  errorText={
+                    errors.last_legal_name && touched.last_legal_name
+                      ? errors.last_legal_name
+                      : ''
+                  }
+                />
 
-      <Text style={styles.label}>Phone number</Text>
-      <View style={styles.phoneContainer}>
-        <TouchableOpacity
-          style={styles.countryCodeButton}
-          onPress={handleCountryCodePress}>
-          <Text style={styles.countryCodeButtonText}>{countryCode}</Text>
-        </TouchableOpacity>
+                <CustomInput
+                  onChangeText={handleChange('email')}
+                  onBlur={handleBlur('email')}
+                  value={values.email}
+                  editable={false}
+                  placeholder="Email address"
+                  label="Email address"
+                  errorText={errors.email && touched.email ? errors.email : ''}
+                />
+                <View>
+                  <PaperText variant="titleMedium" style={{marginBottom: 4}}>
+                    Phone number
+                  </PaperText>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <TouchableOpacity
+                      style={styles.countryCodeButton}
+                      onPress={handleCountryCodePress}>
+                      <PaperText>{countryCode}</PaperText>
+                    </TouchableOpacity>
 
-        <TextInput
-          style={[styles.input, styles.phoneInput]}
-          placeholder="555 555-1234"
-          placeholderTextColor="#999"
-          keyboardType="phone-pad"
-          value={phoneNumber}
-          onChangeText={text => setPhoneNumber(text)}
+                    <TextInput
+                      style={[styles.input, styles.phoneInput]}
+                      placeholder="555 555-1234"
+                      placeholderTextColor="#999"
+                      keyboardType="phone-pad"
+                      value={values.phone_number}
+                      onChangeText={text => setFieldValue('phone_number', text)}
+                    />
+                  </View>
+                  {errors.phone_number ? (
+                    <PaperText style={{color: 'red'}}>
+                      {errors.phone_number}
+                    </PaperText>
+                  ) : null}
+                </View>
+                <CustomInput
+                  onChangeText={handleChange('home_address')}
+                  onBlur={handleBlur('home_address')}
+                  value={values.home_address}
+                  placeholder="Home address"
+                  label="Home address"
+                  errorText={
+                    errors.home_address && touched.home_address
+                      ? errors.home_address
+                      : ''
+                  }
+                />
+                {!google_token && (
+                  <CustomInput
+                    onChangeText={handleChange('password')}
+                    onBlur={handleBlur('password')}
+                    label="Password"
+                    value={values.password}
+                    placeholder="password"
+                    type="password"
+                    errorText={
+                      errors.password && touched.password ? errors.password : ''
+                    }
+                  />
+                )}
+                <View>
+                  <View style={[styles.checkboxContainer, {marginTop: 6}]}>
+                    <Checkbox.Item
+                      status={values.terms_checked ? 'checked' : 'unchecked'}
+                      onPress={() =>
+                        setFieldValue('terms_checked', !values.terms_checked)
+                      }
+                      mode="android"
+                      label=""
+                    />
+                    <PaperText style={styles.checkboxLabel}>
+                      I agree to Beatask
+                      <PaperText style={{color: '#12CCB7'}}>
+                        {' '}
+                        terms of use
+                      </PaperText>{' '}
+                      and
+                      {'\n'}
+                      <PaperText style={{color: '#12CCB7'}}>
+                        {' '}
+                        privacy policy.
+                      </PaperText>
+                    </PaperText>
+                  </View>
+                  {errors.terms_checked ? (
+                    <PaperText style={{color: 'red', paddingHorizontal: 20}}>
+                      {errors.terms_checked}
+                    </PaperText>
+                  ) : null}
+                  <View style={styles.checkboxContainer}>
+                    <Checkbox.Item
+                      status={twoFAChecked ? 'checked' : 'unchecked'}
+                      onPress={() => setTwoFAChecked(!twoFAChecked)}
+                      mode="android"
+                      label=""
+                    />
+                    <PaperText style={styles.checkboxLabel}>
+                      Two-Factor Authentication
+                      <PaperText style={{color: '#12CCB7'}}> (2FA)</PaperText>
+                    </PaperText>
+                  </View>
+                </View>
+
+                <CustomButton
+                  onPress={handleSubmit}
+                  buttonText="Next"
+                  disabled={
+                    Object.keys(errors).length > 0 ||
+                    Object.keys(touched).length === 0
+                  }
+                />
+              </View>
+            );
+          }}
+        </Formik>
+
+        {/* Two-Factor Authentication Checkbox */}
+
+        {/* Next Button */}
+
+        {/* Country Picker Modal */}
+        <CountryPicker
+          show={isPickerVisible}
+          pickerButtonOnPress={handleSelectCountry}
+          lang="en"
+          style={{
+            modal: {
+              height: 500,
+              backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
+            },
+            countryButtonStyles: {
+              backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
+              borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
+            },
+            textInput: {
+              color: colorScheme === 'dark' ? '#010A0C' : '#000',
+            },
+          }}
         />
-      </View>
-      {errors.phoneNumber ? (
-        <Text style={styles.errorText}>{errors.phoneNumber}</Text>
-      ) : null}
-
-      <Text style={styles.label}>Password</Text>
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          secureTextEntry={!isPasswordVisible}
-          value={password}
-          onChangeText={text => setPassword(text)}
+        <CustomModal {...showSuccessModal} />
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
         />
-        <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={togglePasswordVisibility}>
-          <Icon
-            name={isPasswordVisible ? 'eye' : 'eye-slash'}
-            size={20}
-            color="#12CCB7"
-          />
-        </TouchableOpacity>
-      </View>
-      {errors.password ? (
-        <Text style={styles.errorText}>{errors.password}</Text>
-      ) : null}
-
-      <Text style={styles.label}>Home address</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Home address"
-        placeholderTextColor="#999"
-        value={address}
-        onChangeText={text => setAddress(text)}
-      />
-
-      {/* Terms of Use Checkbox */}
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={termsChecked}
-          onValueChange={newValue => setTermsChecked(newValue)}
-          tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-        />
-        <Text style={styles.checkboxLabel}>
-          I agree to Beatask
-          <Text style={{color: '#12CCB7'}}> terms of use</Text> and{'\n'}
-          <Text style={{color: '#12CCB7'}}> privacy policy.</Text>
-        </Text>
-      </View>
-
-      {/* Two-Factor Authentication Checkbox */}
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={twoFAChecked}
-          onValueChange={newValue => setTwoFAChecked(newValue)}
-          tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-        />
-        <Text style={styles.checkboxLabel}>
-          Two-Factor Authentication
-          <Text style={{color: '#12CCB7'}}> (2FA)</Text>
-        </Text>
-      </View>
-
-      {/* Next Button */}
-      <TouchableOpacity style={styles.nextButton} onPress={handleNextPress}>
-        <Text style={styles.nexttext}>Next</Text>
-      </TouchableOpacity>
-
-      {/* Country Picker Modal */}
-      <CountryPicker
-        show={isPickerVisible}
-        pickerButtonOnPress={handleSelectCountry}
-        lang="en"
-        style={{
-          modal: {
-            height: 500,
-            backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
-          },
-          countryButtonStyles: {
-            backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
-            borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
-          },
-          textInput: {
-            color: colorScheme === 'dark' ? '#010A0C' : '#000',
-          },
-        }}
-      />
-      <CustomModal {...showSuccessModal} />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -377,7 +389,7 @@ const lightStyles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#000',
@@ -390,12 +402,13 @@ const lightStyles = StyleSheet.create({
   countryCodeButton: {
     borderWidth: 1,
     borderColor: '#ccc',
-    paddingTop: hp('2.5%'),
-    paddingBottom: hp('2.5%'),
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    height: hp('7.5%'),
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#000',
@@ -404,7 +417,7 @@ const lightStyles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginTop: hp('1%'),
+
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -429,7 +442,7 @@ const lightStyles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2%'), // Responsive margin bottom
+    // Responsive margin bottom
   },
   checkboxLabel: {
     fontSize: wp('4%'),
@@ -481,7 +494,7 @@ const darkStyles = StyleSheet.create({
     borderColor: '#51514C',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#fff',
@@ -494,12 +507,13 @@ const darkStyles = StyleSheet.create({
   },
   countryCodeButton: {
     backgroundColor: '#51514C',
-    paddingTop: hp('2.5%'),
-    paddingBottom: hp('2.5%'),
+    height: hp('7.5%'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#fff',
@@ -508,7 +522,7 @@ const darkStyles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginTop: hp('1%'),
+
     borderColor: '#51514C',
     borderWidth: 1,
     borderRadius: 5,
@@ -535,7 +549,7 @@ const darkStyles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2%'), // Responsive margin bottom
+    // Responsive margin bottom
   },
   checkboxLabel: {
     fontSize: wp('4%'), // Responsive font size

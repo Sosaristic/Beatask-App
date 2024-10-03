@@ -10,39 +10,46 @@ import {
   useColorScheme,
   ScrollView,
 } from 'react-native';
-import SplashScreen from 'react-native-splash-screen';
+
 import {Font} from '../components/coustomFonts';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../App';
 
-const SplashScreenComponent = () => {
-  const navigation = useNavigation();
+type Props = {
+  navigation: StackNavigationProp<RootStackParamList, 'auth_choice'>;
+};
+
+const SplashScreenComponent: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
 
   const createcoustomer = () => {
-    navigation.navigate('CreateCustomer' as never);
+    // navigation.navigate('auth_choice' as never);
+    navigation.navigate('auth_choice', {type: 'customer'} as never);
   };
 
   const createbeatask = () => {
-    navigation.navigate('CreateBeatask' as never);
+    navigation.navigate('auth_choice', {type: 'provider'});
+    // navigation.navigate('CreateBeatask' as never);
   };
 
   const login = () => {
     navigation.navigate('Login' as never);
   };
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const timeout = setTimeout(() => {
-        SplashScreen.hide();
-      }, 2000);
+  // useEffect(() => {
+  //   if (Platform.OS === 'android') {
+  //     const timeout = setTimeout(() => {
+  //       SplashScreen.hide();
+  //     }, 2000);
 
-      return () => clearTimeout(timeout);
-    }
-  }, []);
+  //     return () => clearTimeout(timeout);
+  //   }
+  // }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

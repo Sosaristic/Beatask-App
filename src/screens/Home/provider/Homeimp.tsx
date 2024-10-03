@@ -133,6 +133,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
+    console.log('payload', data);
 
     navigation.navigate('singleservice', {data: payloadData});
   };
@@ -188,10 +189,6 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
     );
   };
 
-  const handleFilterPress = () => {
-    navigation.navigate('Filter', {category: routeData.category_name});
-  };
-
   if (loading) {
     return (
       <ActivityIndicator style={{flex: 1}} size={'large'} color={'#12CCB7'} />
@@ -208,8 +205,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
   if (data && data.length === 0) {
     return <Empty />;
   }
-
-  console.log('filter data', data);
+  console.log(data);
 
   return (
     <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>

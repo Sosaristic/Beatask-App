@@ -95,8 +95,6 @@ const CreateAccountScreen = () => {
       formData.append(key, value);
     }
 
-    console.log(user);
-
     setShowSuccessModal({
       ...showSuccessModal,
       requestLoading: true,

@@ -430,6 +430,22 @@ const SettingsScreen: React.FC = () => {
             />
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={() => navigation.navigate('delete_account' as never)}
+            style={[styles.section2, isDarkMode && styles.darkSection]}>
+            <Text
+              style={[
+                styles.sectionText,
+                isDarkMode && styles.darkSectionText,
+              ]}>
+              Deactivate account
+            </Text>
+            <FontAwesomeIcon
+              name={'chevron-right'}
+              size={wp('6%')}
+              style={[styles.chevron, isDarkMode && styles.darkChevron]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={handleLogout}
             style={[styles.section2, isDarkMode && styles.darkSection]}>
             <Text style={[styles.sectionText1]}>Log out</Text>

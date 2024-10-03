@@ -210,6 +210,7 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
     }
   };
   const handlecalenderpayment = () => {
+    setBookVisible(false);
     navigation.navigate('calenderbook', {
       data,
     });

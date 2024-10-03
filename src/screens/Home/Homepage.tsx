@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,9 @@ import {
   Modal,
   TouchableWithoutFeedback,
   useWindowDimensions,
-  Dimensions,
 } from 'react-native';
 import Swiper from 'react-native-swiper';
-import {RouteProp, useNavigation} from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -28,7 +27,6 @@ import {
   MostBookedService,
   SearchedResults,
   SingleServicePayload,
-  WomenService,
   WomenenServiceType,
 } from '../../interfaces/apiResponses';
 import {makeApiRequest} from '../../utils/helpers';
@@ -37,13 +35,14 @@ import {chunkArray} from '../../utils/helperFunc';
 import {TextCount} from './chat/masglist';
 import {RootStackParamList} from '../../../App';
 import {StackNavigationProp} from '@react-navigation/stack';
-import useFetch from '../../hooks/useFetch';
 import Empty from '../../components/Empty';
 import {useDebouncedCallback} from 'use-debounce';
 import notifee from '@notifee/react-native';
 
 import {customTheme} from '../../custom_theme/customTheme';
 import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
+import useCustomQuery from '../../hooks/useCustomQuery';
+import Refresh from '../../components/Refresh';
 
 const greetingTime = new Date().getHours();
 
@@ -104,83 +103,72 @@ const HomeScreen = ({navigation}: Props) => {
     'Business',
     'IT and Graphic Design',
   ]);
-  const [filteredOptions, setFilteredOptions] = useState(options);
-  const {user, unReadMessages} = useUserStore(state => state);
-  const [featuredProviders, setFeaturedProviders] = useState<
-    FeaturedProvider[] | null
-  >(null);
-  const [mostBookedServices, setMostBookedServices] = useState<
-    MostBookedService[] | null
-  >(null);
-  const [halfPriceServices, setHalfPriceServices] = useState<
-    HalfPrice[] | null
-  >(null);
-  const {
-    data: womenServices,
-    error: womenServiceerror,
-    loading: womenServiceLoading,
-  } = useFetch<WomenServiceRes>('/women-services', 'GET');
+
+  const {user} = useUserStore(state => state);
+  console.log(user?.phone_number.slice(1));
+
   const [searchedResults, setSearchedResults] = useState<SearchedResults[]>([]);
 
-  const [featuredLoading, setFeaturedLoading] = useState(false);
-  const [mostBookedLoading, setMostBookedLoading] = useState(false);
-  const [halfPriceLoading, setHalfPriceLoading] = useState(false);
+  const {
+    data: featuredProviderRes,
+    isError: featuredProviderError,
+    isLoading: featuredProviderLoading,
+    refetch: fetchFeaturedProvider,
+    isFetching,
+  } = useCustomQuery<FaeturedServiceRes>(
+    ['featured-providers'],
+    '/featured-providers',
+    'GET',
+  );
 
-  console.log(user?.id);
+  const {
+    data: mostBookedServicesRes,
+    isError: mostBookedError,
+    isLoading: mostBookedResLoading,
+    refetch: fetchMostBooked,
+  } = useCustomQuery<Mostbooked>(
+    ['most-booked-services'],
+    '/most-booked-services',
+    'GET',
+  );
 
-  useEffect(() => {
-    (async () => {
-      setMostBookedLoading(true);
-      const {data, error} = await makeApiRequest<Mostbooked>(
-        '/most-booked-services',
-        'GET',
-      );
+  const {
+    data: halfPriceServicesRes,
+    isError: halfPriceError,
+    isLoading: halfPriceResLoading,
+    refetch: fetchHalfPrice,
+  } = useCustomQuery<HalfPriceRes>(
+    ['half-price-services'],
+    '/half-price-services',
+    'GET',
+  );
 
-      if (data) {
-        setMostBookedServices(data.data);
-        setMostBookedLoading(false);
-      }
-      if (error) {
-        setMostBookedLoading(false);
-      }
-    })();
-  }, []);
+  const {
+    data: womenServicesRes,
+    isError: womenServicesError,
+    isLoading: womenServicesLoading,
+    refetch: fetchWomenServices,
+  } = useCustomQuery<WomenServiceRes>(
+    ['women-services'],
+    '/women-services',
+    'GET',
+  );
 
-  useEffect(() => {
-    (async () => {
-      setFeaturedLoading(true);
-      const {data, error} = await makeApiRequest<FaeturedServiceRes>(
-        '/featured-providers',
-        'GET',
-      );
+  useFocusEffect(
+    useCallback(() => {
+      fetchFeaturedProvider();
+      fetchMostBooked();
+      fetchHalfPrice();
+      fetchWomenServices();
+    }, [
+      fetchFeaturedProvider,
+      fetchMostBooked,
+      fetchHalfPrice,
+      fetchWomenServices,
+    ]),
+  );
 
-      if (data) {
-        setFeaturedProviders(data.data);
-        setFeaturedLoading(false);
-      }
-      if (error) {
-        setFeaturedLoading(false);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      setFeaturedLoading(true);
-      const {data, error} = await makeApiRequest<HalfPriceRes>(
-        '/half-price-services',
-        'GET',
-      );
-
-      if (data) {
-        setHalfPriceServices(data.data);
-        setHalfPriceLoading(false);
-      }
-      if (error) {
-        setHalfPriceLoading(false);
-      }
-    })();
-  }, []);
+  console.log('half service', halfPriceServicesRes?.data[0].category);
 
   const handleOptionRemove = (index: number) => {
     const newOptions = [...options];
@@ -235,7 +223,6 @@ const HomeScreen = ({navigation}: Props) => {
     );
 
     if (searchData) {
-      console.log('searchData', searchData.data);
       setSearchedResults(searchData.data);
     }
     if (error) {
@@ -288,12 +275,13 @@ const HomeScreen = ({navigation}: Props) => {
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
     };
+    setShowModal(false);
     navigation.navigate('singleservice', {data: payloadData});
   };
 
   const handleMostBooked = (payload: MostBookedService) => {
     const payloadData: SingleServicePayload = {
-      category_name: '',
+      category_name: payload.service.category.category,
       real_price: payload.service.real_price.toString(),
       provider_id: payload.service.provider_id,
       service_id: payload.service_id,
@@ -310,7 +298,7 @@ const HomeScreen = ({navigation}: Props) => {
 
   const handleHalfPrice = (payload: HalfPrice) => {
     const payloadData: SingleServicePayload = {
-      category_name: '',
+      category_name: payload.category.category,
       real_price: payload.real_price,
       provider_id: payload.provider_id,
       category_id: payload.category_id,
@@ -325,7 +313,6 @@ const HomeScreen = ({navigation}: Props) => {
   };
 
   const handleWomenFeatured = (payload: WomenenServiceType) => {
-    console.log('women', payload.category);
     const payloadData: SingleServicePayload = {
       category_name: payload.category.category,
       real_price: payload.real_price.toString(),
@@ -345,12 +332,12 @@ const HomeScreen = ({navigation}: Props) => {
 
   const womanDataComponent = () => {
     if (
-      womenServices === null ||
-      (womenServices === undefined && womenServiceLoading)
+      !womenServicesRes ||
+      (womenServicesRes === undefined && womenServicesLoading)
     )
       return null;
 
-    let womenData = chunkArray(womenServices?.data, 2);
+    let womenData = chunkArray(womenServicesRes?.data, 2);
 
     return (
       <View>
@@ -405,7 +392,7 @@ const HomeScreen = ({navigation}: Props) => {
               <PText
                 variant="titleMedium"
                 style={{textTransform: 'capitalize'}}>
-                {user?.first_legal_name}
+                {user?.last_legal_name + ' ' + user?.first_legal_name}
               </PText>
             </View>
           </View>
@@ -519,7 +506,7 @@ const HomeScreen = ({navigation}: Props) => {
               paddingRight: 20,
               paddingVertical: 10,
             }}
-            onPress={() => navigation.navigate('requests')}>
+            onPress={() => navigation.navigate('pending_actions')}>
             <View
               style={{
                 flexDirection: 'row',
@@ -532,7 +519,7 @@ const HomeScreen = ({navigation}: Props) => {
                 style={{
                   color: customTheme.primaryColor,
                 }}>
-                Completion Requests
+                Pending Actions
               </Text>
               <Icons
                 name="chevron-right"
@@ -766,7 +753,7 @@ const HomeScreen = ({navigation}: Props) => {
           </View>
           <Text style={styles.featuredHeader}>Featured service providers</Text>
 
-          {featuredLoading ? (
+          {featuredProviderLoading ? (
             <View
               style={{
                 minHeight: 300,
@@ -775,7 +762,9 @@ const HomeScreen = ({navigation}: Props) => {
               }}>
               <ActivityIndicator size={24} />
             </View>
-          ) : featuredProviders === null || featuredProviders.length === 0 ? (
+          ) : featuredProviderError ||
+            featuredProviderRes?.data.length === 0 ||
+            !featuredProviderRes ? (
             <View
               style={{
                 minHeight: 300,
@@ -793,7 +782,7 @@ const HomeScreen = ({navigation}: Props) => {
               horizontal
               style={styles.providerSwiper}
               loop={true}>
-              {chunkArray(featuredProviders, 2).map((item, index) => (
+              {chunkArray(featuredProviderRes?.data, 2).map((item, index) => (
                 <View
                   key={Math.random()}
                   style={{
@@ -837,7 +826,7 @@ const HomeScreen = ({navigation}: Props) => {
 
           <Text style={styles.featuredHeader}>Most booked services</Text>
 
-          {mostBookedLoading ? (
+          {mostBookedResLoading ? (
             <View
               style={{
                 minHeight: 300,
@@ -846,8 +835,9 @@ const HomeScreen = ({navigation}: Props) => {
               }}>
               <ActivityIndicator size={24} />
             </View>
-          ) : mostBookedServices === null ||
-            mostBookedServices?.length === 0 ? (
+          ) : mostBookedError ||
+            mostBookedServicesRes === null ||
+            mostBookedServicesRes?.data?.length === 0 ? (
             <View
               style={{
                 minHeight: 300,
@@ -861,7 +851,7 @@ const HomeScreen = ({navigation}: Props) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{paddingHorizontal: 8, gap: 10}}>
-              {mostBookedServices.map(service => (
+              {mostBookedServicesRes?.data.map(service => (
                 <TouchableOpacity
                   key={Math.random()}
                   style={{width: width * 0.4}}
@@ -905,7 +895,7 @@ const HomeScreen = ({navigation}: Props) => {
 
           <Text style={styles.categoryHeader}>Featured services for women</Text>
 
-          {womenServiceLoading ? (
+          {womenServicesLoading ? (
             <View
               style={{
                 minHeight: 300,
@@ -914,11 +904,11 @@ const HomeScreen = ({navigation}: Props) => {
               }}>
               <ActivityIndicator size={24} />
             </View>
-          ) : womenServiceerror ? (
+          ) : womenServicesError ? (
             <View>
-              <Text>Error in fetching Women services</Text>
+              <Refresh onRefresh={() => fetchWomenServices()} />
             </View>
-          ) : womenServices?.data.length === 0 ? (
+          ) : womenServicesRes?.data.length === 0 ? (
             <View>
               <Empty />
             </View>
@@ -999,7 +989,7 @@ const HomeScreen = ({navigation}: Props) => {
 
           <Text style={styles.categoryHeader}>Half price deals</Text>
 
-          {halfPriceLoading ? (
+          {halfPriceResLoading ? (
             <View
               style={{
                 minHeight: 300,
@@ -1008,7 +998,9 @@ const HomeScreen = ({navigation}: Props) => {
               }}>
               <ActivityIndicator size={24} />
             </View>
-          ) : halfPriceServices === null || halfPriceServices.length === 0 ? (
+          ) : !halfPriceServicesRes ||
+            halfPriceServicesRes?.data.length === 0 ||
+            halfPriceError ? (
             <View
               style={{
                 minHeight: 300,
@@ -1026,7 +1018,7 @@ const HomeScreen = ({navigation}: Props) => {
               horizontal
               style={styles.providerSwiper}
               loop={true}>
-              {chunkArray(halfPriceServices, 2).map((item, index) => (
+              {chunkArray(halfPriceServicesRes?.data, 2).map((item, index) => (
                 <View
                   key={Math.random()}
                   style={{

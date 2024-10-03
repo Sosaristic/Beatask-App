@@ -6,4 +6,5 @@ export type UploadTypes = {
   business_address: string;
   password: string;
   two_factor: number;
+  google_token: string;
 };

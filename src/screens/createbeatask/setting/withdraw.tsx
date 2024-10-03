@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ImageBackground,
   ScrollView,
   TouchableOpacity,
   useColorScheme,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -15,12 +15,24 @@ import {
 } from 'react-native-responsive-screen';
 import {useNavigation} from '@react-navigation/native';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
+import useFetch from '../../../hooks/useFetch';
+import {Transaction} from '../../../interfaces/apiResponses';
+import {customTheme} from '../../../custom_theme/customTheme';
+import Refresh from '../../../components/Refresh';
+import {Text} from 'react-native-paper';
+import {Text as FText} from 'react-native-paper';
+import useCustomQuery from '../../../hooks/useCustomQuery';
+import Entypo from 'react-native-vector-icons/Entypo';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../../../App';
+import {useUserStore} from '../../../store/useUserStore';
 
 interface TransactionCardProps {
-  type: 'withdrawal' | 'fee' | 'received';
+  type: 'Withdrawal' | 'Received' | 'Payed' | 'Fee';
   amount: string;
-  status: 'Successful' | 'Unsuccessful';
+  status: 'Successfull' | 'Unsuccessful';
   date: string;
+  purpose: string;
 }
 
 const TransactionCard: React.FC<TransactionCardProps> = ({
@@ -28,6 +40,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
   amount,
   status,
   date,
+  purpose,
 }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -37,17 +50,17 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
   let iconBackgroundColor: string;
 
   switch (type) {
-    case 'withdrawal':
+    case 'Payed':
       icon = 'arrow-up';
       iconColor = '#ff0000';
       iconBackgroundColor = '#ffbaba';
       break;
-    case 'fee':
+    case 'Withdrawal':
       icon = 'chart-line';
       iconColor = '#808080';
       iconBackgroundColor = '#d3d3d3';
       break;
-    case 'received':
+    case 'Received':
       icon = 'arrow-down';
       iconColor = '#00ff00';
       iconBackgroundColor = '#c2f0c2';
@@ -69,31 +82,29 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         style={[styles.iconContainer, {backgroundColor: iconBackgroundColor}]}>
         <Icon name={icon} color={iconColor} size={20} />
       </View>
-      <View style={styles.transactionTextContainer}>
+      <View style={[styles.transactionTextContainer, {gap: 4}]}>
         <Text
           style={[
             styles.transactionType,
             isDarkMode ? styles.textDark : styles.textLight1,
           ]}>
-          {type.charAt(0).toUpperCase() + type.slice(1)}
+          {type}
         </Text>
         <Text
-          style={[
-            styles.transactionDate,
-            isDarkMode ? styles.textDark : styles.textLight1,
-          ]}>
+          variant="bodySmall"
+          style={[isDarkMode ? styles.textDark : styles.textLight1]}>
           {date}
         </Text>
       </View>
       <View style={styles.amountStatusContainer}>
-        <Text style={[styles.transactionAmount, {color: iconColor}]}>
+        <Text
+          variant="bodyLarge"
+          style={[{color: status === 'Successfull' ? 'green' : '#FF0000'}]}>
           {`$${amount}`}
         </Text>
         <Text
-          style={[
-            styles.transactionStatus,
-            {color: status === 'Successful' ? '#00FF00' : '#FF0000'},
-          ]}>
+          variant="bodySmall"
+          style={[{color: status === 'Successfull' ? 'green' : '#FF0000'}]}>
           {status}
         </Text>
       </View>
@@ -101,11 +112,28 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
   );
 };
 
-const TransactionScreen: React.FC = () => {
+type WithdrawRes = {
+  message: string;
+  data: Transaction[];
+  total_amount: number;
+};
+
+type ScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'withdraw'>;
+};
+
+const TransactionScreen: React.FC<ScreenProps> = ({navigation}) => {
   const colorScheme = useColorScheme();
+  const {user} = useUserStore(state => state);
   const isDarkMode = colorScheme === 'dark';
   const [balanceVisible, setBalanceVisible] = useState(true);
-  const navigation = useNavigation();
+
+  const {data, error, isLoading, isFetching} = useCustomQuery<WithdrawRes>(
+    ['list-transactions-history'],
+    '/list-transactions-history',
+    'POST',
+    {provider_id: user?.id},
+  );
 
   const toggleBalanceVisibility = () => {
     setBalanceVisible(!balanceVisible);
@@ -114,6 +142,9 @@ const TransactionScreen: React.FC = () => {
   const handlewithdraw1 = () => {
     navigation.navigate('withdraw1' as never);
   };
+
+  console.log('is fetching', isFetching);
+
   return (
     <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
       <ScrollView
@@ -136,11 +167,34 @@ const TransactionScreen: React.FC = () => {
                 style={styles.eyeIcon}
               />
             </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                marginLeft: 'auto',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 2,
+              }}
+              onPress={() => navigation.navigate('provider_accounts')}>
+              <FText
+                style={{
+                  color: 'white',
+                  marginLeft: 'auto',
+                }}>
+                Accounts
+              </FText>
+              <Entypo name="chevron-small-right" color="white" size={20} />
+            </TouchableOpacity>
           </View>
           <View>
-            <Text style={styles.balanceAmount}>
-              {balanceVisible ? '$3,578' : '****'}
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color={customTheme.primaryColor} />
+            ) : error || !data ? (
+              <Refresh onRefresh={() => {}} />
+            ) : (
+              <Text style={styles.balanceAmount}>
+                {balanceVisible ? `$${data?.total_amount || '0.00'}` : '****'}
+              </Text>
+            )}
           </View>
           <TouchableOpacity
             style={styles.withdrawButton}
@@ -157,53 +211,30 @@ const TransactionScreen: React.FC = () => {
             ]}>
             Transaction history
           </Text>
-          <Text
-            style={[
-              styles.historySubtitle,
-              isDarkMode ? styles.textDark : styles.textLight,
-            ]}>
-            June 2024
-          </Text>
-          <Text
-            style={[
-              styles.historyInOut,
-              isDarkMode ? styles.textDark : styles.textLight,
-            ]}>
-            In: $5,178 Out: $1,600
-          </Text>
-          <TouchableOpacity style={styles.arrowButton}>
-            <Icon name="chevron-right" color="#00f2ea" size={20} />
-          </TouchableOpacity>
-          <TransactionCard
-            type="withdrawal"
-            amount="-1,600"
-            status="Successful"
-            date="Jul 2nd, 11:30:16"
-          />
-          <TransactionCard
-            type="withdrawal"
-            amount="-1,600"
-            status="Unsuccessful"
-            date="Jul 2nd, 11:30:16"
-          />
-          <TransactionCard
-            type="fee"
-            amount="20"
-            status="Successful"
-            date="Jul 2nd, 11:30:16"
-          />
-          <TransactionCard
-            type="received"
-            amount="2,000"
-            status="Successful"
-            date="Jul 2nd, 11:30:16"
-          />
-          <TransactionCard
-            type="received"
-            amount="3,178"
-            status="Successful"
-            date="Jul 2nd, 11:30:16"
-          />
+
+          {isLoading ? (
+            <ActivityIndicator
+              color={customTheme.primaryColor}
+              size={'small'}
+            />
+          ) : error || !data ? (
+            <Refresh onRefresh={() => {}} />
+          ) : data?.data.length === 0 ? (
+            <Text style={styles.textLight}>No transaction history</Text>
+          ) : (
+            <>
+              {data?.data.map((transaction, index) => (
+                <TransactionCard
+                  key={index}
+                  purpose={transaction.purpose}
+                  type={transaction.type}
+                  amount={transaction.amount as string}
+                  status={transaction.transaction}
+                  date={new Date(transaction.created_at).toLocaleString()}
+                />
+              ))}
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaViewContainer>
@@ -321,13 +352,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-end',
   },
-  transactionAmount: {
-    fontSize: wp('4%'),
-    fontWeight: 'bold',
-  },
-  transactionStatus: {
-    fontSize: wp('4%'),
-  },
+
   textLight: {
     color: '#fff',
   },

@@ -20,6 +20,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {makeApiRequest} from '../../../utils/helpers';
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -79,9 +80,13 @@ const SettingsScreen: React.FC = () => {
     setLogoutPopupVisible(true);
   };
 
-  const handleConfirmLogout = () => {
-    setLogoutPopupVisible(false);
-    navigation.navigate('SplashScreen' as never);
+  const handleConfirmLogout = async () => {
+    const {data, error} = await makeApiRequest('/logout', 'POST', {});
+
+    if (data) {
+      setLogoutPopupVisible(false);
+      navigation.navigate('SplashScreen' as never);
+    }
   };
 
   const handleEnglishToggle = () => {

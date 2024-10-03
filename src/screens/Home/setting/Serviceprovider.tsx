@@ -68,6 +68,8 @@ const HomeScreen = ({route, navigation}: Props) => {
     {provider_id: id as string},
   );
 
+  console.log('data', data);
+
   useFocusEffect(
     React.useCallback(() => {
       setBookVisible(false);

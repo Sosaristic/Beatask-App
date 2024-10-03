@@ -21,6 +21,7 @@ import {ListReviewsType} from '../../../interfaces/apiResponses';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../../App';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
+import {ScrollView} from 'react-native';
 
 type ListReviewRes = {
   message: string;
@@ -42,7 +43,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
     '/list-reviews',
     'POST',
     {
-      provider_id: 42,
+      provider_id: user?.id,
     },
   );
 
@@ -56,7 +57,10 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
 
   return (
     <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
-      <>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{flex: 1}}
+        contentContainerStyle={{flexGrow: 1}}>
         {data.data.map(item => {
           return (
             <View
@@ -79,6 +83,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
                     style={[
                       styles.name,
                       isDarkMode ? styles.darkText : styles.lightText,
+                      {textTransform: 'capitalize'},
                     ]}>
                     {item.user.name}
                   </Text>
@@ -128,7 +133,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({navigation}) => {
             </View>
           );
         })}
-      </>
+      </ScrollView>
     </SafeAreaViewContainer>
   );
 };

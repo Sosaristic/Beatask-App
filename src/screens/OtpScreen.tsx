@@ -129,13 +129,13 @@ const OtpScreen: React.FC<Props> = ({route, navigation}) => {
 
         if (type === '2fa') {
           if (is_service_provider === 1) {
-            navigation.navigate('dashboard' as never);
+            navigation.replace('dashboard');
             return;
           }
 
-          navigation.navigate('Home' as never);
+          navigation.replace('Home');
         } else {
-          navigation.navigate('Login' as never);
+          navigation.replace('Login');
         }
       }, 2000);
     }

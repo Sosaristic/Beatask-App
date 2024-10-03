@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">Beatask</string>
+
+<string name="facebook_app_id">464610679900069</string>
+<string name="fb_login_protocol_scheme">f1279b32950139553607ec904a8b4bb1</string>
+<string name="facebook_client_token">d2253b2ec0093a1261df1854ad4ef28a</string>
+
+
     <!-- <string name="facebook_app_id">989562666109541</string> -->
 </resources>

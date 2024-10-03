@@ -23,6 +23,7 @@ import {RootStackParamList} from '../../../../../App';
 import {formatDate} from '../../../../utils/helperFunc';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import SafeAreaViewContainer from '../../../../components/SafeAreaViewContainer';
+import Empty from '../../../../components/Empty';
 
 type Prop = {
   navigation: StackNavigationProp<RootStackParamList, 'masglist1'>;
@@ -52,7 +53,15 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
               gap: 6,
               paddingTop: 10,
             }}>
-            <PaperText variant="titleLarge">Messages</PaperText>
+            <PaperText
+              style={{
+                alignItems: 'center',
+                gap: 4,
+                color: isDarkMode ? '#fff' : '#000',
+              }}
+              variant="titleLarge">
+              Messages
+            </PaperText>
             <TextCount />
           </View>
         </View>
@@ -157,14 +166,11 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
             <View style={styles.innerContainer}>
               {messages?.length === 0 && (
                 <View>
-                  <Text style={{textAlign: 'center', padding: 10}}>
-                    All Conversations will be shown here
-                  </Text>
+                  <Empty />
                 </View>
               )}
 
               {messages.map(message => {
-                console.log('test message time', message.lastMessageTimestamp);
                 const date = new Date(message.lastMessageTimestamp);
 
                 return (
@@ -189,7 +195,7 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
                       ]}>
                       <View style={styles.messageContainer}>
                         <Avatar.Image
-                          size={24}
+                          size={50}
                           source={
                             message.customerAvatar
                               ? {uri: message.customerAvatar}

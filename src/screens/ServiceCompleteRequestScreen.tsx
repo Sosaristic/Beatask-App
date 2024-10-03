@@ -284,6 +284,7 @@ const RenderItem = ({
 
 const ServiceCompleteRequestScreen = () => {
   const {user} = useUserStore(state => state);
+  console.log(user?.id);
   const {data, loading, error, fetchData} = useFetch<RequestRes>(
     '/list-completed-serices-requests',
     'POST',

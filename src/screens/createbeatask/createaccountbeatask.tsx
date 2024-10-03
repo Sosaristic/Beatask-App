@@ -11,15 +11,15 @@ import {
 import {CountryPicker} from 'react-native-country-codes-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Camera from 'react-native-vector-icons/Entypo';
-import CheckBox from '@react-native-community/checkbox';
+
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import {RootStackParamList} from '../../../App';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {CustomErrorModal} from '../../components';
-import {Avatar} from 'react-native-paper';
+import {CustomErrorModal, CustomInput} from '../../components';
+import {Avatar, Checkbox, Text as PaperText} from 'react-native-paper';
 import DocumentPicker, {
   DocumentPickerResponse,
 } from 'react-native-document-picker';
@@ -27,6 +27,8 @@ import {customTheme} from '../../custom_theme/customTheme';
 import {Formik} from 'formik';
 import validationSchema from '../../components/forms/providerSignUpSchema';
 import {useUserStore} from '../../store/useUserStore';
+import {RouteProp} from '@react-navigation/native';
+import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
 
 // Define the interface for the country object
 interface Country {
@@ -36,6 +38,7 @@ interface Country {
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'CreateBeatask'>;
+  route: RouteProp<RootStackParamList, 'CreateBeatask'>;
 };
 interface ImageFile {
   name: string;
@@ -51,18 +54,6 @@ export const formatPhoneNumber = (callCode: string, phone: string) => {
   return `${callCode}${phone}`;
 };
 
-const initialValues = {
-  first_legal_name: '',
-  last_legal_name: '',
-  email: '',
-  business_address: '',
-  password: '',
-  phone: '',
-  description: '',
-  agree_terms: false,
-  two_factor_authentication: false,
-};
-
 type initialValuesType = {
   first_legal_name: string;
   last_legal_name: string;
@@ -75,7 +66,17 @@ type initialValuesType = {
   two_factor_authentication: boolean;
 };
 
-const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
+const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
+  const {
+    params: {
+      email,
+      first_name,
+      google_token,
+      last_name,
+      password,
+      image: imageFromRoute,
+    },
+  } = route || {};
   const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
   const {device_token} = useUserStore(state => state);
@@ -86,13 +87,26 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
 
   const [isPasswordVisible, setPasswordVisible] = useState(false);
 
-  const [description, setDescription] = useState('');
   const [image, setImage] = useState<ImageFile | null>(null);
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: 'Missing Fields',
     errorMessage: 'All fields are required',
     isModalOpen: false,
   });
+
+  const initialValues = {
+    first_legal_name: first_name || '',
+    last_legal_name: last_name || '',
+    email: email,
+    business_address: '',
+    password: password || '',
+    phone: '',
+    description: '',
+    agree_terms: false,
+    is_google_login: google_token ? 1 : 0,
+    two_factor_authentication: false,
+    image: '',
+  };
 
   const handleSelectCountry = (country: Country) => {
     setCountryCode(`${country.dial_code}`);
@@ -103,7 +117,9 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
     setPickerVisible(true);
   };
 
-  const handleImagePicker = async () => {
+  const handleImagePicker = async (
+    setFieldValue: (field: string, value: string) => void,
+  ) => {
     try {
       const res: DocumentPickerResponse | null =
         await DocumentPicker.pickSingle({
@@ -112,16 +128,14 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
 
       if (res) {
         setImage(res as ImageFile);
+
+        setFieldValue('image', res.uri);
       }
     } catch (error) {}
   };
 
   const handleagree = () => {
     navigation.navigate('Agree' as never);
-  };
-
-  const togglePasswordVisibility = () => {
-    setPasswordVisible(!isPasswordVisible);
   };
 
   const containerStyle = [
@@ -136,8 +150,11 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
       phone_number: formatPhoneNumber(countryCode, values.phone),
       two_factor: values.two_factor_authentication ? 1 : 0,
       is_service_provider: 1,
+      password: google_token ? '' : values.password,
       device_token,
       profile_image: image,
+      is_google_login: google_token ? 1 : 0,
+      google_token: google_token || '',
     };
     navigation.navigate('Upload', {
       details: payload,
@@ -145,262 +162,288 @@ const CreateAccountScreen: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <ScrollView contentContainerStyle={containerStyle}>
-      <View style={{alignItems: 'center', paddingVertical: 10}}>
-        <Avatar.Image
-          source={{
-            uri: image?.uri || 'https://avatar.iran.liara.run/public/28',
+    <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
+      <ScrollView contentContainerStyle={containerStyle}>
+        <Formik
+          initialValues={initialValues}
+          onSubmit={handleFormSubmit}
+          validationSchema={validationSchema}>
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+            setFieldValue,
+          }) => {
+            return (
+              <>
+                <View style={{alignItems: 'center', marginBottom: 20}}>
+                  <Avatar.Image
+                    source={{
+                      uri: google_token
+                        ? imageFromRoute
+                        : image?.uri ||
+                          'https://avatar.iran.liara.run/public/28',
+                    }}
+                  />
+                  <Text style={{top: 8}}>
+                    {image?.name || 'Add a profile picture'}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={{top: -40, right: -25}}
+                    onPress={() => handleImagePicker(setFieldValue)}>
+                    <Camera
+                      name="camera"
+                      size={30}
+                      color={
+                        colorScheme === 'dark'
+                          ? customTheme.primaryColor
+                          : 'black'
+                      }
+                    />
+                  </TouchableOpacity>
+
+                  {errors.image && (
+                    <Text style={{marginTop: -10, color: 'red'}}>
+                      {errors.image}
+                    </Text>
+                  )}
+                </View>
+                <View style={{gap: 20}}>
+                  <View>
+                    <Text style={styles.label}>First legal name</Text>
+                    <TextInput
+                      onBlur={handleBlur('first_legal_name')}
+                      onChangeText={handleChange('first_legal_name')}
+                      value={values.first_legal_name}
+                      style={styles.input}
+                      placeholder="First legal name"
+                      placeholderTextColor="#999"
+                    />
+                    {errors.first_legal_name && touched.first_legal_name && (
+                      <Text style={darkStyles.errorText}>
+                        {errors.first_legal_name}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View>
+                    <Text style={styles.label}>Last legal name</Text>
+                    <TextInput
+                      onBlur={handleBlur('last_legal_name')}
+                      onChangeText={handleChange('last_legal_name')}
+                      value={values.last_legal_name}
+                      style={styles.input}
+                      placeholder="Last legal name"
+                      placeholderTextColor="#999"
+                    />
+                    {errors.last_legal_name && touched.last_legal_name && (
+                      <Text style={darkStyles.errorText}>
+                        {errors.last_legal_name}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View>
+                    <Text style={styles.label}>Email address</Text>
+                    <TextInput
+                      onBlur={handleBlur('email')}
+                      onChangeText={handleChange('email')}
+                      value={values.email}
+                      style={styles.input}
+                      editable={false}
+                      placeholder="Email address"
+                      placeholderTextColor="#999"
+                    />
+                    {errors.email && touched.email && (
+                      <Text style={darkStyles.errorText}>{errors.email}</Text>
+                    )}
+                  </View>
+
+                  <View>
+                    <Text style={[styles.label]}>Phone number</Text>
+                    <View style={styles.phoneContainer}>
+                      <TouchableOpacity
+                        style={styles.countryCodeButton}
+                        onPress={handleCountryCodePress}>
+                        <Text style={styles.countryCodeButtonText}>
+                          {countryCode}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TextInput
+                        style={[styles.input, styles.phoneInput]}
+                        placeholder="555 555-1234"
+                        placeholderTextColor="#999"
+                        keyboardType="phone-pad"
+                        onChangeText={handleChange('phone')}
+                        onBlur={handleBlur('phone')}
+                        value={values.phone}
+                      />
+                    </View>
+                    {errors.phone && touched.phone && (
+                      <Text style={[darkStyles.errorText]}>{errors.phone}</Text>
+                    )}
+                  </View>
+                  {!google_token && (
+                    <CustomInput
+                      label="Password"
+                      type="password"
+                      value={values.password}
+                      onChangeText={handleChange('password')}
+                      onBlur={handleBlur('password')}
+                      errorText={
+                        errors.password && touched.password
+                          ? errors.password
+                          : ''
+                      }
+                    />
+                  )}
+
+                  <View>
+                    <Text style={styles.label}>Business Address</Text>
+                    <TextInput
+                      onBlur={handleBlur('business_address')}
+                      onChangeText={handleChange('business_address')}
+                      value={values.business_address}
+                      style={styles.input}
+                      placeholder="Business name"
+                      placeholderTextColor="#999"
+                    />
+                    {errors.business_address && touched.business_address && (
+                      <Text style={darkStyles.errorText}>
+                        {errors.business_address}
+                      </Text>
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.label}>Description</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          borderColor: '#12ccb7',
+
+                          textAlignVertical: 'top', // Align text and placeholder to the top
+                          marginTop: hp('2%'), // Ensure no top margin
+                          paddingTop: hp('2%'), // Ensure no top padding
+                          height: hp('20%'),
+                        },
+                      ]}
+                      value={values.description}
+                      onChangeText={handleChange('description')}
+                      onBlur={handleBlur('description')}
+                      placeholder="Enter Description"
+                      multiline
+                      numberOfLines={8}
+                    />
+                    {errors.description && touched.description && (
+                      <Text style={darkStyles.errorText}>
+                        {errors.description}
+                      </Text>
+                    )}
+                  </View>
+                  <View>
+                    <View style={styles.checkboxContainer}>
+                      <Checkbox.Item
+                        status={values.agree_terms ? 'checked' : 'unchecked'}
+                        onPress={() =>
+                          setFieldValue('agree_terms', !values.agree_terms)
+                        }
+                        mode="android"
+                        label=""
+                      />
+                      <PaperText style={styles.checkboxLabel}>
+                        I agree to Beatask
+                        <PaperText
+                          style={{color: '#12CCB7'}}
+                          onPress={handleagree}>
+                          {' '}
+                          terms of use
+                        </PaperText>{' '}
+                        and{'\n'}
+                        <PaperText
+                          style={{color: '#12CCB7'}}
+                          onPress={handleagree}>
+                          {' '}
+                          privacy policy.
+                        </PaperText>
+                      </PaperText>
+                    </View>
+                    {errors.agree_terms && touched.agree_terms && (
+                      <Text style={[darkStyles.errorText, {}]}>
+                        {errors.agree_terms}
+                      </Text>
+                    )}
+
+                    <View style={styles.checkboxContainer}>
+                      <Checkbox.Item
+                        status={
+                          values.two_factor_authentication
+                            ? 'checked'
+                            : 'unchecked'
+                        }
+                        onPress={() =>
+                          setFieldValue(
+                            'two_factor_authentication',
+                            !values.two_factor_authentication,
+                          )
+                        }
+                        mode="android"
+                        label=""
+                      />
+                      <PaperText style={styles.checkboxLabel}>
+                        Two-Factor Authentication
+                        <Text style={{color: '#12CCB7'}}> (2FA)</Text>
+                      </PaperText>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.nextButton}
+                    disabled={
+                      Object.keys(errors).length > 0 ||
+                      Object.keys(touched).length === 0
+                    }
+                    onPress={() => handleSubmit()}>
+                    <Text style={styles.nexttext}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            );
+          }}
+        </Formik>
+
+        {/* Country Picker Modal */}
+        <CountryPicker
+          show={isPickerVisible}
+          pickerButtonOnPress={handleSelectCountry}
+          lang="en"
+          style={{
+            modal: {
+              height: 300,
+              backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
+            },
+            countryButtonStyles: {
+              backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
+              borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
+            },
+            textInput: {
+              color: colorScheme === 'dark' ? '#010A0C' : '#000',
+            },
           }}
         />
-        <Text style={{marginTop: 20}}>
-          {image?.name || 'Add a profile picture'}
-        </Text>
-
-        <TouchableOpacity
-          style={{top: -55, right: -25}}
-          onPress={handleImagePicker}>
-          <Camera
-            name="camera"
-            size={30}
-            color={colorScheme === 'dark' ? customTheme.primaryColor : 'black'}
-          />
-        </TouchableOpacity>
-
-        {!image && (
-          <Text style={[darkStyles.errorText, {marginBottom: 5}]}>
-            Image is required
-          </Text>
-        )}
-      </View>
-
-      <Formik
-        initialValues={initialValues}
-        onSubmit={handleFormSubmit}
-        validationSchema={validationSchema}>
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-          setFieldValue,
-        }) => (
-          <View style={{gap: 20}}>
-            <View>
-              <Text style={styles.label}>First legal name</Text>
-              <TextInput
-                onBlur={handleBlur('first_legal_name')}
-                onChangeText={handleChange('first_legal_name')}
-                value={values.first_legal_name}
-                style={styles.input}
-                placeholder="First legal name"
-                placeholderTextColor="#999"
-              />
-              {errors.first_legal_name && touched.first_legal_name && (
-                <Text style={darkStyles.errorText}>
-                  {errors.first_legal_name}
-                </Text>
-              )}
-            </View>
-
-            <View>
-              <Text style={styles.label}>Last legal name</Text>
-              <TextInput
-                onBlur={handleBlur('last_legal_name')}
-                onChangeText={handleChange('last_legal_name')}
-                value={values.last_legal_name}
-                style={styles.input}
-                placeholder="Last legal name"
-                placeholderTextColor="#999"
-              />
-              {errors.last_legal_name && touched.last_legal_name && (
-                <Text style={darkStyles.errorText}>
-                  {errors.last_legal_name}
-                </Text>
-              )}
-            </View>
-
-            <View>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                onBlur={handleBlur('email')}
-                onChangeText={handleChange('email')}
-                value={values.email}
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor="#999"
-              />
-              {errors.email && touched.email && (
-                <Text style={darkStyles.errorText}>{errors.email}</Text>
-              )}
-            </View>
-
-            <Text style={[styles.label, {marginBottom: -5}]}>Phone number</Text>
-            <View style={styles.phoneContainer}>
-              <TouchableOpacity
-                style={styles.countryCodeButton}
-                onPress={handleCountryCodePress}>
-                <Text style={styles.countryCodeButtonText}>{countryCode}</Text>
-              </TouchableOpacity>
-
-              <TextInput
-                style={[styles.input, styles.phoneInput]}
-                placeholder="555 555-1234"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-                onChangeText={handleChange('phone')}
-                onBlur={handleBlur('phone')}
-                value={values.phone}
-              />
-            </View>
-            {errors.phone && touched.phone && (
-              <Text style={darkStyles.errorText}>{errors.phone}</Text>
-            )}
-            <View>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Password"
-                  placeholderTextColor="#999"
-                  secureTextEntry={!isPasswordVisible}
-                  value={values.password}
-                  onChangeText={handleChange('password')}
-                  onBlur={handleBlur('password')}
-                />
-                <TouchableOpacity
-                  style={styles.toggleButton}
-                  onPress={togglePasswordVisibility}>
-                  <Icon
-                    name={isPasswordVisible ? 'eye' : 'eye-slash'}
-                    size={20}
-                    color="#12CCB7"
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.password && touched.password && (
-                <Text style={darkStyles.errorText}>{errors.password}</Text>
-              )}
-            </View>
-
-            <View>
-              <Text style={styles.label}>Business Address</Text>
-              <TextInput
-                onBlur={handleBlur('business_address')}
-                onChangeText={handleChange('business_address')}
-                value={values.business_address}
-                style={styles.input}
-                placeholder="Business name"
-                placeholderTextColor="#999"
-              />
-              {errors.business_address && touched.business_address && (
-                <Text style={darkStyles.errorText}>
-                  {errors.business_address}
-                </Text>
-              )}
-            </View>
-            <View>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: '#12ccb7',
-
-                    textAlignVertical: 'top', // Align text and placeholder to the top
-                    marginTop: hp('2%'), // Ensure no top margin
-                    paddingTop: hp('2%'), // Ensure no top padding
-                    height: hp('20%'),
-                  },
-                ]}
-                value={values.description}
-                onChangeText={handleChange('description')}
-                onBlur={handleBlur('description')}
-                placeholder="Enter Description"
-                multiline
-                numberOfLines={8}
-              />
-              {errors.description && touched.description && (
-                <Text style={darkStyles.errorText}>{errors.description}</Text>
-              )}
-            </View>
-
-            <View style={styles.checkboxContainer}>
-              <CheckBox
-                value={values.agree_terms}
-                onValueChange={newValue =>
-                  setFieldValue('agree_terms', newValue)
-                }
-                tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-              />
-              <Text style={styles.checkboxLabel}>
-                I agree to Beatask
-                <Text style={{color: '#12CCB7'}} onPress={handleagree}>
-                  {' '}
-                  terms of use
-                </Text>{' '}
-                and{'\n'}
-                <Text style={{color: '#12CCB7'}} onPress={handleagree}>
-                  {' '}
-                  privacy policy.
-                </Text>
-              </Text>
-            </View>
-            {errors.agree_terms && touched.agree_terms && (
-              <Text style={darkStyles.errorText}>{errors.agree_terms}</Text>
-            )}
-
-            <View style={styles.checkboxContainer}>
-              <CheckBox
-                value={values.two_factor_authentication}
-                onValueChange={newValue =>
-                  setFieldValue('two_factor_authentication', newValue)
-                }
-                tintColors={{true: '#12CCB7', false: '#12CCB7'}}
-              />
-              <Text style={styles.checkboxLabel}>
-                Two-Factor Authentication
-                <Text style={{color: '#12CCB7'}}> (2FA)</Text>
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              disabled={!image}
-              style={styles.nextButton}
-              onPress={() => handleSubmit()}>
-              <Text style={styles.nexttext}>Next</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Formik>
-
-      {/* Country Picker Modal */}
-      <CountryPicker
-        show={isPickerVisible}
-        pickerButtonOnPress={handleSelectCountry}
-        lang="en"
-        style={{
-          modal: {
-            height: 300,
-            backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
-          },
-          countryButtonStyles: {
-            backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
-            borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
-          },
-          textInput: {
-            color: colorScheme === 'dark' ? '#010A0C' : '#000',
-          },
-        }}
-      />
-      <CustomErrorModal
-        {...showErrorModal}
-        closeModal={() =>
-          setShowErrorModal({...showErrorModal, isModalOpen: false})
-        }
-      />
-    </ScrollView>
+        <CustomErrorModal
+          {...showErrorModal}
+          closeModal={() =>
+            setShowErrorModal({...showErrorModal, isModalOpen: false})
+          }
+        />
+      </ScrollView>
+    </SafeAreaViewContainer>
   );
 };
 
@@ -443,8 +486,10 @@ const lightStyles = StyleSheet.create({
   countryCodeButton: {
     borderWidth: 1,
     borderColor: '#ccc',
-    paddingTop: hp('2.5%'),
-    paddingBottom: hp('2.5%'),
+    height: hp('7.5%'),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
@@ -456,7 +501,7 @@ const lightStyles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginTop: hp('1%'),
+
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -484,7 +529,6 @@ const lightStyles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: wp('4%'),
-    marginLeft: wp('2%'),
   },
   toggleButton: {
     position: 'absolute',
@@ -526,7 +570,7 @@ const darkStyles = StyleSheet.create({
     borderColor: '#51514C',
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: hp('2.5%'),
+
     paddingHorizontal: wp('2.5%'),
     padding: hp('2%'),
     color: '#fff',
@@ -535,16 +579,17 @@ const darkStyles = StyleSheet.create({
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp('2.5%'),
   },
   countryCodeButton: {
     backgroundColor: '#51514C',
-    paddingTop: hp('2.5%'),
-    paddingBottom: hp('2.5%'),
+    height: hp('7.5%'),
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: wp('3.75%'),
     borderRadius: 8,
     marginRight: wp('5%'),
-    marginBottom: hp('1%'),
   },
   countryCodeButtonText: {
     color: '#fff',
@@ -553,7 +598,7 @@ const darkStyles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    marginTop: hp('1%'),
+
     borderColor: '#51514C',
     borderWidth: 1,
     borderRadius: 5,
@@ -584,7 +629,6 @@ const darkStyles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: wp('4%'), // Responsive font size
-    marginLeft: wp('2%'),
   },
   toggleButton: {
     position: 'absolute',

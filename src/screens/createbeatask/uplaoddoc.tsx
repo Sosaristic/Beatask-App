@@ -161,6 +161,10 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
           ...showSuccessModal,
           showModal: false,
         });
+        if (details.google_token) {
+          navigation.navigate('Login');
+          return;
+        }
         navigation.navigate('otp', {
           email: payload.email,
           type: 'email-verify',

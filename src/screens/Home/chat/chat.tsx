@@ -43,6 +43,13 @@ type Props = {
   route: RouteProp<RootStackParamList, 'Chat'>;
 };
 
+function capitalizeFirstLetter(input: string): string {
+  if (!input) return ''; // Handle empty string case
+
+  // Convert first letter to uppercase and concatenate with the rest of the string
+  return input.charAt(0).toUpperCase() + input.slice(1);
+}
+
 const ChatScreen: React.FC<Props> = ({route}) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [conversations, setConversations] = useState<IMessage[]>([]);
@@ -65,7 +72,10 @@ const ChatScreen: React.FC<Props> = ({route}) => {
 
   useEffect(() => {
     navigation.setOptions({
-      title: user?.name === providerName ? customerName : providerName,
+      title:
+        user?.name === providerName
+          ? capitalizeFirstLetter(customerName)
+          : capitalizeFirstLetter(providerName),
     });
   }, []);
 

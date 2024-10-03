@@ -108,6 +108,7 @@ export interface MostBookedService {
     created_at: string;
     updated_at: string;
     provider: Provider;
+    category: Category;
   };
 }
 
@@ -129,6 +130,7 @@ export interface HalfPrice {
   created_at: string;
   updated_at: string;
   provider: Provider;
+  category: Category;
 }
 
 interface Provider {
@@ -330,7 +332,7 @@ export type SingleServicePayload = {
   sub_category_name: string;
   real_price: string;
   service_description: string;
-  provider_id: string;
+  provider_id: number | string;
   service_id: number | string;
 };
 
@@ -484,4 +486,64 @@ export type ServiceCompletion = {
     updated_at: string;
     service: ServiceType;
   };
+};
+
+export interface Quotes {
+  id: number;
+  quote_message: string;
+  request_service_id: number;
+  user_id: string | number;
+  provider_id: string | number;
+  is_accepted: number;
+  created_at: string;
+  updated_at: string;
+  user: Provider;
+  provider: Provider;
+}
+
+export interface AcceptedQuote extends Quotes {
+  service: {
+    id: number;
+    category_id: string;
+    sub_category: string;
+    service_name: string;
+    provider_id: string;
+    years_of_experience: string;
+    experience_document: string;
+    service_image: string;
+    real_price: string;
+    discounted_price: string;
+    service_description: string;
+    availability_dates_times: string | null;
+    review_rating: number | null;
+    is_completed: number;
+    created_at: string;
+    updated_at: string;
+    category: Category;
+  };
+}
+
+export type Transaction = {
+  id: number;
+  provider_id: string | number;
+  user_id: string | number;
+  amount: string | number;
+  purpose: string;
+  type: 'Withdrawal' | 'Received' | 'Payed';
+  transaction: 'Successfull' | 'Unsuccessful';
+  created_at: string;
+  updated_at: string;
+  user: null | Provider;
+  provider: Provider;
+};
+
+export type ProviderAccountsType = {
+  id: number;
+  provider_id: string | number;
+  account_holder_name: string;
+  account_number: string;
+  bank_name: string;
+  created_at: string;
+  updated_at: string;
+  provider: Provider;
 };

@@ -169,8 +169,8 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
           <View style={{marginLeft: 'auto'}}>
             <RadioButton
               value="stripe"
-              status={selectedMethod === 'stripe' ? 'checked' : 'unchecked'}
-              onPress={() => setSelectedMethod('stripe')}
+              status={'checked'}
+              // onPress={() => setSelectedMethod('stripe')}
             />
           </View>
         </TouchableOpacity>

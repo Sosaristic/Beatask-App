@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import {
   View,
-  TextInput,
   TouchableOpacity,
   Text,
   StyleSheet,
@@ -11,10 +10,12 @@ import {
   useColorScheme,
   Image,
   Platform,
+  Alert,
 } from 'react-native';
-import CheckBox from '@react-native-community/checkbox';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Checkbox} from 'react-native-paper';
+import {LoginManager, AccessToken} from 'react-native-fbsdk-next';
 
 import {
   widthPercentageToDP as wp,
@@ -22,13 +23,20 @@ import {
 } from 'react-native-responsive-screen';
 import {User, useUserStore} from '../../store/useUserStore';
 import {makeApiRequest} from '../../utils/helpers';
-import {CustomErrorModal, CustomModal} from '../../components';
+import {
+  CustomButton,
+  CustomErrorModal,
+  CustomInput,
+  CustomModal,
+} from '../../components';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../App';
 
 import auth from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
-import {customTheme} from '../../custom_theme/customTheme';
+
+import {Formik} from 'formik';
+import {LoginSchema} from '../../components/forms/authSchema';
 
 export type LoginSuccessResponse = {
   data: User;
@@ -48,7 +56,6 @@ const Login: React.FC<Props> = ({navigation}) => {
     device_token,
   } = useUserStore(state => state);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState({
     errorTitle: '',
     errorMessage: '',
@@ -63,37 +70,16 @@ const Login: React.FC<Props> = ({navigation}) => {
     showModal: false,
   });
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+
   const [loginAttempts, setLoginAttempts] = useState(0);
-  const [accountLocked, setAccountLocked] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [showInvalidCredentialsModal, setShowInvalidCredentialsModal] =
-    useState(false);
 
-  const [googleUser, setGoogleUser] = useState(null);
-
-  const handleLogin = async () => {
+  const handleLogin = async (
+    payload: {email: string; password: string} | {google_token: string},
+  ) => {
     const notVerified =
       'Otp sent again please verify your email address to login';
-
-    if (accountLocked) {
-      return;
-    }
-
-    if (!email) {
-      setEmailError('Email address is required');
-      return;
-    }
-
-    if (!password) {
-      setPasswordError('Password is required');
-      return;
-    }
 
     if (loginAttempts > 5) {
       setShowErrorModal({
@@ -116,12 +102,15 @@ const Login: React.FC<Props> = ({navigation}) => {
       '/login',
       'POST',
       {
-        email,
-        password,
+        ...payload,
         device_token,
       },
     );
     if (error) {
+      GoogleSignin.revokeAccess()
+        .then(() => GoogleSignin.signOut())
+        .then(() => console.log('User signed out!'))
+        .catch(err => console.log(err));
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,
@@ -138,10 +127,12 @@ const Login: React.FC<Props> = ({navigation}) => {
             ...showErrorModal,
             isModalOpen: false,
           });
-          navigation.navigate('otp', {
-            email,
-            type: 'email-verify',
-          });
+          if ('email' in payload) {
+            navigation.navigate('otp', {
+              email: payload.email,
+              type: 'email-verify',
+            });
+          }
         }, 1000);
       }
     }
@@ -178,14 +169,14 @@ const Login: React.FC<Props> = ({navigation}) => {
 
   const closeModal = () => {
     setShowPopup(false);
-    setShowInvalidCredentialsModal(false);
   };
 
   async function onGoogleButtonPress() {
     // Check if your device supports Google Play
     await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
     // Get the users ID token
-    const {data} = await GoogleSignin.signIn();
+    const {data, type} = await GoogleSignin.signIn();
+    if (type === 'cancelled') throw new Error('Cancelled');
 
     // Create a Google credential with the token
     const googleCredential = auth.GoogleAuthProvider.credential(
@@ -196,30 +187,32 @@ const Login: React.FC<Props> = ({navigation}) => {
     return auth().signInWithCredential(googleCredential);
   }
 
-  const InvalidCredentialsModal: React.FC = () => (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={showInvalidCredentialsModal}
-      onRequestClose={closeModal}>
-      <TouchableWithoutFeedback onPress={closeModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Icon
-              name="close-circle-outline"
-              size={wp('10%')}
-              color="red"
-              style={styles.modalIcon}
-            />
-            <Text style={styles.modalText1}>Invalid credentials</Text>
-            <Text style={styles.modalText2}>
-              You have entered the{'\n'}incorrect credentials
-            </Text>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
+  async function onFacebookButtonPress() {
+    // Attempt login with permissions
+    const result = await LoginManager.logInWithPermissions([
+      'public_profile',
+      'email',
+    ]);
+
+    if (result.isCancelled) {
+      throw 'User cancelled the login process';
+    }
+
+    // Once signed in, get the users AccessToken
+    const data = await AccessToken.getCurrentAccessToken();
+
+    if (!data) {
+      throw 'Something went wrong obtaining access token';
+    }
+
+    // Create a Firebase credential with the AccessToken
+    const facebookCredential = auth.FacebookAuthProvider.credential(
+      data.accessToken,
+    );
+
+    // Sign-in the user with the credential
+    return auth().signInWithCredential(facebookCredential);
+  }
 
   const LockoutModal: React.FC = () => (
     <Modal
@@ -253,85 +246,73 @@ const Login: React.FC<Props> = ({navigation}) => {
         isDarkMode ? styles.containerDark : styles.containerLight,
         {padding: wp('5%')}, // Responsive padding
       ]}>
-      <InvalidCredentialsModal />
       <LockoutModal />
 
-      <Text
-        style={[styles.label, isDarkMode ? styles.textDark : styles.textLight]}>
-        Email Address
-      </Text>
-      <TextInput
-        style={[
-          styles.input,
-          isDarkMode ? styles.inputDark : styles.inputLight,
-          {height: hp('7%')}, // Responsive height
-        ]}
-        placeholder="Email address"
-        placeholderTextColor="#888"
-        autoCapitalize="none"
-        onChangeText={text => {
-          setEmail(text);
-          setEmailError('');
+      <Formik
+        initialValues={{email: '', password: ''}}
+        onSubmit={values => handleLogin(values)}
+        validationSchema={LoginSchema}>
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          values,
+          touched,
+          errors,
+        }) => {
+          return (
+            <View style={{gap: 10, marginTop: 10}}>
+              <CustomInput
+                label="Email Address"
+                placeholder="Email address"
+                type="email"
+                onChangeText={handleChange('email')}
+                onBlur={handleBlur('email')}
+                value={values.email}
+                errorText={errors.email && touched.email ? errors.email : ''}
+              />
+
+              <CustomInput
+                label="Password"
+                placeholder="Password"
+                onChangeText={handleChange('password')}
+                onBlur={handleBlur('password')}
+                value={values.password}
+                type="password"
+                errorText={
+                  errors.password && touched.password ? errors.password : ''
+                }
+              />
+
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Checkbox.Item
+                  label=""
+                  mode="android"
+                  style={{paddingLeft: 0, margin: 0}}
+                  status={rememberMe ? 'checked' : 'unchecked'}
+                  onPress={() => setRememberMe(!rememberMe)}
+                />
+                <Text
+                  style={[
+                    styles.checkboxLabel,
+                    isDarkMode ? styles.textDark : styles.textLight,
+                  ]}>
+                  Remember me
+                </Text>
+              </View>
+
+              <CustomButton
+                disabled={
+                  Object.keys(errors).length > 0 ||
+                  Object.keys(touched).length === 0
+                }
+                buttonText="Next"
+                onPress={handleSubmit}
+              />
+            </View>
+          );
         }}
-        value={email}
-      />
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-      <Text
-        style={[styles.label, isDarkMode ? styles.textDark : styles.textLight]}>
-        Password
-      </Text>
-      <View>
-        <TextInput
-          style={[
-            styles.input,
-            isDarkMode ? styles.inputDark : styles.inputLight,
-            {height: hp('7%')}, // Responsive height
-          ]}
-          placeholder="Password"
-          placeholderTextColor="#888"
-          secureTextEntry={!showPassword}
-          onChangeText={text => {
-            setPassword(text);
-            setPasswordError('');
-          }}
-          value={password}
-        />
-        <TouchableOpacity
-          onPress={() => setShowPassword(!showPassword)}
-          style={styles.eyeIcon}>
-          <Icon
-            name={showPassword ? 'eye' : 'eye-off'}
-            size={wp('6%')}
-            color="#12CCB7"
-          />
-        </TouchableOpacity>
-      </View>
-      {passwordError ? (
-        <Text style={styles.errorText}>{passwordError}</Text>
-      ) : null}
-
-      <View style={{flexDirection: 'row', alignItems: 'center'}}>
-        <Checkbox.Item
-          label=""
-          mode="android"
-          style={{paddingLeft: 0, margin: 0}}
-          status={rememberMe ? 'checked' : 'unchecked'}
-          onPress={() => setRememberMe(!rememberMe)}
-        />
-        <Text
-          style={[
-            styles.checkboxLabel,
-            isDarkMode ? styles.textDark : styles.textLight,
-          ]}>
-          Remember me
-        </Text>
-      </View>
-
-      <TouchableOpacity style={styles.nextButton} onPress={handleLogin}>
-        <Text style={styles.nextButtonText}>NEXT</Text>
-      </TouchableOpacity>
-
+      </Formik>
       <TouchableOpacity onPress={() => navigation.navigate('forgotPassword')}>
         <Text style={styles.forgotPassword}>FORGOT PASSWORD?</Text>
       </TouchableOpacity>
@@ -359,17 +340,23 @@ const Login: React.FC<Props> = ({navigation}) => {
       </View>
 
       <View style={styles.socialButtons}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.facebookButton}
-          onPress={() => console.log('Facebook login')}>
+          onPress={() =>
+            onFacebookButtonPress()
+              .then(res => handleLogin({google_token: res.user.uid}))
+              .catch((err: any) =>
+                Alert.alert(`Could not login with facebook credentials`),
+              )
+          }>
           <Icon name="facebook" size={wp('8%')} color="#fff" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           onPress={
             () =>
               onGoogleButtonPress()
-                .then((res: any) => console.log(res))
+                .then(res => handleLogin({google_token: res.user.uid}))
                 .catch((err: any) => console.log(err))
 
             // GoogleSignin.revokeAccess()
@@ -381,13 +368,15 @@ const Login: React.FC<Props> = ({navigation}) => {
             style={{width: 40, height: 40}}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.appleButton,
-            isDarkMode ? styles.appleButtonDark : styles.appleButtonLight,
-          ]}>
-          <Icon name="apple" size={wp('10%')} color="#fff" />
-        </TouchableOpacity>
+        {Platform.OS === 'ios' && (
+          <TouchableOpacity
+            style={[
+              styles.appleButton,
+              isDarkMode ? styles.appleButtonDark : styles.appleButtonLight,
+            ]}>
+            <Icon name="apple" size={wp('10%')} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <CustomModal {...showSuccessModal} />
@@ -497,7 +486,8 @@ const styles = StyleSheet.create({
   },
   socialButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly',
+
     alignItems: 'center',
     marginTop: hp('6%'), // Responsive margin top
   },
