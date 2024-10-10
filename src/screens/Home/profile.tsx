@@ -51,8 +51,6 @@ const SettingsScreen: React.FC = () => {
     user?.phone_number?.slice(2) || '',
   );
 
-  console.log(user?.phone_number);
-
   const [profileDetails, setProfileDetails] = useState({
     first_legal_name: user?.first_legal_name || '',
     last_legal_name: user?.last_legal_name || '',
@@ -94,7 +92,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handlePrivacyPolicy = () => {
-    navigation.navigate('PrivacyPolicy' as never);
+    navigation.navigate('Agree' as never);
   };
 
   const toggleSection = (section: string) => {
@@ -128,7 +126,7 @@ const SettingsScreen: React.FC = () => {
 
     if (data) {
       setLogoutPopupVisible(false);
-      navigation.navigate('SplashScreen' as never);
+      navigation.navigate('AuthScreen' as never);
     }
   };
 
@@ -227,8 +225,8 @@ const SettingsScreen: React.FC = () => {
                 <FontAwesomeIcon
                   name={
                     expandedSections.includes(section)
-                      ? 'chevron-down'
-                      : 'chevron-up'
+                      ? 'chevron-up'
+                      : 'chevron-down'
                   }
                   size={wp('6%')}
                   style={[styles.chevron, isDarkMode && styles.darkChevron]}

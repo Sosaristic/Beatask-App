@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   FlatList,
+  Alert,
 } from 'react-native';
 import {
   Bubble,
@@ -39,8 +40,12 @@ import {Message} from './masglist';
 import {RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../../../../App';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {makeApiRequest} from '../../../utils/helpers';
+import {StackNavigationProp} from '@react-navigation/stack';
 type Props = {
   route: RouteProp<RootStackParamList, 'Chat'>;
+  navigation: StackNavigationProp<RootStackParamList, 'Chat'>;
 };
 
 function capitalizeFirstLetter(input: string): string {
@@ -50,13 +55,75 @@ function capitalizeFirstLetter(input: string): string {
   return input.charAt(0).toUpperCase() + input.slice(1);
 }
 
-const ChatScreen: React.FC<Props> = ({route}) => {
+const blockedKeywordsSet = new Set([
+  'meet up',
+  "let's meet",
+  'can we meet?',
+  "let's catch up",
+  'in-person meeting',
+  'face-to-face',
+  'meet outside',
+  'physical meeting',
+  'whatsapp',
+  'facebook',
+  'fb',
+  'insta',
+  'instagram',
+  'telegram',
+  'tg',
+  'messenger',
+  'snapchat',
+  'contact number',
+  'phone number',
+  'mobile number',
+  'call me',
+  "let's talk on the phone",
+  'video call',
+  'where should we meet?',
+  'meet me at',
+  "let's grab a coffee",
+  'meet for coffee',
+  "let's hang out",
+  'see you outside',
+]);
+
+const checkForBlockedKeywords = async (message: string) => {
+  // Normalize message: lowercase and remove punctuation
+  const normalizedMessage = message.toLowerCase().replace(/[.,?!]/g, '');
+
+  // Check if any single word in the message is in the set
+  const messageWords = normalizedMessage.split(' ');
+  const containsSingleWord = messageWords.some(word =>
+    blockedKeywordsSet.has(word),
+  );
+
+  // Check if the entire message contains any multi-word phrases
+  const containsPhrase = Array.from(blockedKeywordsSet).some(keyword =>
+    normalizedMessage.includes(keyword),
+  );
+
+  return containsSingleWord || containsPhrase;
+};
+
+const warnUser = async () => {
+  try {
+    const value = await AsyncStorage.getItem('warn-user');
+    if (value === 'true') {
+      return true;
+    } else {
+      await AsyncStorage.setItem('warn-user', 'true');
+      return false;
+    }
+  } catch (error) {}
+};
+
+const ChatScreen: React.FC<Props> = ({route, navigation}) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [conversations, setConversations] = useState<IMessage[]>([]);
   const [showTopPopup, setShowTopPopup] = useState(true);
   const colorScheme = useColorScheme();
   const {user} = useUserStore(state => state);
-  const navigation = useNavigation();
+
   const {
     chatId,
     providerId,
@@ -164,8 +231,49 @@ const ChatScreen: React.FC<Props> = ({route}) => {
       is_provider: user?.is_service_provider,
       id: uuidv4(),
     };
-    console.log('sending payload', payload);
+    console.log('sending payload', payload.lastMessageContent);
     await sendMessage(payload);
+
+    checkForBlockedKeywords(payload.lastMessageContent)
+      .then(async containsBlockedKeyword => {
+        console.log('containsBlockedKeyword', containsBlockedKeyword);
+
+        let words = '';
+        blockedKeywordsSet.forEach(word => {
+          words += word + ', ';
+        });
+        if (containsBlockedKeyword) {
+          const isWarned = await warnUser();
+          if (isWarned) {
+            const {data, error} = await makeApiRequest('/block-user', 'POST', {
+              user_id: user?.id,
+            });
+            if (data) {
+              Alert.alert(
+                'Account Blocked',
+                'Your account has been blocked. Please contact us if you think this is an error.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () =>
+                      navigation.reset({routes: [{name: 'AuthScreen'}]}),
+                  },
+                ],
+              );
+            }
+
+            return;
+          }
+          Alert.alert(
+            'Warning',
+            'Your message contains restricted words such as "Facebook," "WhatsApp," or phrases that suggest external communication. For your safety and privacy, external contact or meeting outside the platform is not allowed Please avoid using these terms, or your account may be subject to temporary or permanent suspension.Thank you for understanding and complying with our guidelines.',
+          );
+        }
+      })
+      .catch(error => {
+        console.log('error', error);
+      });
+
     const formattedMessages = messagesArray.map(message => ({
       ...message,
       _id: uuidv4(),

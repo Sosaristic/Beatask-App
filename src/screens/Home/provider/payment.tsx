@@ -93,6 +93,13 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
         publishableKey: apiRes.publishableKey,
       };
     }
+    if (errRes) {
+      setShowErrorModal({
+        errorTitle: 'Error',
+        errorMessage: errRes.message as string,
+        isModalOpen: true,
+      });
+    }
   };
 
   const isDarkMode = colorScheme === 'dark';

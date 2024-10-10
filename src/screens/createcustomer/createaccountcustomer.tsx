@@ -283,13 +283,17 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
                     />
                     <PaperText style={styles.checkboxLabel}>
                       I agree to Beatask
-                      <PaperText style={{color: '#12CCB7'}}>
+                      <PaperText
+                        style={{color: '#12CCB7'}}
+                        onPress={() => navigation.navigate('Agree')}>
                         {' '}
                         terms of use
                       </PaperText>{' '}
                       and
                       {'\n'}
-                      <PaperText style={{color: '#12CCB7'}}>
+                      <PaperText
+                        style={{color: '#12CCB7'}}
+                        onPress={() => navigation.navigate('Agree')}>
                         {' '}
                         privacy policy.
                       </PaperText>

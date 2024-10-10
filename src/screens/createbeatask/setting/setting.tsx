@@ -85,7 +85,7 @@ const SettingsScreen: React.FC = () => {
 
     if (data) {
       setLogoutPopupVisible(false);
-      navigation.navigate('SplashScreen' as never);
+      navigation.navigate('AuthScreen' as never);
     }
   };
 
@@ -154,8 +154,8 @@ const SettingsScreen: React.FC = () => {
               <FontAwesomeIcon
                 name={
                   expandedSections.includes(section)
-                    ? 'chevron-down'
-                    : 'chevron-up'
+                    ? 'chevron-up'
+                    : 'chevron-down'
                 }
                 size={wp('6%')}
                 style={[styles.chevron, isDarkMode && styles.darkChevron]}
@@ -165,7 +165,12 @@ const SettingsScreen: React.FC = () => {
             {expandedSections.includes(section) &&
               section === 'Language setting' && (
                 <View style={[isDarkMode && styles.darkdetailsContainer]}>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 15,
+                    }}>
                     <Text
                       style={[
                         styles.sectionText,

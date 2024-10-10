@@ -7,6 +7,7 @@ import axios, {
 type ApiError = {
   error: boolean;
   msg: string;
+  message?: string;
 };
 
 const apiInstance = axios.create({

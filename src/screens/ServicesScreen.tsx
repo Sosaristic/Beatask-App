@@ -16,6 +16,21 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import SafeAreaViewContainer from '../components/SafeAreaViewContainer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export const userFirstTime = async () => {
+  try {
+    const value = await AsyncStorage.getItem('user-first-time');
+    if (value === 'true') {
+      return true;
+    } else {
+      await AsyncStorage.setItem('user-first-time', 'true');
+      return false;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const App = () => {
   const navigation = useNavigation();
@@ -25,15 +40,6 @@ const App = () => {
     navigation.navigate('ServicesScreen1' as never);
   };
 
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const timeout = setTimeout(() => {
-        SplashScreen.hide();
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, []);
   return (
     <SafeAreaViewContainer>
       <ImageBackground

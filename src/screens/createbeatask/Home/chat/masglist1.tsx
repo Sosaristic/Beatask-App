@@ -204,6 +204,8 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
                         />
                         <View style={styles.textContainer}>
                           <Text
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
                             style={[
                               styles.name,
                               isDarkMode ? styles.darkText : null,
@@ -211,6 +213,8 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
                             {message.customerName}
                           </Text>
                           <Text
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
                             style={[
                               styles.message,
                               isDarkMode ? styles.darkText : null,

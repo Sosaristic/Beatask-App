@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   NavigationContainer,
   useNavigation,
@@ -15,7 +15,7 @@ import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Import your screens here
-import SplashScreen from './src/screens/splashscreen';
+import AuthScreen from './src/screens/AuthScreen';
 import ServicesScreen from './src/screens/ServicesScreen';
 import ServicesScreen1 from './src/screens/ServicesScreen1';
 import ServicesScreen2 from './src/screens/ServicesScreen2';
@@ -79,6 +79,9 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import AccountsScreen from './src/screens/AccountsScreen';
 import SubmitQuoteScreen from './src/screens/SubmitQuoteScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SplashScreen from 'react-native-splash-screen';
+import UpdateDocsScreen from './src/screens/createbeatask/UpdateDocScreen';
 
 type SignUpTypes = {
   email: string;
@@ -97,8 +100,8 @@ type QuoteType = {
 
 // Define RootStackParamList with appropriate types
 export type RootStackParamList = {
-  SplashScreen: undefined;
-  ServicesScreen: undefined;
+  AuthScreen: undefined;
+  Onboarding: undefined;
   ServicesScreen1: undefined;
   ServicesScreen2: undefined;
   CreateBeatask: SignUpTypes;
@@ -172,6 +175,7 @@ export type RootStackParamList = {
   provider_accounts: undefined;
   send_quote: QuoteType;
   delete_account: undefined;
+  update_docs: undefined;
 };
 
 const queryClient = new QueryClient();
@@ -198,12 +202,32 @@ const CustomerTabs = () => {
 // App component
 const App = () => {
   const colorScheme = useColorScheme();
+  const [firstRoute, setFirstRoute] = useState('');
+  const [appLoaded, setAppLoaded] = useState(false);
+
   const isDarkMode = colorScheme === 'dark';
   const theme = colorScheme === 'dark' ? PaperDarkTheme : PaperLightTheme;
   const {
     actions: {setDeviceToken},
   } = useUserStore(state => state);
   useChats();
+
+  useLayoutEffect(() => {
+    AsyncStorage.getItem('user-first-time')
+      .then(value => {
+        if (value === 'true') {
+          setFirstRoute('AuthScreen');
+        } else {
+          setFirstRoute('Onboarding');
+        }
+      })
+      .finally(() => {
+        setAppLoaded(true);
+        setTimeout(() => {
+          SplashScreen.hide();
+        }, 1000);
+      });
+  }, []);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -242,13 +266,17 @@ const App = () => {
     );
   };
 
+  if (!appLoaded) {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={theme}>
         <StripeProvider publishableKey={key}>
           <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
             <Stack.Navigator
-              initialRouteName="ServicesScreen"
+              initialRouteName={firstRoute as keyof RootStackParamList}
               screenOptions={{
                 statusBarColor: '#010A0C',
                 headerStyle: {backgroundColor: '#010A0C'},
@@ -256,12 +284,12 @@ const App = () => {
                 headerTitleAlign: 'center',
               }}>
               <Stack.Screen
-                name="SplashScreen"
-                component={SplashScreen}
+                name="AuthScreen"
+                component={AuthScreen}
                 options={{headerShown: false}}
               />
               <Stack.Screen
-                name="ServicesScreen"
+                name="Onboarding"
                 component={ServicesScreen}
                 options={{headerShown: false}}
               />
@@ -425,6 +453,7 @@ const App = () => {
                 options={{
                   headerShown: true,
                   title: 'Independent contractor agreement',
+                  headerTitleStyle: {fontSize: 17},
                 }}
               />
               <Stack.Screen
@@ -515,6 +544,11 @@ const App = () => {
               <Stack.Screen
                 name="delete_account"
                 component={DeleteAccountScreen}
+                options={{headerShown: true, title: 'Deactivate Account'}}
+              />
+              <Stack.Screen
+                name="update_docs"
+                component={UpdateDocsScreen}
                 options={{headerShown: true, title: 'Deactivate Account'}}
               />
             </Stack.Navigator>

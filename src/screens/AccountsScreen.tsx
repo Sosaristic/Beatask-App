@@ -292,7 +292,7 @@ const AccountsScreen = () => {
                         onChangeText={handleChange('account_holder_name')}
                         onBlur={handleBlur('account_holder_name')}
                         value={values.account_holder_name}
-                        label="Account Name"
+                        label="Account Holder Name"
                         placeholder="Enter account name"
                         errorText={
                           errors.account_holder_name &&

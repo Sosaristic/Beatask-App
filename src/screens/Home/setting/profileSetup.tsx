@@ -9,7 +9,7 @@ import {
   Image,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
-import {useNavigation} from '@react-navigation/native';
+
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'react-native-image-picker';
 
@@ -18,14 +18,20 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import {useUserStore} from '../../../store/useUserStore';
-import {Formik, useFormikContext} from 'formik';
+import {Formik} from 'formik';
 import {ProviderValidationSchema} from '../../../components/forms/providerProfile';
 import {makeApiRequest} from '../../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../../components';
 import {LoginSuccessResponse} from '../../Login/Login';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 import {Text} from 'react-native-paper';
+import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../../../App';
 
+type ScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'ProfileSetup'>;
+};
 interface Country {
   dial_code: string;
 }
@@ -39,7 +45,7 @@ type InitialValues = {
   business_address: string;
 };
 
-const CreateAccountScreen = () => {
+const CreateAccountScreen: React.FC<ScreenProps> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const styles = colorScheme === 'dark' ? darkStyles : lightStyles;
   const {
@@ -285,6 +291,23 @@ const CreateAccountScreen = () => {
                   </Text>
                 )}
               </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('update_docs')}
+                style={[
+                  styles.input,
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  },
+                ]}>
+                <Text>Other Details</Text>
+                <EvilIcons
+                  name="chevron-right"
+                  size={24}
+                  color={colorScheme === 'dark' ? '#12CCB7' : '#000'}
+                />
+              </TouchableOpacity>
               <TouchableOpacity
                 disabled={!imageUri}
                 style={styles.nextButton}

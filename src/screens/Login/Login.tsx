@@ -143,6 +143,7 @@ const Login: React.FC<Props> = ({navigation}) => {
         requestLoading: false,
         showModal: true,
       });
+      console.log('login dqtaa', data);
 
       login(data.data);
       setTimeout(() => {

@@ -14,13 +14,21 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import SafeAreaViewContainer from '../components/SafeAreaViewContainer';
+import {userFirstTime} from './ServicesScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../../App';
 
-const App = () => {
-  const navigation = useNavigation();
+type Props = {
+  navigation: StackNavigationProp<RootStackParamList, 'ServicesScreen2'>;
+};
 
-  const handleNext = () => {
+const App: React.FC<Props> = ({navigation}) => {
+  const handleNext = async () => {
     // Navigate to the next screen
-    navigation.navigate('SplashScreen' as never);
+    await AsyncStorage.setItem('user-first-time', 'true');
+
+    navigation.reset({routes: [{name: 'AuthScreen'}]});
   };
 
   return (
