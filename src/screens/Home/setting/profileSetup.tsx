@@ -123,6 +123,7 @@ const CreateAccountScreen: React.FC<ScreenProps> = ({navigation}) => {
         requestLoading: false,
         showModal: false,
       });
+      console.log(error);
       setShowErrorModal({
         errorTitle: 'Profile Update Failed',
         errorMessage: "We couldn't update your profile. Please try again",

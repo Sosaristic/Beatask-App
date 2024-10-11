@@ -74,7 +74,7 @@ const DeleteAccountScreen = ({navigation}: ScreenProps) => {
         });
         navigation.reset({
           index: 0,
-          routes: [{name: 'SplashScreen'}],
+          routes: [{name: 'AuthScreen'}],
         });
       }, 3000);
     }

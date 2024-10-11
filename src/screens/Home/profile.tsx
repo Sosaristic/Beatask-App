@@ -81,7 +81,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleProfile = () => {
-    navigation.navigate('Profile' as never);
+    navigation.navigate('help_center' as never);
   };
 
   const handleService = () => {

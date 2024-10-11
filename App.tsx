@@ -82,6 +82,7 @@ import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from 'react-native-splash-screen';
 import UpdateDocsScreen from './src/screens/createbeatask/UpdateDocScreen';
+import HelpCentreScreen from './src/screens/HelpCentreScreen';
 
 type SignUpTypes = {
   email: string;
@@ -176,6 +177,7 @@ export type RootStackParamList = {
   send_quote: QuoteType;
   delete_account: undefined;
   update_docs: undefined;
+  help_center: undefined;
 };
 
 const queryClient = new QueryClient();
@@ -549,7 +551,12 @@ const App = () => {
               <Stack.Screen
                 name="update_docs"
                 component={UpdateDocsScreen}
-                options={{headerShown: true, title: 'Deactivate Account'}}
+                options={{headerShown: true, title: 'Update Documents'}}
+              />
+              <Stack.Screen
+                name="help_center"
+                component={HelpCentreScreen}
+                options={{headerShown: true, title: 'Help & Support'}}
               />
             </Stack.Navigator>
           </NavigationContainer>

@@ -81,7 +81,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleConfirmLogout = async () => {
-    const {data, error} = await makeApiRequest('/logout', 'POST', {});
+    const {data} = await makeApiRequest('/logout', 'POST', {});
 
     if (data) {
       setLogoutPopupVisible(false);

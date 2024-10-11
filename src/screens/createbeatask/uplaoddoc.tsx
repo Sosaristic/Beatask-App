@@ -84,6 +84,9 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
     issueDate: '',
     selectedFile: '',
   });
+  const [ssnNumber, setSsnNumber] = useState('');
+
+  console.log(ssnNumber);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prevState =>
@@ -106,6 +109,7 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
       passport_image: passportInfo.selectedFile,
       ein_number: einInfo.einNumber,
       birth_certificate: birthCertificateInfo.birthCertificateNumber,
+      ssn_number: ssnNumber,
       ...details,
     };
     // throw an error if any value is missing
@@ -134,7 +138,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
         'Content-Type': 'multipart/form-data',
       },
     });
-    console.log('error', error);
 
     if (error) {
       setShowSuccessModal({
@@ -290,6 +293,7 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
     'Passport',
     'Birth certificate',
     'EIN number',
+    'SSN Number',
   ];
 
   return (
@@ -324,8 +328,8 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
             <Icon
               name={
                 expandedSections.includes(section)
-                  ? 'chevron-down'
-                  : 'chevron-up'
+                  ? 'chevron-up'
+                  : 'chevron-down'
               }
               size={24}
               style={[styles.chevron, isDarkMode && styles.darkchevron]}
@@ -347,15 +351,7 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                 <Text style={styles.selectedFileText}>
                   {governmentIdInfo.selectedFile}
                 </Text>
-                <TextInput
-                  style={[styles.input, isDarkMode && styles.darkInput]}
-                  placeholder="Full name"
-                  placeholderTextColor="#a3a3a3"
-                  value={governmentIdInfo.fullName}
-                  onChangeText={text =>
-                    setGovernmentIdInfo({...governmentIdInfo, fullName: text})
-                  }
-                />
+
                 <TextInput
                   style={[styles.input, isDarkMode && styles.darkInput]}
                   placeholder="Government-issued ID number"
@@ -365,34 +361,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                     setGovernmentIdInfo({...governmentIdInfo, idNumber: text})
                   }
                 />
-                <View style={styles.dateContainer}>
-                  <TouchableOpacity
-                    onPress={() => showDatePicker(section, 'issueDate')}>
-                    <TextInput
-                      style={[
-                        styles.inputHalf1,
-                        isDarkMode && styles.darkInput,
-                      ]}
-                      placeholder="Select Issue Date"
-                      placeholderTextColor="#a3a3a3"
-                      value={governmentIdInfo.issueDate}
-                      editable={false}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => showDatePicker(section, 'expirationDate')}>
-                    <TextInput
-                      style={[
-                        styles.inputHalf2,
-                        isDarkMode && styles.darkInput,
-                      ]}
-                      placeholder="Select Expiration Date"
-                      placeholderTextColor="#a3a3a3"
-                      value={governmentIdInfo.expirationDate}
-                      editable={false}
-                    />
-                  </TouchableOpacity>
-                </View>
               </View>
             )}
 
@@ -432,34 +400,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                     })
                   }
                 />
-                <View style={styles.dateContainer}>
-                  <TouchableOpacity
-                    onPress={() => showDatePicker(section, 'issueDate')}>
-                    <TextInput
-                      style={[
-                        styles.inputHalf1,
-                        isDarkMode && styles.darkInput,
-                      ]}
-                      placeholder="Select Issue Date"
-                      placeholderTextColor="#a3a3a3"
-                      value={driverLicenseInfo.issueDate}
-                      editable={false}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => showDatePicker(section, 'expirationDate')}>
-                    <TextInput
-                      style={[
-                        styles.inputHalf2,
-                        isDarkMode && styles.darkInput,
-                      ]}
-                      placeholder="Select Expiration Date"
-                      placeholderTextColor="#a3a3a3"
-                      value={driverLicenseInfo.expirationDate}
-                      editable={false}
-                    />
-                  </TouchableOpacity>
-                </View>
               </View>
             )}
 
@@ -495,28 +435,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                   setPassportInfo({...passportInfo, passportNumber: text})
                 }
               />
-              <View style={styles.dateContainer}>
-                <TouchableOpacity
-                  onPress={() => showDatePicker(section, 'issueDate')}>
-                  <TextInput
-                    style={[styles.inputHalf1, isDarkMode && styles.darkInput]}
-                    placeholder="Select Issue Date"
-                    placeholderTextColor="#a3a3a3"
-                    value={passportInfo.issueDate}
-                    editable={false}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => showDatePicker(section, 'expirationDate')}>
-                  <TextInput
-                    style={[styles.inputHalf2, isDarkMode && styles.darkInput]}
-                    placeholder="Select Expiration Date"
-                    placeholderTextColor="#a3a3a3"
-                    value={passportInfo.expirationDate}
-                    editable={false}
-                  />
-                </TouchableOpacity>
-              </View>
             </View>
           )}
 
@@ -535,40 +453,6 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                 <Text style={styles.selectedFileText}>
                   {birthCertificateInfo.selectedFile}
                 </Text>
-                <TextInput
-                  style={[styles.input, isDarkMode && styles.darkInput]}
-                  placeholder="Full name"
-                  placeholderTextColor="#a3a3a3"
-                  value={birthCertificateInfo.fullName}
-                  onChangeText={text =>
-                    setBirthCertificateInfo({
-                      ...birthCertificateInfo,
-                      fullName: text,
-                    })
-                  }
-                />
-                <TextInput
-                  style={[styles.input, isDarkMode && styles.darkInput]}
-                  placeholder="Birth certificate number"
-                  placeholderTextColor="#a3a3a3"
-                  value={birthCertificateInfo.birthCertificateNumber}
-                  onChangeText={text =>
-                    setBirthCertificateInfo({
-                      ...birthCertificateInfo,
-                      birthCertificateNumber: text,
-                    })
-                  }
-                />
-                <TouchableOpacity
-                  onPress={() => showDatePicker(section, 'issueDate')}>
-                  <TextInput
-                    style={[styles.inputHalf1, isDarkMode && styles.darkInput]}
-                    placeholder="Select Issue Date"
-                    placeholderTextColor="#a3a3a3"
-                    value={birthCertificateInfo.issueDate}
-                    editable={false}
-                  />
-                </TouchableOpacity>
               </View>
             )}
 
@@ -596,6 +480,7 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                 value={einInfo.einNumber}
                 onChangeText={text => setEinInfo({...einInfo, einNumber: text})}
               />
+
               {/* <TouchableOpacity onPress={() => showDatePicker(section, 'issueDate')}>
                                 <TextInput
                                     style={[styles.inputHalf1, isDarkMode && styles.darkInput]}
@@ -605,6 +490,17 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                                     editable={false}
                                 />
                             </TouchableOpacity> */}
+            </View>
+          )}
+          {expandedSections.includes(section) && section === 'SSN Number' && (
+            <View style={styles.detailsContainer}>
+              <TextInput
+                style={[styles.input, isDarkMode && styles.darkInput]}
+                placeholder="SSN (Social Security Number)"
+                placeholderTextColor="#a3a3a3"
+                value={ssnNumber}
+                onChangeText={setSsnNumber}
+              />
             </View>
           )}
         </View>
