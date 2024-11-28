@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import {makeApiRequest} from '../../../utils/helpers';
+import notifee, {AuthorizationStatus} from '@notifee/react-native';
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -41,6 +42,18 @@ const SettingsScreen: React.FC = () => {
   const [isLogoutPopupVisible, setLogoutPopupVisible] = useState(false);
   const [isDarkModeEnabled, setDarkModeEnabled] = useState(isDarkMode);
   const [isEnglishEnabled, setEnglishEnabled] = useState(true);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const status = await notifee.getNotificationSettings();
+      if (status.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+        setNotificationEnabled(true);
+      } else {
+        setNotificationEnabled(false);
+      }
+    })();
+  }, []);
 
   const handleProfileSetup = () => {
     navigation.navigate('ProfileSetup' as never);
@@ -69,7 +82,7 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const sections = ['Language setting'];
+  const sections = ['App Setting', 'Language setting'];
 
   const handleSelectCountry = (country: any) => {
     setCountryCode(country.dial_code);
@@ -91,6 +104,20 @@ const SettingsScreen: React.FC = () => {
 
   const handleEnglishToggle = () => {
     setEnglishEnabled(previousState => !previousState);
+  };
+
+  const handleNotificationChange = async () => {
+    if (notificationEnabled) {
+      notifee.openNotificationSettings();
+      return;
+    }
+
+    const setting = await notifee.requestPermission();
+    if (setting.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+      setNotificationEnabled(true);
+    } else {
+      notifee.openNotificationSettings();
+    }
   };
 
   return (
@@ -163,6 +190,34 @@ const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
 
             {expandedSections.includes(section) &&
+              section === 'App Setting' && (
+                <View style={[isDarkMode && styles.darkdetailsContainer]}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingHorizontal: 15,
+                    }}>
+                    <Text
+                      style={[
+                        styles.sectionText,
+                        isDarkMode && styles.darkSectionText,
+                      ]}>
+                      Notification
+                    </Text>
+                    <Switch
+                      style={{marginLeft: 'auto'}}
+                      trackColor={{false: '#767577', true: '#12CCB7'}}
+                      thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
+                      ios_backgroundColor="#3e3e3e"
+                      onValueChange={handleNotificationChange}
+                      value={notificationEnabled}
+                    />
+                  </View>
+                </View>
+              )}
+
+            {expandedSections.includes(section) &&
               section === 'Language setting' && (
                 <View style={[isDarkMode && styles.darkdetailsContainer]}>
                   <View
@@ -192,6 +247,20 @@ const SettingsScreen: React.FC = () => {
               )}
           </View>
         ))}
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('delete_account' as never)}
+          style={[styles.section2, isDarkMode && styles.darkSection]}>
+          <Text
+            style={[styles.sectionText, isDarkMode && styles.darkSectionText]}>
+            Deactivate Account
+          </Text>
+          <FontAwesomeIcon
+            name={'chevron-right'}
+            size={wp('6%')}
+            style={[styles.chevron, isDarkMode && styles.darkChevron]}
+          />
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleLogout}

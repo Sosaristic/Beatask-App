@@ -37,6 +37,7 @@ const validationSchema = Yup.object().shape({
   account_holder_name: Yup.string().required('Account holder name is required'),
   account_number: Yup.string().required('Account number is required'),
   bank_name: Yup.string().required('Bank name is required'),
+  routing_number: Yup.string().required("Routing number is required")
 });
 
 export type AccountRes = {
@@ -48,11 +49,14 @@ type ValuesType = {
   account_holder_name: string;
   account_number: string;
   bank_name: string;
+  routing_number: string
 };
 
 const AccountsScreen = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  console.log("color scheme", colorScheme);
+  
   const {user} = useUserStore(state => state);
   const [showModal, setShowModal] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -275,6 +279,7 @@ const AccountsScreen = () => {
                   account_number: '',
                   account_holder_name: '',
                   bank_name: '',
+                  routing_number: "",
                 }}
                 onSubmit={values => handleFormSubmit(values)}
                 validationSchema={validationSchema}>
@@ -311,6 +316,19 @@ const AccountsScreen = () => {
                         errorText={
                           errors.account_number && touched.account_number
                             ? errors.account_number
+                            : ''
+                        }
+                      />
+                       <CustomInput
+                        onChangeText={handleChange('routing_number')}
+                        onBlur={handleBlur('routing_number')}
+                        type="number"
+                        value={values.routing_number}
+                        label="Account Routing Number"
+                        placeholder="Enter account routing number"
+                        errorText={
+                          errors.routing_number && touched.routing_number
+                            ? errors.routing_number
                             : ''
                         }
                       />

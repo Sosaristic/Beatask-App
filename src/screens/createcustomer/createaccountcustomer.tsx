@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   useColorScheme,
+  Linking,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
 import {RouteProp} from '@react-navigation/native';
@@ -97,6 +98,14 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
 
   const handleCountryCodePress = () => {
     setPickerVisible(true);
+  };
+
+  const handleagree = (type: 'privacy' | 'terms') => {
+    if (type === 'terms') {
+      Linking.openURL('https://beatask.pro/terms-and-conditions/');
+      return;
+    }
+    Linking.openURL('https://beatask.pro/privacy-policy/');
   };
 
   const handleNextPress = async (values: typeof initialValues) => {
@@ -281,19 +290,18 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
                       mode="android"
                       label=""
                     />
-                    <PaperText style={styles.checkboxLabel}>
+                    <PaperText style={[styles.checkboxLabel, {flex: 1}]}>
                       I agree to Beatask
                       <PaperText
                         style={{color: '#12CCB7'}}
-                        onPress={() => navigation.navigate('Agree')}>
+                        onPress={() => handleagree('terms')}>
                         {' '}
-                        terms of use
+                        terms and conditions
                       </PaperText>{' '}
                       and
-                      {'\n'}
                       <PaperText
                         style={{color: '#12CCB7'}}
-                        onPress={() => navigation.navigate('Agree')}>
+                        onPress={() => handleagree('privacy')}>
                         {' '}
                         privacy policy.
                       </PaperText>

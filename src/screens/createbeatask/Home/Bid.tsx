@@ -52,6 +52,8 @@ const BidScreen: React.FC<ScreenProps> = ({navigation}) => {
   const colorScheme = useColorScheme();
 
   const {user, isSubscribed} = useUserStore(state => state);
+  console.log(user);
+
   const isDarkMode = colorScheme === 'dark';
   const {data, loading, error, fetchData} = useFetch<BidRes>(
     '/get-requested-services',
@@ -94,7 +96,6 @@ const BidScreen: React.FC<ScreenProps> = ({navigation}) => {
     navigation.navigate('Bid' as never);
   };
   const handleBid1 = async (payload: QuoteType) => {
-    console.log(user);
     if (!isSubscribed) {
       navigation.navigate('Bid1' as never);
       return;

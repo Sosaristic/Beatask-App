@@ -10,7 +10,7 @@ import {
   NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
 import {Provider as PaperProvider} from 'react-native-paper';
-import {TouchableOpacity, useColorScheme, Text, Pressable} from 'react-native';
+import {TouchableOpacity, useColorScheme} from 'react-native';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -70,9 +70,8 @@ import {StripeProvider, useStripe} from '@stripe/stripe-react-native';
 import SuccessScreen from './src/screens/SuccessScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
-import ServiceCompleteRequestScreen from './src/screens/ServiceCompleteRequestScreen';
 import {PaperDarkTheme, PaperLightTheme} from './src/custom_theme/theme';
-import {View} from 'react-native';
+
 import {PendingTabs} from './src/navigation/Tabs';
 import AuthChoiceScreen from './src/screens/auth/AuthChoiceScreen';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -83,6 +82,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from 'react-native-splash-screen';
 import UpdateDocsScreen from './src/screens/createbeatask/UpdateDocScreen';
 import HelpCentreScreen from './src/screens/HelpCentreScreen';
+import notifee, {AuthorizationStatus} from '@notifee/react-native';
+import Paypal from './src/screens/createbeatask/Home/Paypal';
+import ErrorScreen from './src/screens/ErrorScreen';
 
 type SignUpTypes = {
   email: string;
@@ -97,6 +99,13 @@ type QuoteType = {
   user_id: number | string;
   request_service_id: number;
   provider_id: number;
+};
+
+export type PaymentScreenType = {
+  approvalUrl: string;
+  price: number;
+  subscriptionName: string;
+  success: boolean;
 };
 
 // Define RootStackParamList with appropriate types
@@ -168,6 +177,7 @@ export type RootStackParamList = {
   };
   singleservice: {data: SingleServicePayload};
   success: {redirectTo: 'Home' | 'dashboard'};
+  error: undefined;
   forgotPassword: undefined;
   resetPassword: {email: string};
   requests: undefined;
@@ -178,6 +188,7 @@ export type RootStackParamList = {
   delete_account: undefined;
   update_docs: undefined;
   help_center: undefined;
+  paypal_screen: {url: string};
 };
 
 const queryClient = new QueryClient();
@@ -185,7 +196,6 @@ const queryClient = new QueryClient();
 // Create a Stack navigator
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
-const PendingTab = createBottomTabNavigator();
 
 const key =
   'pk_test_51Puzp4BBmm4vWQq6oKr3cNUZrEJ60Y3DzUnHDFKus6Kw4gnN7yrok5GoDEKsf5GqAU4ZgIBPGD6QpTci13RuxCvf00SJTEUxDN';
@@ -200,6 +210,28 @@ const CustomerTabs = () => {
     </Tab.Navigator>
   );
 };
+
+async function requestUserPermission() {
+  const isNotificationRequested = await AsyncStorage.getItem(
+    'notification-requested',
+  );
+
+  const status = await notifee.getNotificationSettings();
+  if (
+    status.authorizationStatus >= AuthorizationStatus.DENIED &&
+    !isNotificationRequested
+  ) {
+    await notifee.requestPermission();
+    await AsyncStorage.setItem('notification-requested', 'true');
+  }
+  // const settings = await notifee.requestPermission();
+
+  // if (settings.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+  //   console.log('Permission settings:', settings);
+  // } else {
+  //   console.log('User declined permissions');
+  // }
+}
 
 // App component
 const App = () => {
@@ -240,10 +272,13 @@ const App = () => {
 
   useEffect(() => {
     (async () => {
+      requestUserPermission();
+
       await messaging().registerDeviceForRemoteMessages();
 
       // Get the token
       const token = await messaging().getToken();
+
       if (token) setDeviceToken(token);
     })();
   }, []);
@@ -284,11 +319,12 @@ const App = () => {
                 headerStyle: {backgroundColor: '#010A0C'},
                 headerTintColor: '#fff',
                 headerTitleAlign: 'center',
+                headerBackTitle: 'Back',
               }}>
               <Stack.Screen
                 name="AuthScreen"
                 component={AuthScreen}
-                options={{headerShown: false}}
+                options={{headerShown: false, headerBackTitle: 'Back'}}
               />
               <Stack.Screen
                 name="Onboarding"
@@ -343,7 +379,7 @@ const App = () => {
               <Stack.Screen
                 name="Login"
                 component={Login}
-                options={{title: 'Login'}}
+                options={{title: 'Login', headerBackTitle: 'Back'}}
               />
               <Stack.Screen
                 name="OTPVerification"
@@ -363,7 +399,7 @@ const App = () => {
               <Stack.Screen
                 name="ProfileSetup"
                 component={ProfileSetup}
-                options={{title: 'Profile Setup'}}
+                options={{title: 'Profile Setup', headerBackTitle: 'Back'}}
               />
               <Stack.Screen
                 name="servicelisting"
@@ -373,7 +409,7 @@ const App = () => {
               <Stack.Screen
                 name="Profile"
                 component={profile}
-                options={{title: 'Profile'}}
+                options={{title: 'Profile', headerBackTitle: 'Back'}}
               />
               <Stack.Screen
                 name="Booked"
@@ -461,12 +497,16 @@ const App = () => {
               <Stack.Screen
                 name="dashboard"
                 component={dashboard}
-                options={{headerShown: false}}
+                options={{
+                  headerShown: false,
+                  headerBackTitle: 'Dashboard',
+                  headerBackTitleVisible: true,
+                }}
               />
               <Stack.Screen
                 name="booked1"
                 component={booked1}
-                options={{headerShown: true, title: 'Booking'}}
+                options={{headerShown: true, title: 'Bookings'}}
               />
               <Stack.Screen
                 name="Bid"
@@ -511,7 +551,12 @@ const App = () => {
               <Stack.Screen
                 name="success"
                 component={SuccessScreen}
-                options={{title: 'Success'}}
+                options={{headerShown: false, title: 'Success'}}
+              />
+              <Stack.Screen
+                name="error"
+                component={ErrorScreen}
+                options={{headerShown: false, title: 'Error'}}
               />
               <Stack.Screen
                 name="forgotPassword"
@@ -557,6 +602,11 @@ const App = () => {
                 name="help_center"
                 component={HelpCentreScreen}
                 options={{headerShown: true, title: 'Help & Support'}}
+              />
+              <Stack.Screen
+                name="paypal_screen"
+                component={Paypal}
+                options={{headerShown: false, title: 'Complete Payment'}}
               />
             </Stack.Navigator>
           </NavigationContainer>

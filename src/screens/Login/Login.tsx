@@ -143,7 +143,8 @@ const Login: React.FC<Props> = ({navigation}) => {
         requestLoading: false,
         showModal: true,
       });
-      console.log('login dqtaa', data);
+
+      console.log(data, 'login');
 
       login(data.data);
       setTimeout(() => {
@@ -160,10 +161,11 @@ const Login: React.FC<Props> = ({navigation}) => {
           return;
         }
         if (data.data?.is_service_provider === 1) {
-          navigation.navigate('dashboard');
+          navigation.reset({routes: [{name: 'dashboard'}]});
           return;
         }
-        navigation.navigate('Home' as never);
+
+        navigation.reset({routes: [{name: 'Home'}]});
       }, 2000);
     }
   };
@@ -369,7 +371,7 @@ const Login: React.FC<Props> = ({navigation}) => {
             style={{width: 40, height: 40}}
           />
         </TouchableOpacity>
-        {Platform.OS === 'ios' && (
+        {/* {Platform.OS === 'ios' && (
           <TouchableOpacity
             style={[
               styles.appleButton,
@@ -377,7 +379,7 @@ const Login: React.FC<Props> = ({navigation}) => {
             ]}>
             <Icon name="apple" size={wp('10%')} color="#fff" />
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
 
       <CustomModal {...showSuccessModal} />

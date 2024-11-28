@@ -51,10 +51,10 @@ type Props = {
 };
 
 const App: React.FC<Props> = ({navigation}) => {
-  const [selectedTab, setSelectedTab] = useState('Incoming'); // Default to "Incoming" tab
+  const [selectedTab, setSelectedTab] = useState('Pending'); // Default to "Incoming" tab
   const isDarkMode = useColorScheme() === 'dark';
   const {user} = useUserStore(state => state);
-  console.log(user?.id);
+
   const [showSuccessModal, setShowSuccessModal] = useState({
     successTitle: 'Success',
     successMessage: 'Service Booked',
@@ -199,7 +199,7 @@ const App: React.FC<Props> = ({navigation}) => {
           {backgroundColor: isDarkMode ? '#010A0C' : '#FFF'},
         ]}>
         <View style={styles.tabsContainer}>
-          {['Incoming', 'Complete', 'Cancelled'].map(tab => (
+          {['Pending', 'Complete', 'Cancelled'].map(tab => (
             <TouchableOpacity
               key={tab}
               style={[
@@ -218,7 +218,7 @@ const App: React.FC<Props> = ({navigation}) => {
           ))}
         </View>
         <ScrollView contentContainerStyle={styles.cardsContainer}>
-          {selectedTab === 'Incoming' && (
+          {selectedTab === 'Pending' && (
             <>
               {incomingLoading ? (
                 <Loader />
@@ -306,15 +306,11 @@ const App: React.FC<Props> = ({navigation}) => {
                               ]}>
                               Date & Time:{' '}
                             </Text>
-                            <Text
-                              style={[
-                                styles.cardInfo,
-                                isDarkMode ? styles.darkText : styles.lightText,
-                              ]}>
-                              {`${new Date(
-                                convertedArray[0],
-                              ).toLocaleString()}`}
-                            </Text>
+                            {convertedArray.map((date, index) => (
+                              <Text key={index} style={{flex: 1}}>
+                                {`${new Date(date).toLocaleString()}`},{' '}
+                              </Text>
+                            ))}
                           </View>
                           <View style={styles.bookingCardContent}>
                             <Text

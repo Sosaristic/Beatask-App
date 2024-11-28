@@ -28,6 +28,7 @@ export const sendMessage = async ({
   customerName,
   id,
   is_provider,
+  isBlockedBy,
 }: Message) => {
   const conversationId = generateConversationId(providerId, customerId);
 
@@ -56,7 +57,6 @@ export const sendMessage = async ({
       .doc(conversationId);
 
     const conversationDoc = await conversationRef.get();
-    let recipientField = sentBy === 'providerId' ? 'customerId' : 'providerId';
 
     if (conversationDoc.exists) {
       // Update the conversation document
@@ -77,6 +77,8 @@ export const sendMessage = async ({
         sentBy,
         usersIds,
         id,
+        isBlocked: conversationDoc.data()?.isBlocked || false,
+
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
     } else {
@@ -96,7 +98,8 @@ export const sendMessage = async ({
         customerAvatar,
         sentBy,
         id,
-        usersIds,
+        isBlocked: false,
+
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
     }
@@ -125,10 +128,6 @@ export const getAllUserFriends = async (customerId: string) => {
 
       .get();
 
-    console.log('snapshot', snapshot.docs);
-
-    // Extract friend IDs
-    let userFriends = [];
     const friendIds = snapshot.docs.map(doc => {
       const data = doc.data();
       console.log('data', data);
@@ -167,5 +166,42 @@ export const updateMessageCount = async (
           is_provider === 0 ? 0 : conversationDoc.data()?.customerCount,
       });
     }
+  } catch (error) {}
+};
+
+export const blockConversation = async (
+  providerId: string,
+  customerId: string,
+  blockedBy: string,
+) => {
+  const conversationId = generateConversationId(providerId, customerId);
+  try {
+    const conversationRef = firestore()
+      .collection('conversations')
+      .doc(conversationId);
+
+    await conversationRef.update({
+      isBlocked: true,
+      isBlockedBy: blockedBy,
+      lastMessageTimeStamp: new Date().toISOString(),
+    });
+  } catch (error) {}
+};
+
+export const unblockConversation = async (
+  providerId: string,
+  customerId: string,
+) => {
+  const conversationId = generateConversationId(providerId, customerId);
+  try {
+    const conversationRef = firestore()
+      .collection('conversations')
+      .doc(conversationId);
+
+    await conversationRef.update({
+      isBlocked: false,
+      isBlockedBy: '',
+      lastMessageTimeStamp: new Date().toISOString(),
+    });
   } catch (error) {}
 };

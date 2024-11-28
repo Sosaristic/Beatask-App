@@ -141,6 +141,7 @@ const RenderItem = ({
           service_description: data.details[0].service.service_description,
           provider_name: data.details[0].provider.name,
           service_image: data.details[0].service.service_image,
+          discounted_price: data.details[0].service.discounted_price,
         };
 
         setTimeout(() => {
@@ -189,6 +190,7 @@ const RenderItem = ({
       service_description: item.service.service_description,
       provider_name: item.provider.name,
       service_image: item.service.service_image,
+      discounted_price: item.service.discounted_price,
     };
 
     navigation.navigate('singleservice', {data: payload});
@@ -285,6 +287,7 @@ const AcceptedQuoteCard = ({item}: {item: AcceptedQuote}) => {
     service_description: item.service.service_description,
     provider_name: item.provider.name,
     service_image: item.service.service_image,
+    discounted_price: item.service.discounted_price,
   };
 
   const handleView = () => {

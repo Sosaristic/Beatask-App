@@ -1,3 +1,5 @@
+import {User} from '../store/useUserStore';
+
 export interface FeaturedProvider {
   id: number;
   name: string | null;
@@ -330,7 +332,8 @@ export type SingleServicePayload = {
   category_name: string;
   category_id?: number | string;
   sub_category_name: string;
-  real_price: string;
+  real_price: string | number;
+  discounted_price: string | number;
   service_description: string;
   provider_id: number | string;
   service_id: number | string;
@@ -546,4 +549,19 @@ export type ProviderAccountsType = {
   created_at: string;
   updated_at: string;
   provider: Provider;
+};
+
+export type QuoteSentRes = {
+  data: {
+    created_at: string;
+    id: number;
+    provider_id: number;
+    quote_message: string;
+    request_service_id: number;
+    service_id: number;
+    updated_at: string;
+    user_id: number;
+  };
+  msg: string;
+  user: User;
 };

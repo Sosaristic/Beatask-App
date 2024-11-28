@@ -41,6 +41,8 @@ export type Message = {
   customerName: string;
   id: string;
   is_provider?: boolean | number;
+  isBlockedBy?: string;
+  isBlocked?: boolean;
 };
 
 export const TextCount = () => {
@@ -129,6 +131,8 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
           sentBy: data.sentBy,
           providerName: data.providerName,
           customerName: data.customerName,
+          isBlockedBy: data.isBlockedBy,
+          isBlocked: data.isBlocked,
         } as Message;
       });
 
@@ -187,6 +191,8 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
     navigation.navigate('Profile' as never);
   };
 
+  console.log('messages', messages);
+
   return (
     <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
       <View
@@ -204,6 +210,14 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
             )}
             {messages.map((message, index) => {
               const date = new Date(message.lastMessageTimestamp);
+
+              const blockedByYou = message.isBlockedBy === user?.email;
+              const messageContent =
+                message.isBlocked && blockedByYou
+                  ? 'You have blocked this user.'
+                  : message.isBlocked && !blockedByYou
+                  ? 'This user has blocked you.'
+                  : message.lastMessageContent;
 
               return (
                 <TouchableOpacity
@@ -248,7 +262,7 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
                             styles.message,
                             isDarkMode ? styles.darkText : null,
                           ]}>
-                          {message.lastMessageContent}
+                          {messageContent}
                         </Text>
                       </View>
                       <View style={{gap: 6}}>

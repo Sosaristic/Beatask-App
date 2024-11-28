@@ -1,15 +1,14 @@
-import {useEffect} from 'react';
+import {act, useEffect} from 'react';
 import {useUserStore} from '../store/useUserStore';
 import firestore from '@react-native-firebase/firestore';
 import {Message} from '../screens/Home/chat/masglist';
-import {v4 as uuidv4} from 'uuid';
 
 const useChats = () => {
   const {user, actions} = useUserStore(state => state);
 
   useEffect(() => {
     // Construct queries
-    if (user) {
+    if (user && user.email) {
       const conversationsRef = firestore()
         .collection('conversations')
         .where('usersIds', 'array-contains', user?.email);
@@ -32,6 +31,8 @@ const useChats = () => {
             sentBy: data.sentBy,
             providerName: data.providerName,
             customerName: data.customerName,
+            isBlocked: data.isBlocked,
+            isBlockedBy: data.isBlockedBy,
           } as Message;
         });
 
@@ -55,6 +56,7 @@ const useChats = () => {
         });
 
         actions.setUnreadMessages(count);
+        actions.setMessagesList(sortedMessages);
       });
 
       // Clean up the listener on component unmount

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   useColorScheme,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
 
@@ -152,199 +154,202 @@ const CreateAccountScreen: React.FC<ScreenProps> = ({navigation}) => {
   };
 
   return (
-    <SafeAreaViewContainer edges={['bottom', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF'},
-        ]}>
-        <TouchableOpacity onPress={pickImage}>
-          <View style={styles.imageContainer}>
-            {imageUri ? (
-              <Image source={{uri: imageUri}} style={styles.image} />
-            ) : (
-              <Image
-                source={
-                  user?.profile_image
-                    ? {uri: user?.profile_image}
-                    : {uri: 'https://avatar.iran.liara.run/public/44'}
-                }
-                style={styles.image}
+    <SafeAreaViewContainer edges={['bottom', 'left', 'right', 'top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            {backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#fff'},
+          ]}>
+          <TouchableOpacity onPress={pickImage}>
+            <View style={styles.imageContainer}>
+              {imageUri ? (
+                <Image source={{uri: imageUri}} style={styles.image} />
+              ) : (
+                <Image
+                  source={
+                    user?.profile_image
+                      ? {uri: user?.profile_image}
+                      : {uri: 'https://avatar.iran.liara.run/public/44'}
+                  }
+                  style={styles.image}
+                />
+              )}
+              <Icon
+                name="pencil"
+                size={24}
+                color={colorScheme === 'dark' ? '#12CCB7' : '#12CCB7'}
+                style={styles.icon}
               />
-            )}
-            <Icon
-              name="pencil"
-              size={24}
-              color={colorScheme === 'dark' ? '#12CCB7' : '#12CCB7'}
-              style={styles.icon}
-            />
-            {!imageUri && (
-              <Text
-                style={[
-                  darkStyles.errorText,
-                  {marginTop: 10, width: 200, textAlign: 'center'},
-                ]}>
-                Image is required
-              </Text>
-            )}
-          </View>
-        </TouchableOpacity>
-        <Formik
-          initialValues={{
-            profile_image: user?.profile_image || '',
-            first_legal_name: user?.first_legal_name || '',
-            last_legal_name: user?.last_legal_name || '',
-            phone_number: user?.phone_number?.slice(2) || '',
-            email: user?.email || '',
-            business_address: user?.business_address || '',
-          }}
-          onSubmit={values => {
-            handleNextPress(values);
-          }}
-          validationSchema={ProviderValidationSchema}>
-          {({values, handleChange, handleBlur, handleSubmit, errors}) => (
-            <View style={{gap: 12}}>
-              <View style={{gap: 8}}>
-                <Text>First Legal Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="First name"
-                  placeholderTextColor="#999"
-                  onChangeText={handleChange('first_legal_name')}
-                  onBlur={handleBlur('first_legal_name')}
-                  value={values.first_legal_name}
-                />
-                {errors.first_legal_name && (
-                  <Text style={darkStyles.errorText}>
-                    {errors.first_legal_name}
-                  </Text>
-                )}
-              </View>
-              <View style={{gap: 8}}>
-                <Text>Last Legal Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Last name"
-                  placeholderTextColor="#999"
-                  onChangeText={handleChange('last_legal_name')}
-                  onBlur={handleBlur('last_legal_name')}
-                  value={values.last_legal_name}
-                />
-                {errors.last_legal_name && (
-                  <Text style={darkStyles.errorText}>
-                    {errors.last_legal_name}
-                  </Text>
-                )}
-              </View>
-              <View style={{gap: 8}}>
-                <Text>Phone number</Text>
-                <View
-                  style={{
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                  }}>
-                  <View>
-                    <TouchableOpacity
-                      style={styles.countryCodeButton}
-                      onPress={handleCountryCodePress}>
-                      <Text>{countryCode}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={[styles.input, styles.phoneInput]}
-                    placeholder="555 555-1234"
-                    placeholderTextColor="#999"
-                    keyboardType="phone-pad"
-                    value={values.phone_number}
-                    onChangeText={handleChange('phone_number')}
-                    onBlur={handleBlur('phone_number')}
-                  />
-                </View>
-              </View>
-              <View style={{gap: 8}}>
-                <Text>Email address</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor="#999"
-                  keyboardType="email-address"
-                  onChangeText={handleChange('email')}
-                  onBlur={handleBlur('email')}
-                  value={values.email}
-                />
-                {errors.email && (
-                  <Text style={darkStyles.errorText}>{errors.email}</Text>
-                )}
-              </View>
-              <View style={{gap: 8}}>
-                <Text>Business address</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Business address"
-                  placeholderTextColor="#999"
-                  onChangeText={handleChange('business_address')}
-                  onBlur={handleBlur('business_address')}
-                  value={values.business_address}
-                />
-                {errors.business_address && (
-                  <Text style={darkStyles.errorText}>
-                    {errors.business_address}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('update_docs')}
-                style={[
-                  styles.input,
-                  {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  },
-                ]}>
-                <Text>Other Details</Text>
-                <EvilIcons
-                  name="chevron-right"
-                  size={24}
-                  color={colorScheme === 'dark' ? '#12CCB7' : '#000'}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                disabled={!imageUri}
-                style={styles.nextButton}
-                onPress={() => handleSubmit()}>
-                <Text style={styles.nexttext}>Save</Text>
-              </TouchableOpacity>
+              {!imageUri && (
+                <Text
+                  style={[
+                    darkStyles.errorText,
+                    {marginTop: 10, width: 200, textAlign: 'center'},
+                  ]}>
+                  Image is required
+                </Text>
+              )}
             </View>
-          )}
-        </Formik>
+          </TouchableOpacity>
+          <Formik
+            initialValues={{
+              profile_image: user?.profile_image || '',
+              first_legal_name: user?.first_legal_name || '',
+              last_legal_name: user?.last_legal_name || '',
+              phone_number: user?.phone_number?.slice(2) || '',
+              email: user?.email || '',
+              business_address: user?.business_address || '',
+            }}
+            onSubmit={values => {
+              handleNextPress(values);
+            }}
+            validationSchema={ProviderValidationSchema}>
+            {({values, handleChange, handleBlur, handleSubmit, errors}) => (
+              <View style={{gap: 12}}>
+                <View style={{gap: 8}}>
+                  <Text>First Legal Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="First name"
+                    placeholderTextColor="#999"
+                    onChangeText={handleChange('first_legal_name')}
+                    onBlur={handleBlur('first_legal_name')}
+                    value={values.first_legal_name}
+                  />
+                  {errors.first_legal_name && (
+                    <Text style={darkStyles.errorText}>
+                      {errors.first_legal_name}
+                    </Text>
+                  )}
+                </View>
+                <View style={{gap: 8}}>
+                  <Text>Last Legal Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Last name"
+                    placeholderTextColor="#999"
+                    onChangeText={handleChange('last_legal_name')}
+                    onBlur={handleBlur('last_legal_name')}
+                    value={values.last_legal_name}
+                  />
+                  {errors.last_legal_name && (
+                    <Text style={darkStyles.errorText}>
+                      {errors.last_legal_name}
+                    </Text>
+                  )}
+                </View>
+                <View style={{gap: 8}}>
+                  <Text>Phone number</Text>
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                    }}>
+                    <View>
+                      <TouchableOpacity
+                        style={styles.countryCodeButton}
+                        onPress={handleCountryCodePress}>
+                        <Text>{countryCode}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <TextInput
+                      style={[styles.input, styles.phoneInput]}
+                      placeholder="555 555-1234"
+                      placeholderTextColor="#999"
+                      keyboardType="phone-pad"
+                      value={values.phone_number}
+                      onChangeText={handleChange('phone_number')}
+                      onBlur={handleBlur('phone_number')}
+                    />
+                  </View>
+                </View>
+                <View style={{gap: 8}}>
+                  <Text>Email address</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email address"
+                    placeholderTextColor="#999"
+                    keyboardType="email-address"
+                    onChangeText={handleChange('email')}
+                    onBlur={handleBlur('email')}
+                    value={values.email}
+                  />
+                  {errors.email && (
+                    <Text style={darkStyles.errorText}>{errors.email}</Text>
+                  )}
+                </View>
+                <View style={{gap: 8}}>
+                  <Text>Business address</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Business address"
+                    placeholderTextColor="#999"
+                    onChangeText={handleChange('business_address')}
+                    onBlur={handleBlur('business_address')}
+                    value={values.business_address}
+                  />
+                  {errors.business_address && (
+                    <Text style={darkStyles.errorText}>
+                      {errors.business_address}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('update_docs')}
+                  style={[
+                    styles.input,
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    },
+                  ]}>
+                  <Text>Other Details</Text>
+                  <EvilIcons
+                    name="chevron-right"
+                    size={24}
+                    color={colorScheme === 'dark' ? '#12CCB7' : '#000'}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={!imageUri}
+                  style={styles.nextButton}
+                  onPress={() => handleSubmit()}>
+                  <Text style={styles.nexttext}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Formik>
 
-        <CountryPicker
-          show={isPickerVisible}
-          pickerButtonOnPress={handleSelectCountry}
-          lang="en"
-          style={{
-            modal: {
-              height: 300,
-              backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
-            },
-            countryButtonStyles: {
-              backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
-              borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
-            },
-            textInput: {
-              color: colorScheme === 'dark' ? '#010A0C' : '#000',
-            },
-          }}
-        />
-        <CustomModal {...showSuccessModal} />
-        <CustomErrorModal
-          {...showErrorModal}
-          closeModal={() =>
-            setShowErrorModal({...showErrorModal, isModalOpen: false})
-          }
-        />
-      </ScrollView>
+          <CountryPicker
+            show={isPickerVisible}
+            pickerButtonOnPress={handleSelectCountry}
+            lang="en"
+            style={{
+              modal: {
+                height: 300,
+                backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#FFFFFF',
+              },
+              countryButtonStyles: {
+                backgroundColor: colorScheme === 'dark' ? '#AEADA4' : '#F2F2F2',
+                borderColor: colorScheme === 'dark' ? '#51514C' : '#ccc',
+              },
+              textInput: {
+                color: colorScheme === 'dark' ? '#010A0C' : '#000',
+              },
+            }}
+          />
+          <CustomModal {...showSuccessModal} />
+          <CustomErrorModal
+            {...showErrorModal}
+            closeModal={() =>
+              setShowErrorModal({...showErrorModal, isModalOpen: false})
+            }
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaViewContainer>
   );
 };
@@ -353,7 +358,7 @@ const lightStyles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: wp('5%'),
+    paddingHorizontal: wp('5%'),
     backgroundColor: '#F8F7F4',
   },
   inputContainer: {

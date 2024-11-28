@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   useColorScheme,
+  Linking,
 } from 'react-native';
 import {CountryPicker} from 'react-native-country-codes-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -123,7 +124,7 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
     try {
       const res: DocumentPickerResponse | null =
         await DocumentPicker.pickSingle({
-          type: [DocumentPicker.types.allFiles], // You can specify a mime type to filter file types
+          type: [DocumentPicker.types.images], // You can specify a mime type to filter file types
         });
 
       if (res) {
@@ -134,8 +135,12 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
     } catch (error) {}
   };
 
-  const handleagree = () => {
-    navigation.navigate('Agree' as never);
+  const handleagree = (type: 'privacy' | 'terms') => {
+    if (type === 'terms') {
+      navigation.navigate('Agree' as never);
+      return;
+    }
+    Linking.openURL('https://beatask.com/privacy-policy/');
   };
 
   const containerStyle = [
@@ -356,25 +361,29 @@ const CreateAccountScreen: React.FC<Props> = ({navigation, route}) => {
                         mode="android"
                         label=""
                       />
-                      <PaperText style={styles.checkboxLabel}>
+                      <PaperText style={[styles.checkboxLabel, {flex: 1}]}>
                         I agree to Beatask
                         <PaperText
                           style={{color: '#12CCB7'}}
-                          onPress={handleagree}>
+                          onPress={() => handleagree('terms')}>
                           {' '}
-                          terms of use
+                          terms and conditions
                         </PaperText>{' '}
-                        and{'\n'}
+                        and
                         <PaperText
                           style={{color: '#12CCB7'}}
-                          onPress={handleagree}>
+                          onPress={() => handleagree('privacy')}>
                           {' '}
                           privacy policy.
                         </PaperText>
                       </PaperText>
                     </View>
-                    {errors.agree_terms && touched.agree_terms && (
-                      <Text style={[darkStyles.errorText, {}]}>
+                    {errors.agree_terms && (
+                      <Text
+                        style={[
+                          darkStyles.errorText,
+                          {marginLeft: 10, textAlign: 'center'},
+                        ]}>
                         {errors.agree_terms}
                       </Text>
                     )}

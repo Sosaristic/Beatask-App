@@ -132,6 +132,7 @@ const HomeScreen: React.FC<Props> = ({route, navigation}) => {
       provider_name: payload.provider.name,
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
+      discounted_price: payload.discounted_price,
     };
     console.log('payload', data);
 

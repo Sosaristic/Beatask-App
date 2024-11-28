@@ -23,14 +23,23 @@ import {CustomErrorModal, CustomModal} from '../../components';
 import {makeApiRequest} from '../../utils/helpers';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {useUserStore} from '../../store/useUserStore';
+import {LoginSuccessResponse} from '../Login/Login';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'update_docs'>;
 };
 
+type IdentificationInfo<Keys extends {[key: string]: unknown}> = {
+  fullName: string;
+  issueDate?: string;
+  expirationDate?: string;
+  selectedFile: DocumentPickerResponse | null;
+  fileName: string;
+} & Keys;
+
 const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
-  const {user} = useUserStore(state => state);
+  const {user, actions} = useUserStore(state => state);
   const isDarkMode = colorScheme === 'dark';
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -40,7 +49,7 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
   const [currentSection, setCurrentSection] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState({
     successTitle: 'Success',
-    successMessage: 'Registration Successful',
+    successMessage: 'Profile updated successfully',
     loadingMessage: 'processing..',
     requestLoading: false,
     showModal: false,
@@ -50,39 +59,63 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
     errorMessage: 'All fields are required',
     isModalOpen: false,
   });
-
-  const [governmentIdInfo, setGovernmentIdInfo] = useState({
+  const [governmentIdInfo, setGovernmentIdInfo] = useState<
+    IdentificationInfo<{
+      idNumber: string;
+    }>
+  >({
     fullName: '',
-    idNumber: user?.government_issue_id || '',
+    idNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: user?.government_issue_image || '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [driverLicenseInfo, setDriverLicenseInfo] = useState({
+  const [driverLicenseInfo, setDriverLicenseInfo] = useState<
+    IdentificationInfo<{
+      licenseNumber: string;
+    }>
+  >({
     fullName: '',
-    licenseNumber: user?.driver_license_number || '',
+    licenseNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: user?.driver_license_image || '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [passportInfo, setPassportInfo] = useState({
+  const [passportInfo, setPassportInfo] = useState<
+    IdentificationInfo<{
+      passportNumber: string;
+    }>
+  >({
     fullName: '',
-    passportNumber: user?.passport_number || '',
+    passportNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: user?.passport_image || '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [birthCertificateInfo, setBirthCertificateInfo] = useState({
+  const [birthCertificateInfo, setBirthCertificateInfo] = useState<
+    IdentificationInfo<{
+      birthCertificateNumber: string;
+    }>
+  >({
     fullName: '',
-    birthCertificateNumber: user?.birth_certificate || '',
+    birthCertificateNumber: '',
     issueDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [einInfo, setEinInfo] = useState({
+  const [einInfo, setEinInfo] = useState<
+    IdentificationInfo<{
+      einNumber: string;
+    }>
+  >({
     fullName: '',
-    einNumber: user?.ein_number || '',
+    einNumber: '',
     issueDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
   const [ssnNumber, setSsnNumber] = useState('');
 
@@ -105,20 +138,11 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
       driver_license_issue_date: driverLicenseInfo.issueDate,
       passport_number: passportInfo.passportNumber,
       passport_image: passportInfo.selectedFile,
-      ein_number: einInfo.einNumber,
+      ein_document: einInfo.selectedFile,
       birth_certificate: birthCertificateInfo.birthCertificateNumber,
       ssn_number: ssnNumber,
     };
     // throw an error if any value is missing
-
-    if (einInfo.einNumber === '') {
-      setShowErrorModal({
-        ...showErrorModal,
-        isModalOpen: true,
-        errorMessage: 'EIN number is required',
-      });
-      return;
-    }
 
     const formData = new FormData();
     for (const [key, value] of Object.entries(payload)) {
@@ -130,8 +154,8 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
       requestLoading: true,
       showModal: true,
     });
-    const {data, error} = await makeApiRequest(
-      '/update-user',
+    const {data, error} = await makeApiRequest<LoginSuccessResponse>(
+      `/update-user/${user?.id}`,
       'POST',
       formData,
       {
@@ -184,31 +208,36 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
           case 'Government-issued ID':
             setGovernmentIdInfo({
               ...governmentIdInfo,
-              selectedFile: res.name || '',
+              selectedFile: res || '',
+              fileName: res.name as string,
             });
             break;
           case 'Driver’s license':
             setDriverLicenseInfo({
               ...driverLicenseInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           case 'Passport':
             setPassportInfo({
               ...passportInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           case 'Birth certificate':
             setBirthCertificateInfo({
               ...birthCertificateInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
-          case 'EIN number':
+          case 'EIN Document':
             setEinInfo({
               ...einInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           default:
@@ -287,7 +316,8 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
     'Driver’s license',
     'Passport',
     'Birth certificate',
-    'EIN number',
+    'EIN Document',
+    'SSN Number',
   ];
 
   return (
@@ -343,7 +373,7 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
                   </Text>
                 </TouchableOpacity>
                 <Text style={styles.selectedFileText}>
-                  {governmentIdInfo.selectedFile}
+                  {governmentIdInfo.fileName}
                 </Text>
 
                 <TextInput
@@ -371,7 +401,7 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
                   </Text>
                 </TouchableOpacity>
                 <Text style={styles.selectedFileText}>
-                  {driverLicenseInfo.selectedFile}
+                  {driverLicenseInfo.fileName}
                 </Text>
                 <TextInput
                   style={[styles.input, isDarkMode && styles.darkInput]}
@@ -409,7 +439,7 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
                 </Text>
               </TouchableOpacity>
               <Text style={styles.selectedFileText}>
-                {passportInfo.selectedFile}
+                {passportInfo.fileName}
               </Text>
               <TextInput
                 style={[styles.input, isDarkMode && styles.darkInput]}
@@ -445,35 +475,37 @@ const UpdateDocsScreen: React.FC<Props> = ({navigation}) => {
                   </Text>
                 </TouchableOpacity>
                 <Text style={styles.selectedFileText}>
-                  {birthCertificateInfo.selectedFile}
+                  {birthCertificateInfo.fileName}
                 </Text>
               </View>
             )}
 
-          {expandedSections.includes(section) && section === 'EIN number' && (
+          {expandedSections.includes(section) && section === 'EIN Document' && (
             <View style={styles.detailsContainer}>
-              {/* <TouchableOpacity onPress={() => selectFile(section)} style={styles.uploadButton}>
-                                <Icon name="upload" size={30} color="#6e6e6e" />
-                                <Text style={styles.uploadButtonText}>
-                                    <Text style={styles.chooseText}>Choose </Text>
-                                    file to upload
-                                </Text>
-                            </TouchableOpacity>
-                            <Text style={styles.selectedFileText}>{einInfo.selectedFile}</Text>
-                            <TextInput
+              <TouchableOpacity
+                onPress={() => selectFile(section)}
+                style={styles.uploadButton}>
+                <Icon name="upload" size={30} color="#6e6e6e" />
+                <Text style={styles.uploadButtonText}>
+                  <Text style={styles.chooseText}>Choose </Text>
+                  file to upload
+                </Text>
+              </TouchableOpacity>
+              <Text style={styles.selectedFileText}>{einInfo.fileName}</Text>
+              {/* <TextInput
                                 style={[styles.input, isDarkMode && styles.darkInput]}
                                 placeholder="Full name"
                                 placeholderTextColor="#a3a3a3"
                                 value={einInfo.fullName}
                                 onChangeText={text => setEinInfo({ ...einInfo, fullName: text })}
                             /> */}
-              <TextInput
+              {/* <TextInput
                 style={[styles.input, isDarkMode && styles.darkInput]}
                 placeholder="EIN number"
                 placeholderTextColor="#a3a3a3"
                 value={einInfo.einNumber}
                 onChangeText={text => setEinInfo({...einInfo, einNumber: text})}
-              />
+              /> */}
 
               {/* <TouchableOpacity onPress={() => showDatePicker(section, 'issueDate')}>
                                 <TextInput

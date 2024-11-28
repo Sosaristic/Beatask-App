@@ -8,7 +8,7 @@ import {
   TextInput,
   useColorScheme,
 } from 'react-native';
-import {RouteProp, useNavigation} from '@react-navigation/native';
+import {RouteProp} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import DocumentPicker, {
   DocumentPickerResponse,
@@ -22,6 +22,15 @@ import {RootStackParamList} from '../../../App';
 import {CustomErrorModal, CustomModal} from '../../components';
 import {makeApiRequest} from '../../utils/helpers';
 import {StackNavigationProp} from '@react-navigation/stack';
+import {Text as RNText} from 'react-native-paper';
+
+type IdentificationInfo<Keys extends {[key: string]: unknown}> = {
+  fullName: string;
+  issueDate?: string;
+  expirationDate?: string;
+  selectedFile: DocumentPickerResponse | null;
+  fileName: string;
+} & Keys;
 
 type Props = {
   route: RouteProp<RootStackParamList, 'Upload'>;
@@ -51,42 +60,65 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
     isModalOpen: false,
   });
 
-  const [governmentIdInfo, setGovernmentIdInfo] = useState({
+  const [governmentIdInfo, setGovernmentIdInfo] = useState<
+    IdentificationInfo<{
+      idNumber: string;
+    }>
+  >({
     fullName: '',
     idNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [driverLicenseInfo, setDriverLicenseInfo] = useState({
+  const [driverLicenseInfo, setDriverLicenseInfo] = useState<
+    IdentificationInfo<{
+      licenseNumber: string;
+    }>
+  >({
     fullName: '',
     licenseNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [passportInfo, setPassportInfo] = useState({
+  const [passportInfo, setPassportInfo] = useState<
+    IdentificationInfo<{
+      passportNumber: string;
+    }>
+  >({
     fullName: '',
     passportNumber: '',
     issueDate: '',
     expirationDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [birthCertificateInfo, setBirthCertificateInfo] = useState({
+  const [birthCertificateInfo, setBirthCertificateInfo] = useState<
+    IdentificationInfo<{
+      birthCertificateNumber: string;
+    }>
+  >({
     fullName: '',
     birthCertificateNumber: '',
     issueDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
-  const [einInfo, setEinInfo] = useState({
+  const [einInfo, setEinInfo] = useState<
+    IdentificationInfo<{
+      einNumber: string;
+    }>
+  >({
     fullName: '',
     einNumber: '',
     issueDate: '',
-    selectedFile: '',
+    selectedFile: null,
+    fileName: '',
   });
   const [ssnNumber, setSsnNumber] = useState('');
-
-  console.log(ssnNumber);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prevState =>
@@ -107,21 +139,14 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
       driver_license_issue_date: driverLicenseInfo.issueDate,
       passport_number: passportInfo.passportNumber,
       passport_image: passportInfo.selectedFile,
-      ein_number: einInfo.einNumber,
+      ein_document: einInfo.selectedFile,
       birth_certificate: birthCertificateInfo.birthCertificateNumber,
       ssn_number: ssnNumber,
       ...details,
     };
     // throw an error if any value is missing
 
-    if (einInfo.einNumber === '') {
-      setShowErrorModal({
-        ...showErrorModal,
-        isModalOpen: true,
-        errorMessage: 'EIN number is required',
-      });
-      return;
-    }
+    console.log(payload);
 
     const formData = new FormData();
     for (const [key, value] of Object.entries(payload)) {
@@ -189,31 +214,36 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
           case 'Government-issued ID':
             setGovernmentIdInfo({
               ...governmentIdInfo,
-              selectedFile: res.name || '',
+              selectedFile: res || '',
+              fileName: res.name as string,
             });
             break;
           case 'Driver’s license':
             setDriverLicenseInfo({
               ...driverLicenseInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           case 'Passport':
             setPassportInfo({
               ...passportInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           case 'Birth certificate':
             setBirthCertificateInfo({
               ...birthCertificateInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
-          case 'EIN number':
+          case 'EIN Document':
             setEinInfo({
               ...einInfo,
-              selectedFile: res.name || '',
+              selectedFile: res,
+              fileName: res.name as string,
             });
             break;
           default:
@@ -278,7 +308,7 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
           issueDate: formattedDate,
         });
         break;
-      case 'EIN number':
+      case 'EIN Image':
         setEinInfo({...einInfo, issueDate: formattedDate});
         break;
       default:
@@ -292,10 +322,10 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
     'Driver’s license',
     'Passport',
     'Birth certificate',
-    'EIN number',
+    'EIN Document',
     'SSN Number',
   ];
-
+  console.log(einInfo.selectedFile);
   return (
     <ScrollView
       contentContainerStyle={[
@@ -343,14 +373,17 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                   onPress={() => selectFile(section)}
                   style={styles.uploadButton}>
                   <Icon name="upload" size={30} color="#6e6e6e" />
-                  <Text style={styles.uploadButtonText}>
-                    <Text style={styles.chooseText}>Choose </Text>
-                    file to upload
-                  </Text>
+                  {governmentIdInfo.selectedFile ? (
+                    <RNText>{governmentIdInfo.fileName}</RNText>
+                  ) : (
+                    <>
+                      <Text style={styles.uploadButtonText}>
+                        <Text style={styles.chooseText}>Choose </Text>
+                        file to upload
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-                <Text style={styles.selectedFileText}>
-                  {governmentIdInfo.selectedFile}
-                </Text>
 
                 <TextInput
                   style={[styles.input, isDarkMode && styles.darkInput]}
@@ -371,14 +404,18 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                   onPress={() => selectFile(section)}
                   style={styles.uploadButton}>
                   <Icon name="upload" size={30} color="#6e6e6e" />
-                  <Text style={styles.uploadButtonText}>
-                    <Text style={styles.chooseText}>Choose </Text>
-                    file to upload
-                  </Text>
+                  {driverLicenseInfo.selectedFile ? (
+                    <RNText>{driverLicenseInfo.fileName}</RNText>
+                  ) : (
+                    <>
+                      <Text style={styles.uploadButtonText}>
+                        <Text style={styles.chooseText}>Choose </Text>
+                        file to upload
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-                <Text style={styles.selectedFileText}>
-                  {driverLicenseInfo.selectedFile}
-                </Text>
+
                 <TextInput
                   style={[styles.input, isDarkMode && styles.darkInput]}
                   placeholder="Full name"
@@ -409,14 +446,18 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                 onPress={() => selectFile(section)}
                 style={styles.uploadButton}>
                 <Icon name="upload" size={30} color="#6e6e6e" />
-                <Text style={styles.uploadButtonText}>
-                  <Text style={styles.chooseText}>Choose </Text>
-                  file to upload
-                </Text>
+                {passportInfo.selectedFile ? (
+                  <RNText>{passportInfo.fileName}</RNText>
+                ) : (
+                  <>
+                    <Text style={styles.uploadButtonText}>
+                      <Text style={styles.chooseText}>Choose </Text>
+                      file to upload
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
-              <Text style={styles.selectedFileText}>
-                {passportInfo.selectedFile}
-              </Text>
+
               <TextInput
                 style={[styles.input, isDarkMode && styles.darkInput]}
                 placeholder="Full name"
@@ -445,41 +486,55 @@ const UploadDocument: React.FC<Props> = ({route, navigation}) => {
                   onPress={() => selectFile(section)}
                   style={styles.uploadButton}>
                   <Icon name="upload" size={30} color="#6e6e6e" />
-                  <Text style={styles.uploadButtonText}>
-                    <Text style={styles.chooseText}>Choose </Text>
-                    file to upload
-                  </Text>
+                  {birthCertificateInfo.selectedFile ? (
+                    <RNText>{birthCertificateInfo.fileName}</RNText>
+                  ) : (
+                    <>
+                      <Text style={styles.uploadButtonText}>
+                        <Text style={styles.chooseText}>Choose </Text>
+                        file to upload
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
-                <Text style={styles.selectedFileText}>
-                  {birthCertificateInfo.selectedFile}
-                </Text>
               </View>
             )}
 
-          {expandedSections.includes(section) && section === 'EIN number' && (
+          {expandedSections.includes(section) && section === 'EIN Document' && (
             <View style={styles.detailsContainer}>
-              {/* <TouchableOpacity onPress={() => selectFile(section)} style={styles.uploadButton}>
-                                <Icon name="upload" size={30} color="#6e6e6e" />
-                                <Text style={styles.uploadButtonText}>
-                                    <Text style={styles.chooseText}>Choose </Text>
-                                    file to upload
-                                </Text>
-                            </TouchableOpacity>
-                            <Text style={styles.selectedFileText}>{einInfo.selectedFile}</Text>
-                            <TextInput
+              <TouchableOpacity
+                onPress={() => selectFile(section)}
+                style={styles.uploadButton}>
+                <Icon name="upload" size={30} color="#6e6e6e" />
+
+                {einInfo.selectedFile ? (
+                  <RNText>{einInfo.fileName}</RNText>
+                ) : (
+                  <>
+                    <Text style={styles.uploadButtonText}>
+                      <Text style={styles.chooseText}>Choose </Text>
+                      file to upload
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <RNText style={styles.selectedFileText}>
+                {einInfo.fileName}
+              </RNText>
+              {/* <TextInput
                                 style={[styles.input, isDarkMode && styles.darkInput]}
                                 placeholder="Full name"
                                 placeholderTextColor="#a3a3a3"
                                 value={einInfo.fullName}
                                 onChangeText={text => setEinInfo({ ...einInfo, fullName: text })}
                             /> */}
-              <TextInput
+              {/* <TextInput
                 style={[styles.input, isDarkMode && styles.darkInput]}
                 placeholder="EIN number"
                 placeholderTextColor="#a3a3a3"
                 value={einInfo.einNumber}
                 onChangeText={text => setEinInfo({...einInfo, einNumber: text})}
-              />
+              /> */}
 
               {/* <TouchableOpacity onPress={() => showDatePicker(section, 'issueDate')}>
                                 <TextInput

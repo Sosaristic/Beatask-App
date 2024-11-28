@@ -12,7 +12,7 @@ import {
 } from 'react-native-responsive-screen';
 import {Card, Checkbox, Text} from 'react-native-paper';
 import useCustomQuery from '../hooks/useCustomQuery';
-import {useUserStore} from '../store/useUserStore';
+import {User, useUserStore} from '../store/useUserStore';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Panel from '../components/Panel';
 import {ScrollView} from 'react-native';
@@ -22,6 +22,7 @@ import {RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../../App';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {makeApiRequest} from '../utils/helpers';
+import {QuoteSentRes} from '../interfaces/apiResponses';
 
 interface Service {
   id: number;
@@ -51,10 +52,15 @@ type ScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'send_quote'>;
 };
 
+type UpdatedRes = {
+  data: User[];
+  msg: string;
+};
+
 const SubmitQuoteScreen = ({route, navigation}: ScreenProps) => {
   const colorScheme = useColorScheme();
   const {params} = route;
-  const {user} = useUserStore();
+  const {user, actions} = useUserStore();
   const [selectedAccount, setSelectedAccount] = useState<Service | null>(null);
   const [openPanel, setOpenPanel] = useState(false);
   const [notes, setNotes] = useState('');
@@ -99,7 +105,7 @@ const SubmitQuoteScreen = ({route, navigation}: ScreenProps) => {
       service_id: selectedAccount?.id,
     };
 
-    const {data: saveResponse, error} = await makeApiRequest(
+    const {data: saveResponse, error} = await makeApiRequest<QuoteSentRes>(
       '/send-quotes',
       'POST',
       payload,
@@ -117,6 +123,17 @@ const SubmitQuoteScreen = ({route, navigation}: ScreenProps) => {
       });
     }
     if (saveResponse) {
+      const {data, error} = await makeApiRequest<UpdatedRes>(
+        '/get-provider-updated-data',
+        'post',
+        {provider_id: user?.id},
+      );
+
+      if (data) {
+        actions.login(data.data[0]);
+      }
+
+      actions.login(saveResponse.user);
       setShowSuccessModal({
         ...showSuccessModal,
         requestLoading: false,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -19,18 +20,9 @@ import {makeApiRequest} from '../../../utils/helpers';
 import {useStripe} from '@stripe/stripe-react-native';
 import {useUserStore} from '../../../store/useUserStore';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {RootStackParamList} from '../../../../App';
+import {PaymentScreenType, RootStackParamList} from '../../../../App';
 import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
-
-type BidRes = {
-  customer: string;
-  ephemeralKey: string;
-  paymentIntent: string;
-  price: number;
-  publishableKey: string;
-  subscriptionName: string;
-  success: boolean;
-};
+import {customTheme} from '../../../custom_theme/customTheme';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Bid1'>;
@@ -39,71 +31,62 @@ type Props = {
 const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
   const colorScheme = useColorScheme();
   const {user, actions} = useUserStore(state => state);
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(0);
   const isDarkMode = colorScheme === 'dark';
   const {initPaymentSheet, presentPaymentSheet} = useStripe();
 
-  const handleprofile = () => {
-    navigation.navigate('ProfileSetup' as never);
-  };
-  const handlesetting = () => {
-    navigation.navigate('Setting' as never);
-  };
-  const handleHome = () => {
-    navigation.navigate('dashboard' as never);
-  };
-  const handleChat = () => {
-    navigation.navigate('masglist1' as never);
-  };
-  const handlebooked = () => {
-    navigation.navigate('booked1' as never);
-  };
-  const handlebid = () => {
-    navigation.navigate('Bid' as never);
-  };
-
-  const handleSubscription = async (
-    price: string,
-    type: 'one_month' | 'two_month',
-  ) => {
+  const handleSubscription = async (type: 'one_month' | 'two_month') => {
+    setIsDisabled(true);
+    if (type === 'one_month') {
+      setIsLoading(1);
+    }
+    if (type === 'two_month') {
+      setIsLoading(2);
+    }
     const url =
       type === 'one_month'
-        ? '/stripe-subscription-one-month-premium'
-        : '/stripe-subscription-two-months';
-    const {data, error} = await makeApiRequest<BidRes>(url, 'POST', {
+        ? '/paypal-subscription-one-month-premium'
+        : '/paypal-subscription-two-months';
+    const {data, error} = await makeApiRequest<PaymentScreenType>(url, 'POST', {
       provider_id: user?.id,
     });
-    console.log(error);
-
-    if (error) return;
-
     if (data) {
-      const {error: iniError, paymentOption} = await initPaymentSheet({
-        merchantDisplayName: 'Beatask',
-        customerId: data.customer,
-        customerEphemeralKeySecret: data.ephemeralKey,
-        paymentIntentClientSecret: data.paymentIntent,
-        // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
-        //methods that complete payment after a delay, like SEPA Debit and Sofort.
-        allowsDelayedPaymentMethods: true,
-        defaultBillingDetails: {
-          name: user?.name as string,
-        },
-      });
-
-      if (iniError) {
-        Alert.alert('Something went wrong in init');
-        return;
-      }
-
-      const {error} = await presentPaymentSheet();
-      if (error) {
-        // setSheetLoading(false);
-      } else {
-        actions.setIsSubscribed(true);
-        navigation.replace('success', {redirectTo: 'dashboard'});
-        // setSheetLoading(false);
-      }
+      navigation.navigate('paypal_screen', {url: data.approvalUrl});
     }
+    setIsDisabled(false);
+    setIsLoading(0);
+
+    // if (error) return;
+
+    // if (data) {
+    //   const {error: iniError, paymentOption} = await initPaymentSheet({
+    //     merchantDisplayName: 'Beatask',
+    //     customerId: data.customer,
+    //     customerEphemeralKeySecret: data.ephemeralKey,
+    //     paymentIntentClientSecret: data.paymentIntent,
+    //     // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
+    //     //methods that complete payment after a delay, like SEPA Debit and Sofort.
+    //     allowsDelayedPaymentMethods: true,
+    //     defaultBillingDetails: {
+    //       name: user?.name as string,
+    //     },
+    //   });
+
+    //   if (iniError) {
+    //     Alert.alert('Something went wrong in init');
+    //     return;
+    //   }
+
+    //   const {error} = await presentPaymentSheet();
+    //   if (error) {
+    //     // setSheetLoading(false);
+    //   } else {
+    //     actions.setIsSubscribed(true);
+    //     navigation.replace('success', {redirectTo: 'dashboard'});
+    //     // setSheetLoading(false);
+    //   }
+    // }
   };
 
   return (
@@ -134,18 +117,20 @@ const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
           {[
             {
               title: 'Introductory Unlimited Plan',
-              price: '$29.99',
+              price: '$14.99',
               type: 'two_month',
               duration: 'for two months',
+              loading: isLoading === 2 ? true : false,
               description:
                 'You are able to send Unlimited quotes for two months at a discounted rate.',
               buttonLabel: 'SUBSCRIBE',
             },
             {
               title: 'Premium Access Plan',
-              price: '$49.00',
+              price: '$29.99',
               type: 'one_month',
               duration: 'per month',
+              loading: isLoading === 1 ? true : false,
               description:
                 'You can send Unlimited quotes, priority listing, advanced analytics such as being able to see when their quote was opened, reasons for rejection (consumer behavior), early access to leads, priority support.',
               buttonLabel: 'SUBSCRIBE',
@@ -186,16 +171,21 @@ const SubscriptionScreen: React.FC<Props> = ({navigation}) => {
                 {plan.description}
               </Text>
               <TouchableOpacity
+                disabled={isDisabled}
                 style={styles.subscribeButton}
                 onPress={() =>
-                  handleSubscription(
-                    plan.price,
-                    plan.type as 'one_month' | 'two_month',
-                  )
+                  handleSubscription(plan.type as 'one_month' | 'two_month')
                 }>
-                <Text style={styles.subscribeButtonText}>
-                  {plan.buttonLabel}
-                </Text>
+                {plan.loading ? (
+                  <ActivityIndicator
+                    size={'small'}
+                    color={customTheme.primaryColor}
+                  />
+                ) : (
+                  <Text style={styles.subscribeButtonText}>
+                    {plan.buttonLabel}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           ))}

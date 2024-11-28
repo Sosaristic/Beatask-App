@@ -301,7 +301,10 @@ const SingleServiceScreen = ({route, navigation}: Props) => {
                     fontSize: wp('8%'),
                     paddingHorizontal: 8,
                   }}>
-                  ${data.real_price}
+                  $
+                  {(data.discounted_price as number) > 0
+                    ? data.discounted_price
+                    : data.real_price}
                 </Text>
                 <TouchableOpacity
                   onPress={handleProviderSave}

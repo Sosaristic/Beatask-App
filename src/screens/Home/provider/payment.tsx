@@ -19,7 +19,7 @@ import {makeApiRequest} from '../../../utils/helpers';
 import {CustomErrorModal, CustomModal, Loader} from '../../../components';
 import useFetch from '../../../hooks/useFetch';
 import {BookingPriceResponse} from '../../../interfaces/apiResponses';
-import {RootStackParamList} from '../../../../App';
+import {PaymentScreenType, RootStackParamList} from '../../../../App';
 
 import {useStripe} from '@stripe/stripe-react-native';
 import {customTheme} from '../../../custom_theme/customTheme';
@@ -32,12 +32,10 @@ type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'payment'>;
 };
 
-type StripRes = {
-  customer: string;
-  paymentIntent: string;
-  error: boolean;
-  ephemeralKey: string;
-  publishableKey: string;
+type PaypalRes = {
+  paymentId: string;
+  redirectUrl: string;
+  success: string;
 };
 
 const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
@@ -49,10 +47,12 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
   const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
   const [sheetLoading, setSheetLoading] = useState(false);
   const {user} = useUserStore(state => state);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDisabled, setIsdisabled] = useState(false);
 
-  const {colors} = useTheme();
+  // const {colors} = useTheme();
 
-  const {initPaymentSheet, presentPaymentSheet} = useStripe();
+  // const {initPaymentSheet, presentPaymentSheet} = useStripe();
   const {loading, error, data} = useFetch<BookingPriceResponse>(
     '/get-service-price',
     'POST',
@@ -73,9 +73,11 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
     showModal: false,
   });
 
-  const getDetails = async (): Promise<StripRes | undefined> => {
-    const {data: apiRes, error: errRes} = await makeApiRequest<StripRes>(
-      '/stripe',
+  const getDetails = async () => {
+    setIsLoading(true);
+    setIsdisabled(true);
+    const {data: apiRes, error: errRes} = await makeApiRequest<PaypalRes>(
+      '/paypal',
       'POST',
       {
         service_id: serviceData.service_id,
@@ -84,15 +86,12 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
         user_id: user?.id,
       },
     );
+
     if (apiRes) {
-      return {
-        customer: apiRes.customer,
-        paymentIntent: apiRes.paymentIntent,
-        error: apiRes.error,
-        ephemeralKey: apiRes.ephemeralKey,
-        publishableKey: apiRes.publishableKey,
-      };
+      console.log(apiRes);
+      navigation.navigate('paypal_screen', {url: apiRes.redirectUrl});
     }
+
     if (errRes) {
       setShowErrorModal({
         errorTitle: 'Error',
@@ -100,6 +99,8 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
         isModalOpen: true,
       });
     }
+    setIsLoading(false);
+    setIsdisabled(false);
   };
 
   const isDarkMode = colorScheme === 'dark';
@@ -122,39 +123,39 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
     );
   }
 
-  const openPaymentSheet = async () => {
-    const res = await getDetails();
+  // const openPaymentSheet = async () => {
+  //   const res = await getDetails();
 
-    if (res === undefined) return;
+  //   if (res === undefined) return;
 
-    const {error: iniError, paymentOption} = await initPaymentSheet({
-      merchantDisplayName: 'Beatask',
-      customerId: res.customer,
-      customerEphemeralKeySecret: res.ephemeralKey,
-      paymentIntentClientSecret: res.paymentIntent,
-      // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
-      //methods that complete payment after a delay, like SEPA Debit and Sofort.
-      allowsDelayedPaymentMethods: true,
-      defaultBillingDetails: {
-        name: 'Jane Doe',
-      },
-    });
+  //   const {error: iniError, paymentOption} = await initPaymentSheet({
+  //     merchantDisplayName: 'Beatask',
+  //     customerId: res.customer,
+  //     customerEphemeralKeySecret: res.ephemeralKey,
+  //     paymentIntentClientSecret: res.paymentIntent,
+  //     // Set `allowsDelayedPaymentMethods` to true if your business can handle payment
+  //     //methods that complete payment after a delay, like SEPA Debit and Sofort.
+  //     allowsDelayedPaymentMethods: true,
+  //     defaultBillingDetails: {
+  //       name: 'Jane Doe',
+  //     },
+  //   });
 
-    if (iniError) {
-      Alert.alert('Something went wrong in init');
-      return;
-    }
+  //   if (iniError) {
+  //     Alert.alert('Something went wrong in init');
+  //     return;
+  //   }
 
-    setSheetLoading(true);
+  //   setSheetLoading(true);
 
-    const {error} = await presentPaymentSheet();
-    if (error) {
-      setSheetLoading(false);
-    } else {
-      navigation.replace('success', {redirectTo: 'Home'});
-      setSheetLoading(false);
-    }
-  };
+  //   const {error} = await presentPaymentSheet();
+  //   if (error) {
+  //     setSheetLoading(false);
+  //   } else {
+  //     navigation.replace('success', {redirectTo: 'Home'});
+  //     setSheetLoading(false);
+  //   }
+  // };
 
   return (
     <SafeAreaViewContainer>
@@ -167,11 +168,11 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
           style={styles.paymentOption}
           onPress={() => setSelectedMethod('GooglePay')}>
           <Image
-            source={require('../../../assets/images/stripe-s.png')}
+            source={require('../../../assets/images/paypal.png')}
             style={styles.modalIcon}
           />
           <PaperText variant="titleLarge" style={{marginLeft: 20}}>
-            Stripe
+            Paypal
           </PaperText>
           <View style={{marginLeft: 'auto'}}>
             <RadioButton
@@ -228,9 +229,13 @@ const PaymentScreen: React.FC<Props> = ({route, navigation}) => {
                 : customTheme.primaryColor,
             },
           ]}
-          disabled={!selectedMethod}
-          onPress={openPaymentSheet}>
-          <Text style={styles.payButtonText}>PAY</Text>
+          disabled={!selectedMethod || isDisabled}
+          onPress={getDetails}>
+          {isLoading ? (
+            <ActivityIndicator size={'small'} color={'#fff'} />
+          ) : (
+            <Text style={styles.payButtonText}>PAY</Text>
+          )}
         </TouchableOpacity>
         <CustomModal {...showSuccessModal} />
         <CustomErrorModal

@@ -1,4 +1,11 @@
-import React, {useEffect, useState, useId, useRef} from 'react';
+import React, {
+  useEffect,
+  useState,
+  useId,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {v4 as uuidv4} from 'uuid';
 
 import {
@@ -30,11 +37,12 @@ import {useUserStore} from '../../../store/useUserStore';
 import firestore from '@react-native-firebase/firestore';
 
 import {
+  blockConversation,
   generateConversationId,
   sendMessage,
+  unblockConversation,
   updateMessageCount,
 } from '../../../firebase/helpers';
-import {useNavigation} from '@react-navigation/native';
 
 import {Message} from './masglist';
 import {RouteProp} from '@react-navigation/native';
@@ -43,86 +51,49 @@ import SafeAreaViewContainer from '../../../components/SafeAreaViewContainer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {makeApiRequest} from '../../../utils/helpers';
 import {StackNavigationProp} from '@react-navigation/stack';
+import {
+  Avatar,
+  Dialog,
+  Menu,
+  Text as PaperText,
+  Portal,
+} from 'react-native-paper';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {CustomButton, CustomErrorModal, CustomModal} from '../../../components';
+import {ReportModal} from '../../../components/chats';
+import {
+  blockedKeywordsSet,
+  capitalizeFirstLetter,
+  checkForBlockedKeywords,
+  warnUser,
+} from './helpers';
 type Props = {
   route: RouteProp<RootStackParamList, 'Chat'>;
   navigation: StackNavigationProp<RootStackParamList, 'Chat'>;
 };
 
-function capitalizeFirstLetter(input: string): string {
-  if (!input) return ''; // Handle empty string case
-
-  // Convert first letter to uppercase and concatenate with the rest of the string
-  return input.charAt(0).toUpperCase() + input.slice(1);
-}
-
-const blockedKeywordsSet = new Set([
-  'meet up',
-  "let's meet",
-  'can we meet?',
-  "let's catch up",
-  'in-person meeting',
-  'face-to-face',
-  'meet outside',
-  'physical meeting',
-  'whatsapp',
-  'facebook',
-  'fb',
-  'insta',
-  'instagram',
-  'telegram',
-  'tg',
-  'messenger',
-  'snapchat',
-  'contact number',
-  'phone number',
-  'mobile number',
-  'call me',
-  "let's talk on the phone",
-  'video call',
-  'where should we meet?',
-  'meet me at',
-  "let's grab a coffee",
-  'meet for coffee',
-  "let's hang out",
-  'see you outside',
-]);
-
-const checkForBlockedKeywords = async (message: string) => {
-  // Normalize message: lowercase and remove punctuation
-  const normalizedMessage = message.toLowerCase().replace(/[.,?!]/g, '');
-
-  // Check if any single word in the message is in the set
-  const messageWords = normalizedMessage.split(' ');
-  const containsSingleWord = messageWords.some(word =>
-    blockedKeywordsSet.has(word),
-  );
-
-  // Check if the entire message contains any multi-word phrases
-  const containsPhrase = Array.from(blockedKeywordsSet).some(keyword =>
-    normalizedMessage.includes(keyword),
-  );
-
-  return containsSingleWord || containsPhrase;
-};
-
-const warnUser = async () => {
-  try {
-    const value = await AsyncStorage.getItem('warn-user');
-    if (value === 'true') {
-      return true;
-    } else {
-      await AsyncStorage.setItem('warn-user', 'true');
-      return false;
-    }
-  } catch (error) {}
-};
-
 const ChatScreen: React.FC<Props> = ({route, navigation}) => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [conversations, setConversations] = useState<IMessage[]>([]);
-  const [showTopPopup, setShowTopPopup] = useState(true);
+  const [showTopPopup, setShowTopPopup] = useState(false);
   const colorScheme = useColorScheme();
-  const {user} = useUserStore(state => state);
+  const {user, messagesList} = useUserStore(state => state);
+  const insets = useSafeAreaInsets();
+  const [optionsVisible, setOptionsVisible] = useState(true);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState({
+    errorTitle: '',
+    errorMessage: '',
+    isModalOpen: false,
+  });
+
+  const [showSuccessModal, setShowSuccessModal] = useState({
+    successTitle: 'Success',
+    successMessage: 'Reported Successfully',
+    loadingMessage: 'Processing..',
+    requestLoading: false,
+    showModal: false,
+  });
 
   const {
     chatId,
@@ -133,9 +104,35 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
     providerAvatar,
     customerAvatar,
   } = route.params || {};
+  const [chatIsBlocked, setChatIsBlocked] = useState(false);
+  const [chatIsBlockedBy, setChatIsBlockedBy] = useState('');
 
   const id = useId();
   const chatRef = useRef<FlatList<IMessage> | null>(null);
+
+  useEffect(() => {
+    const convoId = generateConversationId(providerId, customerId);
+
+    const convo = messagesList.find(item => {
+      const id = generateConversationId(item.usersIds[0], item.usersIds[1]);
+      return id === convoId;
+    });
+
+    setChatIsBlocked(convo?.isBlocked as boolean);
+    setChatIsBlockedBy(convo?.isBlockedBy as string);
+  }, [messagesList]);
+
+  const userBlocked = useMemo(() => {
+    const blockedByYou = chatIsBlockedBy === user?.email;
+    const blockedUser =
+      chatIsBlocked && blockedByYou
+        ? 1
+        : chatIsBlocked && !blockedByYou
+        ? 2
+        : 0;
+
+    return blockedUser;
+  }, [chatIsBlocked, chatIsBlockedBy]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -143,8 +140,83 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
         user?.name === providerName
           ? capitalizeFirstLetter(customerName)
           : capitalizeFirstLetter(providerName),
+      header: () => {
+        return (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: insets.top,
+              paddingHorizontal: wp('3%'),
+              gap: 8,
+              paddingVertical: 4,
+              backgroundColor: colorScheme === 'dark' ? '#010A0C' : '#fff',
+            }}>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.goBack();
+              }}>
+              <Icons name="arrow-left" size={24} />
+            </TouchableOpacity>
+            <Avatar.Image
+              size={50}
+              source={
+                customerId === user?.email
+                  ? {uri: providerAvatar}
+                  : {uri: customerAvatar}
+              }
+            />
+            <PaperText>
+              {user?.email === customerId
+                ? capitalizeFirstLetter(providerName)
+                : capitalizeFirstLetter(customerName)}
+            </PaperText>
+            <View style={{marginLeft: 'auto'}}>
+              <Menu
+                visible={optionsVisible}
+                onDismiss={() => setOptionsVisible(false)}
+                anchorPosition="bottom"
+                anchor={
+                  <TouchableOpacity
+                    style={{padding: 8}}
+                    onPress={() => setOptionsVisible(true)}>
+                    <Icons name="more-vertical" size={24} />
+                  </TouchableOpacity>
+                }>
+                <Menu.Item
+                  disabled={userBlocked === 2}
+                  leadingIcon={'block-helper'}
+                  title={userBlocked === 1 ? 'Unblock User' : 'Block User'}
+                  onPress={async () => {
+                    if (!chatIsBlocked) {
+                      await blockConversation(
+                        providerId,
+                        customerId,
+                        user?.email as string,
+                      );
+                    } else {
+                      await unblockConversation(providerId, customerId);
+                    }
+
+                    setOptionsVisible(false);
+                  }}
+                />
+
+                <Menu.Item
+                  leadingIcon={'thumb-down'}
+                  title="Report Account"
+                  onPress={() => {
+                    setOptionsVisible(false);
+                    setReportModalOpen(true);
+                  }}
+                />
+              </Menu>
+            </View>
+          </View>
+        );
+      },
     });
-  }, []);
+  }, [optionsVisible, chatIsBlocked, chatIsBlockedBy]);
 
   useEffect(() => {
     // Reference to the conversations collection
@@ -155,8 +227,6 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
       providerId,
       customerId as string,
     );
-
-    (async () => {})();
 
     const messagesRef = firestore()
       .collection('conversations')
@@ -231,13 +301,11 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
       is_provider: user?.is_service_provider,
       id: uuidv4(),
     };
-    console.log('sending payload', payload.lastMessageContent);
+
     await sendMessage(payload);
 
     checkForBlockedKeywords(payload.lastMessageContent)
       .then(async containsBlockedKeyword => {
-        console.log('containsBlockedKeyword', containsBlockedKeyword);
-
         let words = '';
         blockedKeywordsSet.forEach(word => {
           words += word + ', ';
@@ -294,6 +362,42 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
     setShowTopPopup(false);
   };
 
+  const handleReport = async (reason: string) => {
+    setShowSuccessModal({
+      ...showSuccessModal,
+      requestLoading: true,
+      showModal: true,
+    });
+
+    const {data, error} = await makeApiRequest('/report-user', 'POST', {
+      user_id: user?.id,
+      reason,
+    });
+    if (error) {
+      setShowErrorModal({
+        errorTitle: 'Error',
+        errorMessage: error.msg,
+        isModalOpen: true,
+      });
+    }
+    if (data) {
+      setShowSuccessModal({
+        successTitle: 'Success',
+        successMessage: 'Reported Successfully',
+        loadingMessage: 'Processing..',
+        requestLoading: false,
+        showModal: true,
+      });
+
+      setTimeout(() => {
+        setShowSuccessModal({
+          ...showSuccessModal,
+          showModal: false,
+        });
+      }, 3000);
+    }
+  };
+
   return (
     <SafeAreaViewContainer edges={['right', 'left', 'bottom']}>
       <View
@@ -342,9 +446,16 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
           scrollToBottomComponent={() => (
             <Icons name="arrow-down-circle" size={24} color="#1E90FF" />
           )}
-          renderInputToolbar={renderInputToolbar}
+          renderInputToolbar={props =>
+            renderInputToolbar(
+              props,
+              colorScheme as string,
+              chatIsBlocked,
+              userBlocked,
+            )
+          }
           renderSend={renderSend}
-          renderComposer={renderComposer}
+          renderComposer={props => renderComposer(props, colorScheme)}
           textInputProps={{
             style: styles.textInput,
             placeholderTextColor: colorScheme === 'dark' ? '#aaa' : '#888',
@@ -353,6 +464,20 @@ const ChatScreen: React.FC<Props> = ({route, navigation}) => {
           inverted={true}
         />
       </View>
+
+      <ReportModal
+        visible={reportModalOpen}
+        hideDialog={() => setReportModalOpen(false)}
+        handleSubmit={reason => handleReport(reason)}
+      />
+
+      <CustomModal {...showSuccessModal} />
+      <CustomErrorModal
+        {...showErrorModal}
+        closeModal={() =>
+          setShowErrorModal({...showErrorModal, isModalOpen: false})
+        }
+      />
     </SafeAreaViewContainer>
   );
 };
@@ -382,13 +507,35 @@ const renderBubble = (props: any) => (
   />
 );
 
-const renderInputToolbar = (props: any) => (
-  <InputToolbar
-    {...props}
-    containerStyle={styles.inputToolbarContainer}
-    primaryStyle={{alignItems: 'center'}}
-  />
-);
+const renderInputToolbar = (
+  props: any,
+  colorScheme: string,
+  isConvoBlocked: boolean,
+  isConvoBlockedBy: number,
+) => {
+  if (isConvoBlocked) {
+    return (
+      <View style={{alignItems: 'center', paddingVertical: 4}}>
+        <PaperText>
+          {isConvoBlockedBy === 1
+            ? 'You have blocked this conversation'
+            : 'Other user has blocked this conversation'}
+        </PaperText>
+      </View>
+    );
+  }
+
+  return (
+    <InputToolbar
+      {...props}
+      containerStyle={[
+        styles.inputToolbarContainer,
+        {backgroundColor: colorScheme === 'dark' ? '#404040' : '#fff'},
+      ]}
+      primaryStyle={{alignItems: 'center'}}
+    />
+  );
+};
 
 const renderSend = (props: any) => (
   <Send {...props}>
@@ -398,13 +545,19 @@ const renderSend = (props: any) => (
   </Send>
 );
 
-const renderComposer = (props: any) => (
-  <Composer
-    {...props}
-    textInputStyle={styles.textInput}
-    placeholderTextColor={props.colorScheme === 'dark' ? '#aaa' : '#888'}
-  />
-);
+const renderComposer = (props: any, colorScheme: any) => {
+  return (
+    <Composer
+      {...props}
+      multiline
+      textInputStyle={[
+        styles.textInput,
+        colorScheme === 'dark' ? styles.darkTextInput : styles.lightTextInput,
+      ]}
+      placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
+    />
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -453,21 +606,24 @@ const styles = StyleSheet.create({
     right: wp('1%'),
   },
   inputToolbarContainer: {
-    backgroundColor: '#fff',
-    borderTopColor: '#e8e8e8',
     borderTopWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   textInput: {
-    color: '#000',
     flex: 1,
     marginLeft: wp('2%'),
     marginRight: wp('2%'),
     padding: wp('2%'),
-    backgroundColor: '#fff',
+
     borderRadius: wp('2%'),
+  },
+  darkTextInput: {
+    color: '#fff',
+  },
+  lightTextInput: {
+    color: '#1e293b',
   },
   sendingContainer: {
     justifyContent: 'center',

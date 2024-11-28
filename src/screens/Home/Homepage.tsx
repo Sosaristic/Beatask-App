@@ -274,6 +274,7 @@ const HomeScreen = ({navigation}: Props) => {
       provider_name: '',
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
+      discounted_price: payload.discounted_price,
     };
     setShowModal(false);
     navigation.navigate('singleservice', {data: payloadData});
@@ -291,6 +292,7 @@ const HomeScreen = ({navigation}: Props) => {
       provider_name: payload.service.provider_id,
       sub_category_name: payload.service.sub_category,
       service_description: payload.service.service_description,
+      discounted_price: payload.service.discounted_price,
     };
 
     navigation.navigate('singleservice', {data: payloadData});
@@ -308,6 +310,7 @@ const HomeScreen = ({navigation}: Props) => {
       provider_name: payload.provider.name,
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
+      discounted_price: payload.discounted_price,
     };
     navigation.navigate('singleservice', {data: payloadData});
   };
@@ -324,6 +327,7 @@ const HomeScreen = ({navigation}: Props) => {
       provider_name: '',
       sub_category_name: payload.sub_category,
       service_description: payload.service_description,
+      discounted_price: payload.discounted_price,
     };
     navigation.navigate('singleservice', {data: payloadData});
   };
@@ -485,7 +489,7 @@ const HomeScreen = ({navigation}: Props) => {
               </View>
             </View>
           </Modal>
-          <Swiper style={styles.swiper} showsButtons={false} autoplay={true}>
+          {/* <Swiper style={styles.swiper} showsButtons={false} autoplay={true}>
             <View style={styles.slide}>
               <Text style={styles.slideText}>Slide 1</Text>
             </View>
@@ -495,44 +499,53 @@ const HomeScreen = ({navigation}: Props) => {
             <View style={styles.slide}>
               <Text style={styles.slideText}>Slide 3</Text>
             </View>
-          </Swiper>
+          </Swiper> */}
 
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-              gap: 4,
-              paddingRight: 20,
-              paddingVertical: 10,
-            }}
-            onPress={() => navigation.navigate('pending_actions')}>
+          <View style={styles.categoryContainer}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 4,
-                borderBottomColor: customTheme.primaryColor,
-                borderBottomWidth: 1,
+                justifyContent: 'space-between',
               }}>
               <Text
                 style={{
-                  color: customTheme.primaryColor,
+                  fontSize: wp('4%'),
+                  color: isDarkMode ? '#FFF' : '#000',
                 }}>
-                Pending Actions
+                Beatask service categories
               </Text>
-              <Icons
-                name="chevron-right"
-                size={20}
-                color={customTheme.primaryColor}
-              />
+              <TouchableOpacity
+                style={{
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'flex-end',
+                  gap: 4,
+                  paddingRight: 20,
+                }}
+                onPress={() => navigation.navigate('pending_actions')}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    borderBottomColor: customTheme.primaryColor,
+                    borderBottomWidth: 1,
+                  }}>
+                  <Text
+                    style={{
+                      color: customTheme.primaryColor,
+                    }}>
+                    Pending Actions
+                  </Text>
+                  <Icons
+                    name="chevron-right"
+                    size={20}
+                    color={customTheme.primaryColor}
+                  />
+                </View>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-
-          <View style={styles.categoryContainer}>
-            <Text style={styles.categoryHeader1}>
-              Beatask service categories
-            </Text>
             <View style={styles.categories}>
               <View style={styles.categoryWrapper}>
                 <TouchableOpacity
@@ -908,7 +921,9 @@ const HomeScreen = ({navigation}: Props) => {
             <View>
               <Refresh onRefresh={() => fetchWomenServices()} />
             </View>
-          ) : womenServicesRes?.data.length === 0 ? (
+          ) : womenServicesRes === null ||
+            !womenServicesRes ||
+            womenServicesRes?.data.length === 0 ? (
             <View>
               <Empty />
             </View>

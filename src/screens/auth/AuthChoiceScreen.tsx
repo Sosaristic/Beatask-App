@@ -251,15 +251,6 @@ const AuthChoiceScreen: React.FC<Props> = ({navigation, route}) => {
             style={{width: 40, height: 40}}
           />
         </TouchableOpacity>
-        {Platform.OS === 'ios' && (
-          <TouchableOpacity
-            style={[
-              styles.appleButton,
-              isDarkMode ? styles.appleButtonDark : styles.appleButtonLight,
-            ]}>
-            <Icon name="apple" size={wp('10%')} color="#fff" />
-          </TouchableOpacity>
-        )}
       </View>
     </SafeAreaViewContainer>
   );

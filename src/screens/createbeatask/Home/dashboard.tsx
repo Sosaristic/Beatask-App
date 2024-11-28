@@ -9,6 +9,8 @@ import {
   useColorScheme,
   ActivityIndicator,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -84,6 +86,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const queryClient = useQueryClient();
 
+  const {user} = useUserStore(state => state);
+
   const requestCompleteData = useRef<RequestCompleteType | null>(null);
   const [requestData, setRequestData] = useState<RequestCompleteType | null>(
     null,
@@ -103,7 +107,6 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     showModal: false,
   });
 
-  const {user} = useUserStore(state => state);
   const {
     data,
     loading,
@@ -133,7 +136,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     '/pending-tasks',
     'POST',
     {
-      provider_id: 2,
+      provider_id: user?.id,
     },
   );
 
@@ -503,6 +506,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             <>
               {pendingResData?.data.map(item => {
                 const dates = convertStringToArray(item.dates_and_times);
+                console.log(dates);
                 return (
                   <View
                     key={item.id}
@@ -550,20 +554,29 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                         {item.user.name}
                       </Text>
                     </View>
+                    {dates.map((date, index) => (
+                      <Text key={index} style={{flex: 1}}>
+                        {`${new Date(date).toLocaleString()}`},{' '}
+                      </Text>
+                    ))}
 
-                    <Text
+                    {/* <Text
                       style={[isDarkMode ? styles.darkText : styles.lightText]}>
                       {`${new Date(dates[0]).toLocaleString()}`}
-                    </Text>
-                    <Text
+                    </Text> */}
+                    {/* <Text
                       style={[isDarkMode ? styles.darkText : styles.lightText]}>
                       {' '}
                       -{' '}
-                    </Text>
-                    <Text
-                      style={[isDarkMode ? styles.darkText : styles.lightText]}>
-                      {dates[dates.length - 1]}
-                    </Text>
+                    </Text> */}
+                    {/* {dates.length > 0 && (
+                      <Text
+                        style={[
+                          isDarkMode ? styles.darkText : styles.lightText,
+                        ]}>
+                        {`${new Date(dates.length - 1).toLocaleString()}`}
+                      </Text>
+                    )} */}
                   </View>
                 );
               })}
@@ -731,25 +744,29 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                 />
               </Pressable>
               <FText variant="titleMedium">Request Service Completion</FText>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: '#12ccb7',
-                    color: isDarkMode ? '#FFFFFF' : '#000000',
-                    backgroundColor: isDarkMode ? '#51514C' : '#FFFFFF',
-                    textAlignVertical: 'top', // Align text and placeholder to the top
-                    marginTop: hp('2%'), // Ensure no top margin
-                    paddingTop: hp('2%'), // Ensure no top padding
-                  },
-                ]}
-                value={instructions}
-                onChangeText={text => setInstructions(text)}
-                placeholder="Enter Note"
-                placeholderTextColor={isDarkMode ? '#CCCCCC' : '#707070'}
-                multiline
-                numberOfLines={2}
-              />
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{width: '100%'}}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: '#12ccb7',
+                      color: isDarkMode ? '#FFFFFF' : '#000000',
+                      backgroundColor: isDarkMode ? '#51514C' : '#FFFFFF',
+                      textAlignVertical: 'top', // Align text and placeholder to the top
+                      marginTop: hp('2%'), // Ensure no top margin
+                      paddingTop: hp('2%'), // Ensure no top padding
+                    },
+                  ]}
+                  value={instructions}
+                  onChangeText={text => setInstructions(text)}
+                  placeholder="Enter Note"
+                  placeholderTextColor={isDarkMode ? '#CCCCCC' : '#707070'}
+                  multiline
+                  numberOfLines={2}
+                />
+              </KeyboardAvoidingView>
               <TouchableOpacity
                 onPress={handleServiceCompleteReq}
                 disabled={!instructions}

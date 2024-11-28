@@ -94,6 +94,8 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
           sentBy: data.sentBy,
           providerName: data.providerName,
           customerName: data.customerName,
+          isBlockedBy: data.isBlockedBy,
+          isBlocked: data.isBlocked,
         } as Message;
       });
       const sortedMessages = newMessages.slice().sort((a, b) => {
@@ -173,6 +175,16 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
               {messages.map(message => {
                 const date = new Date(message.lastMessageTimestamp);
 
+                console.log(message, 'message');
+
+                const blockedByYou = message.isBlockedBy === user?.email;
+                const messageContent =
+                  message.isBlocked && blockedByYou
+                    ? 'You have blocked this user.'
+                    : message.isBlocked && !blockedByYou
+                    ? 'This user has blocked you.'
+                    : message.lastMessageContent;
+
                 return (
                   <TouchableOpacity
                     onPress={() =>
@@ -219,7 +231,7 @@ const ChatScreen: React.FC<Prop> = ({navigation}) => {
                               styles.message,
                               isDarkMode ? styles.darkText : null,
                             ]}>
-                            {message.lastMessageContent}
+                            {messageContent}
                           </Text>
                         </View>
                         <View style={{gap: 6}}>

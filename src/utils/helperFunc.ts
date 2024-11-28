@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Text} from 'react-native';
 
 export const formatDate = (date: Date): string => {
@@ -12,7 +13,7 @@ export const formatDate = (date: Date): string => {
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
     // Less than an hour
-    return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+    return `${diffInMinutes} min${diffInMinutes !== 1 ? 's' : ''} ago`;
   }
 
   const diffInHours = Math.floor(diffInMinutes / 60);

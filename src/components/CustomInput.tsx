@@ -49,6 +49,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
           }, // Border color adapts to mode
         ]}>
         <RNTextInput
+          autoCapitalize="none"
           secureTextEntry={type === 'password' ? !isPasswordVisible : false} // Only apply secureTextEntry for password type
           style={[styles.input, {color: isDarkMode ? 'white' : 'dark'}]}
           placeholderTextColor={isDarkMode ? '#ccc' : '#555'} // Placeholder color adapts to mode

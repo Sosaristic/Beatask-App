@@ -9,6 +9,7 @@ import React from 'react';
 import {Text} from 'react-native-paper';
 
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import {customTheme} from '../custom_theme/customTheme';
 
 type ModalProps = {
   showModal: boolean;
@@ -28,8 +29,16 @@ const Panel = ({showModal, setShowModal, children, title}: ModalProps) => {
       animationType="slide"
       onDismiss={() => setShowModal(false)}
       onRequestClose={() => setShowModal(false)}>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
+      <View style={[styles.modalContainer]}>
+        <View
+          style={[
+            styles.modalContent,
+            {
+              backgroundColor: isDarkMode
+                ? customTheme.lightDarkColor
+                : 'white',
+            },
+          ]}>
           <View
             style={{
               flexDirection: 'row',
@@ -66,7 +75,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: '#fff',
     padding: 20,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,

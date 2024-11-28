@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import {Message} from '../screens/Home/chat/masglist';
 export type User = {
   id: number;
   name: string | null;
@@ -37,11 +38,13 @@ export type User = {
   profile_photo_url: string;
   is_subscribed_to_one_month_premium: number;
   is_subscribed_to_two_months_subscription: number;
+  free_quotes_trial: number;
 } | null;
 
 type UserType = {
   user: User;
   unReadMessages: number;
+  messagesList: Message[];
   isAuthenticated: boolean;
   device_token: string;
   showWarning: boolean;
@@ -53,12 +56,14 @@ type UserType = {
     setDeviceToken: (value: string) => void;
     setShowWarning: (value: boolean) => void;
     setIsSubscribed: (value: boolean) => void;
+    setMessagesList: (value: Message[]) => void;
   };
 };
 
 const initialValues = {
   user: null,
   isAuthenticated: false,
+  messagesList: [],
   unReadMessages: 0,
   device_token: '',
   showWarning: true,
@@ -74,7 +79,8 @@ export const useUserStore = create<UserType>(set => ({
         isAuthenticated: true,
         isSubscribed:
           user?.is_subscribed_to_one_month_premium === 1 ||
-          user?.is_subscribed_to_two_months_subscription === 1,
+          user?.is_subscribed_to_two_months_subscription === 1 ||
+          user?.free_quotes_trial === 1,
       });
     },
     logout: () => {
@@ -91,6 +97,9 @@ export const useUserStore = create<UserType>(set => ({
     },
     setIsSubscribed: (value: boolean) => {
       set({isSubscribed: value});
+    },
+    setMessagesList: (value: Message[]) => {
+      set({messagesList: value});
     },
   },
 }));

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   useColorScheme,
   TouchableWithoutFeedback,
   Keyboard,
+  Linking,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
@@ -25,6 +26,7 @@ import {User, useUserStore} from '../../store/useUserStore';
 import {makeApiRequest} from '../../utils/helpers';
 import {CustomErrorModal, CustomModal} from '../../components';
 import SafeAreaViewContainer from '../../components/SafeAreaViewContainer';
+import notifee, {AuthorizationStatus} from '@notifee/react-native';
 
 type UpdateSuccessResponse = {
   data: User;
@@ -37,6 +39,7 @@ const SettingsScreen: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const {user, actions} = useUserStore(state => state);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [governmentIdInfo] = useState({
@@ -76,6 +79,17 @@ const SettingsScreen: React.FC = () => {
     showModal: false,
   });
 
+  useEffect(() => {
+    (async () => {
+      const status = await notifee.getNotificationSettings();
+      if (status.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+        setNotificationEnabled(true);
+      } else {
+        setNotificationEnabled(false);
+      }
+    })();
+  }, []);
+
   const handleProfileSetup = () => {
     navigation.navigate('ProfileSetup' as never);
   };
@@ -92,7 +106,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handlePrivacyPolicy = () => {
-    navigation.navigate('Agree' as never);
+    Linking.openURL('https://beatask.com/privacy-policy/');
   };
 
   const toggleSection = (section: string) => {
@@ -202,8 +216,22 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const handleNotificationChange = async () => {
+    if (notificationEnabled) {
+      notifee.openNotificationSettings();
+      return;
+    }
+
+    const setting = await notifee.requestPermission();
+    if (setting.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+      setNotificationEnabled(true);
+    } else {
+      notifee.openNotificationSettings();
+    }
+  };
+
   return (
-    <SafeAreaViewContainer>
+    <SafeAreaViewContainer edges={['right', 'bottom', 'left']}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={[
@@ -363,6 +391,28 @@ const SettingsScreen: React.FC = () => {
                         Help center
                       </Text>
                     </TouchableOpacity>
+                    <View
+                      style={[
+                        styles.section3,
+                        {flexDirection: 'row', alignItems: 'center'},
+                      ]}>
+                      <Text
+                        style={[
+                          styles.sectionText,
+                          isDarkMode && styles.darkSectionText,
+                          {flexDirection: 'row', gap: 4, alignItems: 'center'},
+                        ]}>
+                        Notification
+                      </Text>
+                      <Switch
+                        style={{marginLeft: 'auto'}}
+                        trackColor={{false: '#767577', true: '#12CCB7'}}
+                        thumbColor={isDarkModeEnabled ? '#fff' : '#f4f3f4'}
+                        ios_backgroundColor="#3e3e3e"
+                        value={notificationEnabled}
+                        onChange={handleNotificationChange}
+                      />
+                    </View>
                   </View>
                 )}
 
@@ -512,7 +562,6 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: wp('5%'),
-    backgroundColor: '#fff',
   },
   darkContainer: {
     backgroundColor: '#010A0C',
